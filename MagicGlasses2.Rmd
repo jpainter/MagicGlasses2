@@ -1,0 +1,513 @@
+---
+title: "DHIS2 Magic Glasses"
+# author: "John Painter"
+# date: "12/20/2021"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    theme:
+      version: 4
+      bootswatch: sandstone
+runtime: shiny
+---
+
+<!-- For mapping, need to install the GDAL library.  On mac, use homebrew.  On windows ?  -->
+<!-- see : https://gitmemory.cn/index.php/repo/r-spatial/sf/issues/1848 -->
+<!-- remotes::install_github("r-spatial/sf", configure.args = "--with-gdal-config=/opt/homebrew/opt/gdal/bin/gdal-config --with-sqlite3-lib=/opt/homebrew/opt/sqlite3") -->
+
+```{r setup, include=FALSE}
+options(shiny.trace=FALSE)
+options(shiny.reactlog=FALSE)
+knitr::opts_chunk$set(echo = FALSE)
+
+library(data.table)
+library(shiny)
+library(shinyjs)
+library(shinydashboard)
+library(shinyBS)
+library(shinyLP)
+library(leaflet)
+library( progressr )
+# library(mapview)
+library(RColorBrewer)
+library(plotly)
+library(tidyverse)
+# library(googleVis)
+library(scales)
+library( zoo )
+library(knitr)
+library(rlang)
+library(stringi)
+library(tidyselect)
+library(geojsonsf)
+library(geojsonio)
+library(jsonlite)
+library(httr)
+library(curl)
+library(assertthat)
+
+library(futile.logger)
+# library(utils)
+library(DT)
+# library(textutils)
+library(readxl)
+library(openxlsx)
+library(anytime)
+library(lubridate)
+library( tictoc )
+
+library(ipc)
+library(future)
+library(furrr)
+library( purrr )
+library(promises)
+
+# library(knitrProgressBar)
+# library( progressr )
+library(sf)
+library(mapview)
+library( leaflet )
+# library(rmapshaper)
+
+# busy spinner
+library(shinybusy)
+add_busy_spinner(spin = "fading-circle", position = "bottom-right")
+
+```
+
+```{r trend_viewer_libraries, eval= FALSE }
+
+library(pacman)
+
+pacman::p_load( officer , rvg ,
+                tidyverse, scales, plotly ,
+                data.table , tidyfast, tidytable ,
+        lubridate , anytime, progressr , assertthat  , stringr, 
+        readxl, patchwork, cowplot, kableExtra  ,
+        tsibble, fable, fabletools, feasts  , 
+        fable.prophet ,  fable.bsts  , 
+        slider, anomalize, brolgar   ,
+        tsbox , CausalImpact , tibbletime , dygraphs  , 
+        fpp3  , fabletools  , 
+        furrr, tictoc, magrittr, hrbrthemes, data.tree, igraph  ,
+        sf, mapview, GGally , plotly , sugrrants, lemon , plotly ,
+        shinyscreenshot, ggrepel, shinybusy, DT ,
+        HDInterval ,rstanarm , bayestestR , 
+        see 
+        )
+
+## Functions ####
+source( "ingest_formula_data.r")
+source( "outlier.r" )
+source( 'DToptions.R' )
+
+# see https://stackoverflow.com/questions/54438495/shift-legend-into-empty-facets-of-a-faceted-plot-in-ggplot2
+shift_legend2 <- function(p) {
+  # ...
+  # to grob
+  gp <- ggplotGrob(p)
+  facet.panels <- grep("^panel", gp[["layout"]][["name"]])
+  empty.facet.panels <- sapply(facet.panels, function(i) "zeroGrob" %in% class(gp[["grobs"]][[i]]))
+  empty.facet.panels <- facet.panels[empty.facet.panels]
+
+  # establish name of empty panels
+  empty.facet.panels <- gp[["layout"]][empty.facet.panels, ]
+  names <- empty.facet.panels$name
+  # example of names:
+  #[1] "panel-3-2" "panel-3-3"
+
+# now we just need a simple call to reposition the legend
+  reposition_legend(p, 'center', panel=names)
+}
+
+shift_legend3 <- function(p) {
+    pnls <- cowplot::plot_to_gtable(p) %>% gtable::gtable_filter("panel") %>%
+      with(setNames(grobs, layout$name)) %>% purrr::keep(~identical(.x,zeroGrob()))
+
+    if( length(pnls) == 0 ) return(p)
+
+    lemon::reposition_legend( p, "center", panel=names(pnls) )
+}
+
+```
+
+```{r sources}
+# Functions ####
+
+source( 'TS_Modeling_Functions.r')
+# source("Model_TS.R") # new version of model.ts()
+source( "Summary_TS.R") # new version of summary_ts()
+source( 'TS_model_outlier_impute.R') # model_ts()
+source( 'Deviation_Expected_Functions.R')
+source( 'theme_ppt.R')
+source( 'clean_ts.r' )
+source( 'DToptions.R')
+source( 'model_ts2.r' )
+source( 'api_data.r' )
+source( 'dqa.r' )
+# source( 'API.r' )
+
+Month_Year = function( x ){ yearmonth( zoo::as.yearmon( x , "%Y%m") ) }
+
+
+options(dplyr.summarise.inform = FALSE)
+
+useShinyjs()   # Set up shinyjs
+
+```
+
+```{css my-css , include = FALSE, eval = TRUE }
+
+.fluid-row {
+  font-size: 5.9vw;
+}
+
+.chart-title {
+     font-size: 10px;
+}
+
+.chart{
+    margin: 0px
+}
+
+.shiny-input-container{
+    margin: 0px
+}
+
+.checkbox{
+    margin: 0px
+}
+
+.selectize-input { 
+    font-size: 10pt; 
+    font-weight: bold;
+    margin: 0 0 0 0;
+    white-space: nowrap;
+    padding: 5px;
+    } 
+    
+.select-input { 
+    font-size: 10pt; 
+    font-weight: bold;
+    margin: 0 0 0 0;
+    white-space: nowrap;
+    padding: 5px;
+    } 
+    
+.checkbox-input { 
+    margin: 0px
+    }
+
+.value-box > .inner {
+  padding: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+.value-box .value {
+  font-size: 10px;
+  font-weight: bold;
+  margin: 0 0 0 0;
+  white-space: nowrap;
+  padding: 0;
+}
+
+.value-box .caption {
+  font-size: 5px;
+}
+
+.section.sidebar {
+  position: fixed;
+  top: 51px; /* overridden by theme */
+  left: 0;
+  bottom: 0;
+  border-right: 1px solid #e2e2e2;
+  background-color: white; /* overridden by theme */
+  padding-left: 5px;
+  padding-right: 5px;
+  visibility: hidden;
+}
+
+.section.sidebar form p:first-child {
+  margin-top: 5px;
+}
+
+.storyboard-nav {
+    box-sizing: border-box;
+    width: 100% !important; /* This prevents JS transformation on width */
+    height: auto; /* This overrides the height */
+}
+
+.storyboard-nav .sbnext, .storyboard-nav .sbprev {
+    height: auto; /* This overrides the height */
+    font-size: 3rem;
+}
+
+.storyboard-nav .sbframelist {
+    height: auto; /* This overrides the height */
+}
+
+.storyboard-nav .sbframelist ul {
+    box-sizing: border-box;
+    width: 100% !important; /* This prevents JS transformation on width */
+    height: auto; /* This overrides the height */
+}
+
+.storyboard-nav .sbframelist ul li {
+    height: auto; /* This overrides the height */
+    width: auto; /* This overrides the width */
+}
+
+
+input[type="number"] {
+  max-width: 80%;
+}
+
+div.outer {
+  position: fixed;
+  top: 41px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+  /*overflow: hidden;*/
+  padding: 0;
+}
+
+#controls {
+  /* Appearance */
+  background-color: white;
+  padding: 0 10px 10px 10px;
+  cursor: move;
+  /* Fade out while not hovering */
+  opacity: 0.65;
+  zoom: 0.9;
+  transition: opacity 500ms 1s;
+  overflow-y: auto;
+}
+
+#controls:hover {
+  /* Fade in while hovering */
+  opacity: 0.95;
+  transition-delay: 0;
+}
+
+/* Position and style citation */
+#cite {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  font-size: 12px;
+}
+
+/* If not using map tiles, show a white background */
+.leaflet-container {
+  background-color: white !important;
+}
+
+.tab-content {
+  overflow: visible;
+}
+
+.selectize-control .selectize-dropdown {
+  position: static !important;
+}
+
+.select-control .select-dropdown {
+  position: static !important;
+}
+
+/* Customize fonts */
+body, label, input, button, select { 
+  font-family: 'Helvetica Neue', Helvetica;
+  font-weight: 100;
+}
+
+h1, h2 { font-weight: 300; }
+
+h3, h4 { font-weight: 200; }
+
+#controls:hover {
+  /* Fade in while hovering */
+  opacity: 0.95;
+  transition-delay: 0;
+}
+
+# flexdashboard in rmarkdown (https://groups.google.com/g/shiny-discuss/c/N5N0PqcBvuY?pli=1)
+.chart-wrapper {
+  overflow-y: scroll;
+}
+
+/* Fix DT / Flexdashboard container cut off */
+.chart-stage-flex {
+  overflow: scroll !important;
+}
+```
+
+<!-- Inputs {.sidebar data-width=300} -->
+<!-- ==================================== -->
+
+Setup and Logon
+=======================
+
+Column
+-----------------------------------
+
+```{r, echo = FALSE  }
+source( 'directory_widget.r' )
+directory_widget_ui( "directory1" )
+
+directoryWidgetOutput = directory_widget_server( "directory1" )
+
+```
+
+Column
+-----------------------------------
+
+### Login
+
+```{r, echo = FALSE  }
+source( 'login_widget.r' )
+login_widget_ui( "login1" )
+
+loginWidgetOutput = login_widget_server( "login1" )
+
+```
+
+Metadata Dictionary
+========================
+
+```{r , eval=TRUE}
+source( 'metadata_widget.r' )
+metadata_widget_ui( "metadata1" )
+
+metadataWidgetOutput =
+  metadata_widget_server( "metadata1" ,
+            loginDetails  =  loginWidgetOutput ,
+            dataDir = directoryWidgetOutput
+            )
+```
+
+Define Formula (data dictionary)
+========================
+Column
+-----------------------------------
+
+### Data definitions (formulas)
+
+```{r, echo = FALSE  }
+source( 'data_widget.r' )
+data_widget_ui( "data1" )
+
+data1_Widget_output = 
+  data_widget_server( "data1" , 
+                      dataDir = directoryWidgetOutput )
+
+```
+
+Request Data
+========================
+
+Column
+-----------------------------------
+
+### Data definitions (formulas)
+
+```{r, echo = FALSE  }
+source( 'data_widget.r' )
+data_widget_ui( "data2" )
+
+data2_Widget_output = 
+  data_widget_server( "data2" , 
+                      dataDir = directoryWidgetOutput 
+                      , data_request_output = data_request_Output
+                      )
+
+```
+
+Column
+-----------------------------------
+
+### Request
+
+```{r , eval=TRUE}
+source( 'data_request_widget.r' )
+data_request_widget_ui( "data_request1" )
+
+data_request_Output =
+  data_request_widget_server( "data_request1" ,
+            loginDetails  =  loginWidgetOutput ,
+            dataDirectory = directoryWidgetOutput ,
+            metadata_widget_output = metadataWidgetOutput , 
+            data_widget_output = data2_Widget_output
+            )
+```
+
+Reporting Rate
+========================
+
+<!-- Column -->
+<!-- ----------------------------------- -->
+
+<!-- ### Data downloads -->
+
+```{r, echo = FALSE , eval=FALSE }
+source( 'data_widget.r' )
+data_widget_ui( "data3" )
+
+data3_Widget_output = 
+  data_widget_server( "data3" , 
+                      dataDir = directoryWidgetOutput 
+                      )
+
+```
+
+<!-- Column -->
+<!-- ----------------------------------- -->
+
+<!-- ### Reporting -->
+
+
+```{r  }
+source( 'reporting_widget.r' )
+reporting_widget_ui( "reporting1" )
+
+reporting_widget_server( "reporting1" ,
+                         dataDirectory = directoryWidgetOutput ,
+                         metadata_widget_output = metadataWidgetOutput ,
+                         data_widget_output = data2_Widget_output )
+```
+
+
+
+Outliers and Errors
+========================
+
+
+```{r , eval=FALSE}
+source( 'cleaning_widget.r' )
+cleaning_widget_ui( "cleaning1" )
+
+cleaning_widget_server( "cleaning1" , 
+            data  =  dataWidgetData$dataset )
+```
+
+
+
+Evaluation and Trends
+========================
+
+About
+========================
+```{r, eval= FALSE }
+# testing leaflet...
+# leafletOutput(  "map" )
+# map2 = leaflet() %>% addTiles() %>% setView(-93.65, 42.0285, zoom = 18)
+# output$map = renderLeaflet(map2) 
+  
+source( 'leaflet_widget.r' )
+leaflet_widget_ui( "leaflet1" )
+leaflet_widget_server( "leaflet1" )             
+```
+
