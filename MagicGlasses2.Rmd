@@ -33,6 +33,8 @@ library( progressr )
 library(RColorBrewer)
 library(plotly)
 library(tidyverse)
+# library( tidyfast )
+# library( tidytable )
 # library(googleVis)
 library(scales)
 library( zoo )
@@ -70,37 +72,38 @@ library(mapview)
 library( leaflet )
 # library(rmapshaper)
 
+library( tsibble  )
+library( fable )
+library( fabletools )
+library( feasts )
+library( fable.prophet )
+library( fable.bsts )
+
 # busy spinner
 library(shinybusy)
 add_busy_spinner(spin = "fading-circle", position = "bottom-right")
 
 ```
 
-```{r trend_viewer_libraries, eval= FALSE }
-
-library(pacman)
-
-pacman::p_load( officer , rvg ,
-                tidyverse, scales, plotly ,
-                data.table , tidyfast, tidytable ,
-        lubridate , anytime, progressr , assertthat  , stringr, 
-        readxl, patchwork, cowplot, kableExtra  ,
-        tsibble, fable, fabletools, feasts  , 
-        fable.prophet ,  fable.bsts  , 
-        slider, anomalize, brolgar   ,
-        tsbox , CausalImpact , tibbletime , dygraphs  , 
-        fpp3  , fabletools  , 
-        furrr, tictoc, magrittr, hrbrthemes, data.tree, igraph  ,
-        sf, mapview, GGally , plotly , sugrrants, lemon , plotly ,
-        shinyscreenshot, ggrepel, shinybusy, DT ,
-        HDInterval ,rstanarm , bayestestR , 
-        see 
-        )
-
-## Functions ####
-source( "ingest_formula_data.r")
+```{r sources}
+# Functions ####
+source( "data_time_libraries.r")
 source( "outlier.r" )
-source( 'DToptions.R' )
+source( "ingest_formula_data.r")
+source( 'TS_Modeling_Functions.r')
+# source("Model_TS.R") # new version of model.ts()
+source( "Summary_TS.R") # new version of summary_ts()
+source( 'TS_model_outlier_impute.R') # model_ts()
+source( 'Deviation_Expected_Functions.R')
+source( 'theme_ppt.R')
+source( 'clean_ts.r' )
+source( 'DToptions.R')
+source( 'model_ts2.r' )
+source( 'api_data.r' )
+source( 'dqa.r' )
+# source( 'API.r' )
+
+Month_Year = function( x ){ yearmonth( zoo::as.yearmon( x , "%Y%m") ) }
 
 # see https://stackoverflow.com/questions/54438495/shift-legend-into-empty-facets-of-a-faceted-plot-in-ggplot2
 shift_legend2 <- function(p) {
@@ -129,27 +132,6 @@ shift_legend3 <- function(p) {
 
     lemon::reposition_legend( p, "center", panel=names(pnls) )
 }
-
-```
-
-```{r sources}
-# Functions ####
-
-source( 'TS_Modeling_Functions.r')
-# source("Model_TS.R") # new version of model.ts()
-source( "Summary_TS.R") # new version of summary_ts()
-source( 'TS_model_outlier_impute.R') # model_ts()
-source( 'Deviation_Expected_Functions.R')
-source( 'theme_ppt.R')
-source( 'clean_ts.r' )
-source( 'DToptions.R')
-source( 'model_ts2.r' )
-source( 'api_data.r' )
-source( 'dqa.r' )
-# source( 'API.r' )
-
-Month_Year = function( x ){ yearmonth( zoo::as.yearmon( x , "%Y%m") ) }
-
 
 options(dplyr.summarise.inform = FALSE)
 

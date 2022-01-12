@@ -30,7 +30,7 @@ data_widget_ui = function ( id )
                       size = 4  ##needed for `selected = FALSE` to work ) 
                      ) ,
           
-        selectInput( ns("dataset") , label = "Data previously downloaed from DHIS2:" , 
+        selectInput( ns("dataset") , label = "Data previously downloaded from DHIS2:" , 
               width = '95%',
               choices = NULL , 
               selected = FALSE,
@@ -143,7 +143,7 @@ data_widget_server <- function( id ,
           
           file.type = 'rds' # input$file.type 
           # file.other = ifelse( input$cleaned %in% "Cleaned" , '_Seasonal' , "" )  # input$file.other
-          file.label = '_formulaData|Seasonal|dts'
+          file.label = '_formulaData' # '_formulaData|Seasonal|dts'
           
           data.files = dir.files[ 
                   # grepl( 'All levels' , dir.files ) &
