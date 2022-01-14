@@ -105,7 +105,7 @@ tabsetPanel( type = "tabs",
   tabPanel( "Facilities Reporting",  style = "height:90vh;" ,
             fluidPage( 
             fluidRow( style = "height:40vh;",
-                    column(4, 
+                    column(6, 
                       ### Number of Facilties Reporting each Period (plot_reporting_by_month)
                       plotOutput( ns('plot_reporting_by_month') , 
                           click = "plot2_click" ,
@@ -114,7 +114,7 @@ tabsetPanel( type = "tabs",
                           brush = "plot2_brush" )
                       ) ,
                       
-                     column(4,  
+                     column(6,  
                       # htmlOutput("x_value") ,
 
                       ### Histogram of Annual Number of Months Reported (plot_reports_in_a_year)
@@ -127,7 +127,7 @@ tabsetPanel( type = "tabs",
                     ) ,
             fluidRow( style = "height:40vh"  ,
                     
-                    column(4, 
+                    column(12, 
                       plotOutput( ns('plot_values') ,
                           hover = "plotSelectedOusValues_hover" ,
                           brush = "plotSelectedOusValues_brush"

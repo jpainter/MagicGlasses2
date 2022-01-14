@@ -6,6 +6,10 @@ metadata_widget_ui <- function( id ) {
   fillCol( height = 600, flex = c(NA ) ,
            
   tagList(
+    
+    add_busy_spinner(spin = "fading-circle", 
+                   position = "top-right") ,
+
 
     tabsetPanel(type = "tabs",
 
@@ -131,9 +135,6 @@ metadata_widget_server <- function( id ,
       
   # cat('\n **** Starting metadata_widget_server \n')
       
-  add_busy_spinner(spin = "fading-circle", 
-                   position = "top-right")
-
   # reactives to toggle login status
   login = reactive({ login_widget_output$login() })
   baseurl = reactive({ login_widget_output$baseurl() })
