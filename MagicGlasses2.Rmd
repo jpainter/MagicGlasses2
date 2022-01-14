@@ -41,6 +41,7 @@ library(plotly)
 # library( tidyfast )
 # library( tidytable )
 # library(googleVis)
+library( ggrepel )
 library(scales)
 library( zoo )
 library(knitr)
@@ -349,7 +350,7 @@ Metadata Dictionary
 source( 'metadata_widget.r' )
 metadata_widget_ui( "metadata1" )
 
-metadataWidgetOutput =
+metadata_widget_output =
   metadata_widget_server( "metadata1" ,
             login_widget_output  =  login_widget_output ,
             directory_widget_output = directory_widget_output 
@@ -406,7 +407,7 @@ data_request_Output =
   data_request_widget_server( "data_request1" ,
             loginDetails  =  loginWidgetOutput ,
             dataDirectory = directory_widget_output ,
-            metadata_widget_output = metadataWidgetOutput , 
+            metadata_widget_output = metadata_widget_output , 
             data_widget_output = data2_Widget_output
             )
 ```
@@ -421,7 +422,7 @@ reporting_widget_ui( "reporting1" )
 reporting_widget_output = 
   reporting_widget_server( "reporting1" ,
                          dataDirectory = directory_widget_output ,
-                         metadata_widget_output = metadataWidgetOutput ,
+                         metadata_widget_output = metadata_widget_output ,
                          data_widget_output = data2_Widget_output )
 ```
 

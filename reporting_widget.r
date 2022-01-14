@@ -290,6 +290,10 @@ reporting_widget_server <- function( id ,
     cat( '\n- done' )
 } )
   
+  # updata split
+  observe({  updateSelectInput( session, 'split' , 
+                              choices =  c('None', names( dataset() )) ) } )
+  
   dataSets = reactive({
     req( dataset() )
     if ( ! 'dataSet' %in% names( dataset() ) ){
@@ -621,6 +625,7 @@ reporting_widget_server <- function( id ,
 })
 
   levels = reactive({ 
+    req( orgUnits() )
     cat( '\n* levels():' )
     levels = 
       count( orgUnits() %>% as_tibble, level, levelName ) %>% 
@@ -997,7 +1002,7 @@ reporting_widget_server <- function( id ,
        # if ( input$merge & input$all_categories ){
       
       .group_by_cols =  group_by_cols()  
-      cat( '\n# data.total .group_by_cols:' , .group_by_cols )
+      cat( '\n# data.total .group_by_cols:' )
   
       # Total categories by facilities and datasets
       data = plotData() 
@@ -1006,8 +1011,8 @@ reporting_widget_server <- function( id ,
       # Merge  datasets 
       # Set all dataSets to Combined and re-summaries taking mean
       # #print( 'data.total datasets' );  #print( dataSets() )
-      cat( '\ninput$merge ', input$merge )
-      cat( '\ndata datsets ' , unique(data$dataSet) ) 
+      cat( '\n- input$merge ', input$merge )
+      cat( '\n- data datsets ' , unique(data$dataSet) ) 
       
       mergeDatasets = input$merge %>% str_replace_all( fixed("\n"), "") 
       cat( '\n# mergeDatasets:' , mergeDatasets )
@@ -1303,13 +1308,25 @@ reporting_widget_server <- function( id ,
   output$plot_values <- renderPlot({  plotAgregateValue()  })
 
 # Return ####
+  split = reactive({ input$split })
+  startingMonth = reactive({ input$startingMonth })
+  endingMonth = reactive({ input$endingMonth })
+
   return( 
     list(
       dates = dates ,
       dataset = dataset , 
       data.hts = data.hts ,
+      data.total = data.total , 
       period = period , 
-      levelNames = levelNames 
+      levelNames = levelNames ,
+      split = split ,
+      startingMonth = startingMonth ,
+      endingMonth = endingMonth ,
+      num_datasets = num_datasets ,
+      num_facilities = num_facilities ,
+      plotData = plotData ,
+      caption.text = caption.text
     ))
 } )
 }

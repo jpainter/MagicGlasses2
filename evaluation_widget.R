@@ -15,47 +15,67 @@ tabsetPanel( type = "tabs",
   tabPanel( "Model",  
     inputPanel(
       
-      selectInput("model", label = "Time-series model:" , 
+      selectInput( ns( "model" ), label = "Time-series model:" , 
               choices = c('ETS' , 'ARIMA', 'BSTS' , 'Prophet', 
                           'TSLM', 'TSLM (trend)', 
                           'TSLM (trend+season)') , 
               selected = 'ETS'  ) ,
 
-      textInput('model.formula', 'Model Formula' ,
+      textInput( ns( 'model.formula' ) , 'Model Formula' ,
           value =  'total ~ 1' ) ,
 
-      textInput('covariates', 'Model covariates' ,
-          value =  NULL )
-      )
+      textInput( ns( 'covariates' ), 'Model covariates' ,
+          value =  NULL ) ,
+      
+    checkboxInput( ns( "smooth" ) , label ='Show smoothed trend line (loess)',
+                   value = FALSE  ) ,
+    
+    checkboxInput( ns( "pre_evaluation") , label ='Pre-intervention model fit',
+                   value = FALSE  ) ,
+    
+    
+    checkboxInput( ns( "evaluation" ), label ='Post-intervention evaluation',
+                   value = FALSE  ) ,
+    
+    checkboxInput( ns( "scale" ) , label ='Scale values (x-mean)/sd + 1)',
+                   value = FALSE  ) ,
+    
+    checkboxInput( ns( 'components' ), label = 'Visualize trend' ,
+                value = FALSE ) ,
+    
+    checkboxInput( ns( "forecast_ci" ) , label ='Confidence interval',
+                   value = FALSE  ) 
+    
+          )
 ) ,
   
   tabPanel( 'Impact' ,
         sidebarLayout(
           sidebarPanel(
             
-              selectInput("agg_level", label = "Aggregate to" , 
+              selectInput( ns( "agg_level") , label = "Aggregate to" , 
                 choices = NULL , 
                 selected = 1  ) ,
 
-              checkboxInput( "facet_admin" , label ="Facet by admin",
+              checkboxInput( ns( "facet_admin" ) , label ="Facet by admin",
                              value = FALSE  ) ,
               
-              checkboxInput( "facet_split" , label ="Facet by split",
+              checkboxInput( ns( "facet_split" ) , label ="Facet by split",
                              value = FALSE  ) ,
               
-              checkboxInput( "selected" , label ='Selected facilities only',
+              checkboxInput( ns( "selected" ) , label ='Selected facilities only',
                              value = TRUE  ) ,
               
-              checkboxInput( "legend" , label ='Show legend',
+              checkboxInput( ns( "legend" ) , label ='Show legend',
                              value = FALSE  ) ,
               
-              checkboxInput( "plotly" , label ='Plotly Chart',
+              checkboxInput( ns( "plotly" ) , label ='Plotly Chart',
                              value = FALSE  ) 
           ),
           
           mainPanel( 
             
-             plotOutput( "plot_trends" , hover = "plot_hover"  )
+             plotOutput( ns( "plot_trends" ) , hover = "plot_hover"  )
           )
         )    
         
@@ -93,6 +113,14 @@ evaluation_widget_server <- function( id ,
     data.hts = reactive({ reporting_widget_output$data.hts() })
     levelNames = reactive({ reporting_widget_output$levelNames() })
     period = reactive({ reporting_widget_output$period() })
+    split = reactive({ reporting_widget_output$split() })
+    startingMonth = reactive({ reporting_widget_output$startingMonth() })
+    endingMonth = reactive({ reporting_widget_output$endingMonth() })
+    num_datasets = reactive({ reporting_widget_output$num_datasets() })
+    num_facilities = reactive({ reporting_widget_output$num_facilities() })
+    plotData = reactive({ reporting_widget_output$plotData() })
+    caption.text = reactive({ reporting_widget_output$caption.text() })
+    data.total = reactive({ reporting_widget_output$data.total() })
     
     # see https://stackoverflow.com/questions/54438495/shift-legend-into-empty-facets-of-a-faceted-plot-in-ggplot2
     shift_legend3 <- function(p) {
@@ -183,16 +211,16 @@ evaluation_widget_server <- function( id ,
                   
       
       observeEvent(
-        input$split  , 
+        split()  , 
         { 
-        if ( !input$split %in% 'None' ){
+        if ( !split() %in% 'None' ){
           
-          print( "input$split:" ); print( input$split )
+          print( "split():" ); print( split() )
           # print( "data.total():" ); # glimpse( data.total() )
           
-          # splits = data.total() %>% pull( .data[[ input$split ]] ) %>% unique
+          # splits = data.total() %>% pull( .data[[ split() ]] ) %>% unique
           
-          splits = data.total()[, input$split] %>% unique
+          splits = data.total()[, split()] %>% unique
           
           print( paste( 'splits: ', splits  ) )
       
@@ -209,12 +237,33 @@ evaluation_widget_server <- function( id ,
       
       backtick <- function(x) paste0("`", x, "`")
       
+      levelNames = reactive({ 
+          req( orgUnits() )
+          cat( '\n* levelNames():' )
+          l = count( orgUnits() %>% as_tibble, level, levelName ) %>% 
+            arrange( level ) %>% pull(levelName ) 
+          l = l[ !is.na(l) ]
+          cat( '\n- end levelNames():' )
+          return(l)
+  })
+  
+      levels = reactive({ 
+          req( orgUnits() )
+          cat( '\n* levels():' )
+          levels = 
+            count( orgUnits() %>% as_tibble, level, levelName ) %>% 
+            arrange( level ) 
+          cat( '\n- end levels():' )
+          return( levels )
+    })
+    
       sub_agg_level = reactive({
-        levels() %>%
-           mutate( parent = dplyr::lag( levelName ) ) %>%
-           filter( parent == input$agg_level ) %>%
-           pull( levelName )
-      })
+          req( levels() )
+          levels() %>%
+             mutate( parent = dplyr::lag( levelName ) ) %>%
+             filter( parent == input$agg_level ) %>%
+             pull( levelName )
+        })
         
       MAPE = reactive({
         req( tsPreForecast() ) 
@@ -628,7 +677,7 @@ evaluation_widget_server <- function( id ,
       
       .d = data.hts()
       
-    if ( input$selected  ){ # & num_facilities() > 1 (jp removed 1/21)
+    if ( input$selected  & num_facilities() > 1 ){ 
         
         cat( '\n- input$selected TRUE' )
       
@@ -637,14 +686,14 @@ evaluation_widget_server <- function( id ,
         
         if ( period() %in% 'Month' ){ 
           .d = .d %>% filter( 
-            Month >=  yearmonth( input$startingMonth )   ,
-            Month <= yearmonth( input$endingMonth )  )
+            Month >=  yearmonth( startingMonth() )   ,
+            Month <= yearmonth( endingMonth() )  )
         }
           
         if ( period() %in% 'Week' ){ 
           .d = .d %>% filter( 
-            Week >=  yearweek( input$startingMonth )   ,
-            Week <= yearweek( input$endingMonth )  )
+            Week >=  yearweek( startingMonth() )   ,
+            Week <= yearweek( endingMonth )  )
         }
   } 
     
@@ -706,13 +755,13 @@ evaluation_widget_server <- function( id ,
      }
         
     # if split, remove aggregate grouping
-     if ( !input$split %in% 'None' ){
-       cat( '\n-input split:' , input$split )
+     if ( !split() %in% 'None' ){
+       cat( '\n-input split:' , split() )
        .d = .d %>%
-         filter( !is_aggregated( !! rlang::sym( input$split ) ) 
+         filter( !is_aggregated( !! rlang::sym( split() ) ) 
          ) %>%
          mutate( grouping_var = as.character( 
-           !! rlang::sym( input$split ) )
+           !! rlang::sym( split() ) )
          )
        cat( '\n- .d  aggregated split' , unique(.d$grouping_var) )
        # print( glimpse( .d ))
@@ -721,10 +770,10 @@ evaluation_widget_server <- function( id ,
 
   cat( '\n- nrow(.d)' , nrow(.d))
      
-    # if ( !input$split %in% 'None' & !input$filter_data %in% 'All' ){
+    # if ( !split() %in% 'None' & !input$filter_data %in% 'All' ){
     #     print( 'filter_data is not null' )
     #     .d = .d %>% 
-    #       filter( .data[[ input$split ]] %in% input$filter_data )
+    #       filter( .data[[ split() ]] %in% input$filter_data )
     # }
   
   if ( input$scale ) .d = .d %>%
@@ -744,9 +793,9 @@ evaluation_widget_server <- function( id ,
     plotTrends = reactive({
           
           req( trendData() )
-          req( input$split )
+          req( split() )
           # req( input$evaluation_month )
-          print( 'plotTrends():' )
+          cat( '\n* plotTrends():' )
         
           .limits =
           if ( input$scale ){
@@ -757,10 +806,10 @@ evaluation_widget_server <- function( id ,
           data.text = paste( unique( plotData()$data ), collapse = " + " )
           
           .d = trendData() 
-          print( 'ploTrends .d:'); #glimpse(.d)
+          cat( '\n- ploTrends .d:'); #glimpse(.d)
           
           # if ( !input$filter_display %in% 'All' ) .d = .d %>% 
-          #         filter( .data[[ input$split ]] %in%
+          #         filter( .data[[ split() ]] %in%
           #                   input$filter_display )
         
           tic() 
@@ -776,12 +825,12 @@ evaluation_widget_server <- function( id ,
           # TESTING: 
           
           
-          print( 'basic plot done' ); toc()
+          cat( '\n- basic plot done' ); toc()
           
           if ( !input$legend ) g = g + 
             theme(legend.position = "none")
           
-          if ( !input$split %in% 'None' ){ 
+          if ( !split() %in% 'None' ){ 
             g = g + geom_label_repel( 
                        data = .d %>% filter( Month == max( .d$Month , na.rm = T )) ,
                        aes( label = grouping_var , group = grouping_var )
@@ -797,14 +846,14 @@ evaluation_widget_server <- function( id ,
         
           # if ( input$agg_level != levelNames()[1] & input$facet_admin ){
           if ( num_agg_levels  > 1 & input$facet_admin ){
-            print( 'facets' )
+            cat( '\n- facets' )
             g = g +
             facet_wrap( vars(!! rlang::sym( input$agg_level ) ) ,
                            scales = "free_y" )
           }
           
           if ( input$facet_split ){
-            print( 'facets' )
+            cat( '\n- facet_split' )
             g = g +
             facet_wrap( ~grouping_var   ,
                            scales = "free_y" )
@@ -820,11 +869,11 @@ evaluation_widget_server <- function( id ,
                   subtitle = str_wrap( data.text , 200 ) 
                   , caption =  str_wrap( caption.text() , 200 )
                   ) 
-          print( 'axis scales and labs done' )
+          cat( '\n- axis scales and labs done' )
           
           #### Evaluation Trend Line
           if ( input$evaluation ){
-            print( 'evaluation line ' )
+            cat( '\n- evaluation line ' )
             eval_date =   yearmonth( input$evaluation_month  ) 
             
            g = g + 
@@ -857,16 +906,16 @@ evaluation_widget_server <- function( id ,
                        )
           }
           
-          print( 'evaluation line done' )
+          cat( '\n- evaluation line done' )
         
           ### Pre-Evaluation trend line
           if ( input$pre_evaluation ){
             
-            print( 'pre evaluation line ' )
+            cat( '\n- pre evaluation line ' )
             pre_eval_date = yearmonth( input$evaluation_month  ) - 12
                 # month( as.integer( input$horizon ) )
               
-            print( 'pre_eval_date is' ); print( pre_eval_date )
+            cat( '\n- pre_eval_date is' ); print( pre_eval_date )
             g = g + 
             autolayer( tsPreForecast()
                        , level = ci_levels()
@@ -888,15 +937,15 @@ evaluation_widget_server <- function( id ,
         
           }
           
-          print( 'pre-evaluation line done' )
+          cat( '\n- pre-evaluation line done' )
            
           if (input$smooth){
-            print( 'agg level' ); print( input$agg_level )
+            cat( '\n- agg level', input$agg_level )
             .d. = .d %>% 
               as_tibble %>%
               mutate( !! input$agg_level := as.character( !! rlang::sym( input$agg_level  ) ) )
             
-            print( 'smooth .d.') ; #glimpse(.d. )
+            cat( '\n- smooth .d.') ; #glimpse(.d. )
             g = g + 
             geom_smooth( data = .d. , 
                          alpha = .75 )
@@ -904,7 +953,7 @@ evaluation_widget_server <- function( id ,
           } 
           
          
-          print( 'end plotTrends():' )
+          cat( '\n- end plotTrends():' )
           
           return( g )
         })
@@ -913,19 +962,22 @@ evaluation_widget_server <- function( id ,
   
       req( tsModel() )
       req( input$evaluation_month )
-      print( 'plotComponenets():' )
+      cat( '\n* plotComponenets():' )
     
       g = tsModel() %>% fabletools::components() %>% autoplot
       
-      print( 'end plotComponents():' )
+      cat( '\n- end plotComponents():' )
       
       return( g )
 })
     
     plotTrendOutput = reactive({
+      cat('\n* plotTrendOutput')
     if ( input$components ){
+        cat('\n - components')
         plotComponenets()  
     } else {
+        cat('\n - plotTrends')
         plotTrends()  
     }
 })
@@ -933,8 +985,8 @@ evaluation_widget_server <- function( id ,
     output$plot_trends <-  renderPlot({ plotTrendOutput()  })
         
     output$dynamic <- renderUI({
-    req(input$plot_hover) 
-    verbatimTextOutput("vals")
+      req(input$plot_hover) 
+      verbatimTextOutput("vals")
   })
 
     output$vals <- renderPrint({
