@@ -438,7 +438,11 @@ cleaning_widget_ui( "cleaning1" )
 
 cleaning_widget_output = 
   cleaning_widget_server( "cleaning1" , 
-            data  =  dataWidgetData$dataset )
+                          directory_widget_output = directory_widget_output ,
+                         metadata_widget_output = metadata_widget_output ,
+                         data_widget_output = data2_Widget_output ,
+                         reporting_widget_output = reporting_widget_output 
+                         )
 ```
 
 

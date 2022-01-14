@@ -1316,6 +1316,7 @@ reporting_widget_server <- function( id ,
     list(
       dates = dates ,
       dataset = dataset , 
+      d = d ,
       data.hts = data.hts ,
       data.total = data.total , 
       period = period , 
