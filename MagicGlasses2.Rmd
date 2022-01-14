@@ -83,7 +83,7 @@ library( fable )
 library( fabletools )
 library( feasts )
 library( fable.prophet )
-library( fable.bsts )
+# library( fable.bsts )
 
 # busy spinner
 library(shinybusy)
