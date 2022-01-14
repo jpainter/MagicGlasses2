@@ -29,6 +29,9 @@ data_widget_ui = function ( id )
                       selectize = FALSE, 
                       size = 4  ##needed for `selected = FALSE` to work ) 
                      ) ,
+        
+        textInput( ns("file.keywords"), "key words for searching data files" ,
+                   value = '_formulaData|Seasonal|dts|rds' ) ,
           
         selectInput( ns("dataset") , label = "Data previously downloaded from DHIS2:" , 
               width = '95%',
@@ -143,19 +146,20 @@ data_widget_server <- function( id ,
           
           file.type = 'rds' # input$file.type 
           # file.other = ifelse( input$cleaned %in% "Cleaned" , '_Seasonal' , "" )  # input$file.other
-          file.label = '_formulaData' # '_formulaData|Seasonal|dts'
+          
+          file.keywords = input$file.keywords # '_formulaData|Seasonal|dts|rds'
           
           data.files = dir.files[ 
                   # grepl( 'All levels' , dir.files ) &
                   grepl( file.type , dir.files) &
                   # grepl( file.other, dir.files, fixed = TRUE  ) &
-                  !grepl( file.label, dir.files, ignore.case = T ) ]
+                  grepl( file.keywords, dir.files, ignore.case = T ) ]
         
           # cat('\nall levels data files:' , data.files )
           
           f.indicator = grepl( indicator , data.files , fixed = TRUE )
           
-          cat("\n f.indicator:" , f.indicator ) 
+          # cat("\n f.indicator:" , f.indicator ) 
           
           if ( sum( f.indicator ) == 0 ) return( NULL )
           
@@ -163,7 +167,7 @@ data_widget_server <- function( id ,
           
           data_files = data.files[f.indicator] # %>% most_recent_file()
           
-          cat( '\n data_files are:\n' , data_files )
+          # cat( '\n data_files are:\n' , data_files )
           
           # Arrange by modified date
           data_file.mdate = file.info( paste0( data.folder() , data_files ) )$mtime

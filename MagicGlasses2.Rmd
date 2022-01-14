@@ -21,7 +21,12 @@ options(shiny.trace=FALSE)
 options(shiny.reactlog=FALSE)
 knitr::opts_chunk$set(echo = FALSE)
 
-library(data.table)
+library(conflicted) # For diagnosing function name conflicts
+library(tidyverse)
+library(data.table) # for clean install, run from clean session: 
+    # remove.packages("data.table")
+    # install.packages("data.table", type = "source",
+    # repos = "https://Rdatatable.gitlab.io/data.table")
 library(shiny)
 library(shinyjs)
 library(shinydashboard)
@@ -32,7 +37,7 @@ library( progressr )
 # library(mapview)
 library(RColorBrewer)
 library(plotly)
-library(tidyverse)
+
 # library( tidyfast )
 # library( tidytable )
 # library(googleVis)
@@ -83,15 +88,23 @@ library( fable.bsts )
 library(shinybusy)
 add_busy_spinner(spin = "fading-circle", position = "bottom-right")
 
+# Avoid naming conflicts for functions found in more than 1 package...
+conflict_prefer("filter", "dplyr")
+conflict_prefer("select", "dplyr")
+conflict_prefer("last", "dplyr")
+conflict_prefer("first", "dplyr")
+conflict_prefer("year", "lubridate")
+conflict_prefer("month", "lubridate")
+conflict_prefer("runExample", "shiny")
+
 ```
 
-```{r sources}
+```{r sources, include=FALSE}
 # Functions ####
 source( "data_time_libraries.r")
 source( "outlier.r" )
 source( "ingest_formula_data.r")
 source( 'TS_Modeling_Functions.r')
-# source("Model_TS.R") # new version of model.ts()
 source( "Summary_TS.R") # new version of summary_ts()
 source( 'TS_model_outlier_impute.R') # model_ts()
 source( 'Deviation_Expected_Functions.R')
@@ -104,34 +117,6 @@ source( 'dqa.r' )
 # source( 'API.r' )
 
 Month_Year = function( x ){ yearmonth( zoo::as.yearmon( x , "%Y%m") ) }
-
-# see https://stackoverflow.com/questions/54438495/shift-legend-into-empty-facets-of-a-faceted-plot-in-ggplot2
-shift_legend2 <- function(p) {
-  # ...
-  # to grob
-  gp <- ggplotGrob(p)
-  facet.panels <- grep("^panel", gp[["layout"]][["name"]])
-  empty.facet.panels <- sapply(facet.panels, function(i) "zeroGrob" %in% class(gp[["grobs"]][[i]]))
-  empty.facet.panels <- facet.panels[empty.facet.panels]
-
-  # establish name of empty panels
-  empty.facet.panels <- gp[["layout"]][empty.facet.panels, ]
-  names <- empty.facet.panels$name
-  # example of names:
-  #[1] "panel-3-2" "panel-3-3"
-
-# now we just need a simple call to reposition the legend
-  reposition_legend(p, 'center', panel=names)
-}
-
-shift_legend3 <- function(p) {
-    pnls <- cowplot::plot_to_gtable(p) %>% gtable::gtable_filter("panel") %>%
-      with(setNames(grobs, layout$name)) %>% purrr::keep(~identical(.x,zeroGrob()))
-
-    if( length(pnls) == 0 ) return(p)
-
-    lemon::reposition_legend( p, "center", panel=names(pnls) )
-}
 
 options(dplyr.summarise.inform = FALSE)
 
@@ -340,7 +325,7 @@ Column
 source( 'directory_widget.r' )
 directory_widget_ui( "directory1" )
 
-directoryWidgetOutput = directory_widget_server( "directory1" )
+directory_widget_output = directory_widget_server( "directory1" )
 
 ```
 
@@ -353,7 +338,7 @@ Column
 source( 'login_widget.r' )
 login_widget_ui( "login1" )
 
-loginWidgetOutput = login_widget_server( "login1" )
+login_widget_output = login_widget_server( "login1" )
 
 ```
 
@@ -366,8 +351,8 @@ metadata_widget_ui( "metadata1" )
 
 metadataWidgetOutput =
   metadata_widget_server( "metadata1" ,
-            loginDetails  =  loginWidgetOutput ,
-            dataDir = directoryWidgetOutput
+            login_widget_output  =  login_widget_output ,
+            directory_widget_output = directory_widget_output 
             )
 ```
 
@@ -384,7 +369,7 @@ data_widget_ui( "data1" )
 
 data1_Widget_output = 
   data_widget_server( "data1" , 
-                      dataDir = directoryWidgetOutput )
+                      dataDir = directory_widget_output )
 
 ```
 
@@ -402,7 +387,7 @@ data_widget_ui( "data2" )
 
 data2_Widget_output = 
   data_widget_server( "data2" , 
-                      dataDir = directoryWidgetOutput 
+                      dataDir = directory_widget_output 
                       , data_request_output = data_request_Output
                       )
 
@@ -420,7 +405,7 @@ data_request_widget_ui( "data_request1" )
 data_request_Output =
   data_request_widget_server( "data_request1" ,
             loginDetails  =  loginWidgetOutput ,
-            dataDirectory = directoryWidgetOutput ,
+            dataDirectory = directory_widget_output ,
             metadata_widget_output = metadataWidgetOutput , 
             data_widget_output = data2_Widget_output
             )
@@ -429,34 +414,13 @@ data_request_Output =
 Reporting Rate
 ========================
 
-<!-- Column -->
-<!-- ----------------------------------- -->
-
-<!-- ### Data downloads -->
-
-```{r, echo = FALSE , eval=FALSE }
-source( 'data_widget.r' )
-data_widget_ui( "data3" )
-
-data3_Widget_output = 
-  data_widget_server( "data3" , 
-                      dataDir = directoryWidgetOutput 
-                      )
-
-```
-
-<!-- Column -->
-<!-- ----------------------------------- -->
-
-<!-- ### Reporting -->
-
-
 ```{r  }
 source( 'reporting_widget.r' )
 reporting_widget_ui( "reporting1" )
 
-reporting_widget_server( "reporting1" ,
-                         dataDirectory = directoryWidgetOutput ,
+reporting_widget_output = 
+  reporting_widget_server( "reporting1" ,
+                         dataDirectory = directory_widget_output ,
                          metadata_widget_output = metadataWidgetOutput ,
                          data_widget_output = data2_Widget_output )
 ```
@@ -471,7 +435,8 @@ Outliers and Errors
 source( 'cleaning_widget.r' )
 cleaning_widget_ui( "cleaning1" )
 
-cleaning_widget_server( "cleaning1" , 
+cleaning_widget_output = 
+  cleaning_widget_server( "cleaning1" , 
             data  =  dataWidgetData$dataset )
 ```
 
@@ -480,16 +445,24 @@ cleaning_widget_server( "cleaning1" ,
 Evaluation and Trends
 ========================
 
+```{r }
+source( 'evaluation_widget.r' )
+evaluation_widget_ui( "evaluation1" )
+
+evaluation_widget_output = 
+  evaluation_widget_server( "evaluation1" ,
+                         directory_widget_output = directory_widget_output ,
+                         metadata_widget_output = metadata_widget_output ,
+                         data_widget_output = data2_Widget_output ,
+                         reporting_widget_output = reporting_widget_output )
+```
+
 About
 ========================
 ```{r, eval= FALSE }
-# testing leaflet...
-# leafletOutput(  "map" )
-# map2 = leaflet() %>% addTiles() %>% setView(-93.65, 42.0285, zoom = 18)
-# output$map = renderLeaflet(map2) 
-  
-source( 'leaflet_widget.r' )
-leaflet_widget_ui( "leaflet1" )
-leaflet_widget_server( "leaflet1" )             
+ 
+# source( 'leaflet_widget.r' )
+# leaflet_widget_ui( "leaflet1" )
+# leaflet_widget_server( "leaflet1" )             
 ```
 

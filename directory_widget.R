@@ -7,13 +7,24 @@ directory_widget_ui = function ( id )
          h4( 'Directory for storing/retrieving data files for this project:') ,
                  
          textInput( ns("data.directory"), label = NULL , 
-                     value = "../HMIS/Formulas/" ,
+                     value = "./" ,
                      width = '95%'
                      ) ,
          
          h4( 'Previously downloaded metadata:') ,
         
          selectInput( ns("metadataFiles") , label = NULL , 
+                      width = '95%',
+                      choices = NULL , 
+                      selected = FALSE,
+                      multiple = FALSE ,
+                      selectize = FALSE, 
+                      size = 4  ##needed for `selected = FALSE` to work ) 
+                     ) ,
+         
+         h4( 'Previously downloaded geofeatures (map data):') ,
+        
+         selectInput( ns("geofeturesFiles") , label = NULL , 
                       width = '95%',
                       choices = NULL , 
                       selected = FALSE,
@@ -57,6 +68,15 @@ directory_widget_server <- function( id ) {
                 cat( '-data.folder is ', data.dir , '\n')
                 return( data.dir )
         })
+
+       observe({ 
+         isolate(
+           if ( file.exists( "../HMIS/Formulas/" ) ){
+              cat( '\n directory_widget -setting JP data.directory' )
+              updateTextInput( session, "data.directory" , value = "../HMIS/Formulas/" ) 
+           }
+         )
+          } )
         
         data.dir.files = reactive({ 
             req( data.folder() )
@@ -93,6 +113,34 @@ directory_widget_server <- function( id ) {
           return( mf )
           })
         
+        geofeatures.files = reactive({ 
+          req( data.folder() )
+          cat( '\n* geofeatures.files: looking for geoFeatures in:' , data.folder() , '\n')
+          
+          dir.files = data.dir.files()
+          
+          file.type = '.rds' # input$file.type 
+          file.other = "geofeatures"
+          
+          search.index = 
+                  grepl( file.type , dir.files, ignore.case = TRUE ) &
+                  grepl( file.other, dir.files, ignore.case = TRUE ) 
+          
+       
+          if ( !any( search.index ) ){
+            cat( '- no geoFeatures files in directory \n' )
+            return( NULL )
+          } 
+          
+          gf = dir.files[ search.index ]
+          
+          cat( '-', length(gf) , 'geofeatures files \n')
+           
+          cat( 'gf:' , gf , '\n')
+          
+          return( gf )
+          })
+        
         rds_data_files = reactive({
           req( data.dir.files() )
           cat( '- looking for rds files in:' , data.folder() , '\n')
@@ -117,19 +165,27 @@ directory_widget_server <- function( id ) {
         
         # Update list of data files
         observe({  
-            cat( '-updating metadata file list \n' )
+            cat( '\n directory_widget -updating metadata file list \n' )
             updateSelectInput( session, 'metadataFiles' , 
                                       choices = metadata.files()  ) 
           } )
         
         observe({  
-            cat( '-updating .rds file list \n' )
+            cat( '\n directory_widget -updating geofeatures file list \n' )
+            updateSelectInput( session, 'geofeturesFiles' , 
+                                      choices = geofeatures.files()  ) 
+          } )
+        
+        observe({  
+            cat( '\n directory_widget -updating .rds file list \n' )
             updateSelectInput( session, 'datasetFiles' , 
                                       choices = rds_data_files()  ) 
           } )
         
         return( list( 
-          directory = data.folder
+          directory = data.folder ,
+          metadata.files = metadata.files ,
+          geofeatures.files = geofeatures.files
             ))
         })
     }  
