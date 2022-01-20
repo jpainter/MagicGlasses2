@@ -75,7 +75,7 @@ tabsetPanel( type = "tabs",
           
           mainPanel( 
             
-             plotOutput( ns( "plot_trends" ) , hover = "plot_hover"  )
+             plotOutput( ns( "plotOutput" ) , hover = "plot_hover"  )
           )
         )    
         
@@ -444,7 +444,7 @@ evaluation_widget_server <- function( id ,
     
         }
     
-      print( 'end model_formula' ); print( f )
+      cat( '\n - end model_formula', f )
       return( f )
     })
     
@@ -670,14 +670,13 @@ evaluation_widget_server <- function( id ,
     
 # Trend data ####
     trendData = reactive({
-      req( input$selected )
       req( data.hts() )
       # req( aggregatePlotData() )
       cat( '\n* evaluation_widget: trendData(): ' )
       
       .d = data.hts()
       
-    if ( input$selected  & num_facilities() > 1 ){ 
+      if ( input$selected  & num_facilities() > 1 ){ 
         
         cat( '\n- input$selected TRUE' )
       
@@ -697,94 +696,93 @@ evaluation_widget_server <- function( id ,
         }
   } 
     
-  cat( "\n- input$agg_level:", input$agg_level )
+      cat( "\n- input$agg_level:", input$agg_level )
 
-
-  cat( "\n- sub_agg_level:" , sub_agg_level() )
-   
-  # .d = data.hts() %>% 
-  #     filter( 
-  #       ! is.na( !! rlang::sym( levelNames()[1] ) )
-  #       , is_aggregated( !! rlang::sym( levelNames()[1] ) )
-  #     ) 
-  
-  sub_agg = sub_agg_level() 
-  cat( "\n- sub agg level filter" , sub_agg )
-  
-  .d = .d %>% 
-      filter( 
-        ! is.na( !! rlang::sym( input$agg_level   ) ) 
-        # next line is good for level 0
-        , ! is_aggregated(  !! rlang::sym( input$agg_level   ) )
-      )
-  
-  cat( '\n- !is_empty(sub_agg)' , sub_agg )
-  cat( '\n- ' , !is_empty(sub_agg)) 
-  cat( '\n-',  class( sub_agg )) 
-  if ( !is_empty(sub_agg) ){
-    print( 'filtering by sub_agg' )
-    .d = .d %>% filter( 
-          is_aggregated( !! rlang::sym( sub_agg  ) )
-    )
-  }
-    
-    .d = .d %>%
-       mutate( 
-         grouping_var = 'Total' ) %>%
-      fill_gaps( .full = TRUE  )
-
-     
-     cat( '\n- .d in trendData' ); # glimpse(.d)
-     
-     if ( num_datasets() > 1 ){
-       .d = .d %>%
-       filter( !is_aggregated( dataSet ) ) %>%
-       mutate( dataSet = as.character( dataSet ) %>%
-           str_remove_all( "<aggregated>" ) ,
-           grouping_var = dataSet )
-
-     }
-
-     if ( num_facilities() > 1 ){
-       .d = .d %>%
-       filter( !is_aggregated( Selected )  ) %>%
-       mutate( Selected = as.character( Selected ) %>%
-           str_remove_all( "<aggregated>" )  )
-
-       cat( '\n- Facilities:' ,  unique(.d$Selected) )
-     }
-        
-    # if split, remove aggregate grouping
-     if ( !split() %in% 'None' ){
-       cat( '\n-input split:' , split() )
-       .d = .d %>%
-         filter( !is_aggregated( !! rlang::sym( split() ) ) 
-         ) %>%
-         mutate( grouping_var = as.character( 
-           !! rlang::sym( split() ) )
-         )
-       cat( '\n- .d  aggregated split' , unique(.d$grouping_var) )
-       # print( glimpse( .d ))
+      cat( "\n- sub_agg_level:" , sub_agg_level() )
        
-     } 
-
-  cat( '\n- nrow(.d)' , nrow(.d))
-     
-    # if ( !split() %in% 'None' & !input$filter_data %in% 'All' ){
-    #     print( 'filter_data is not null' )
-    #     .d = .d %>% 
-    #       filter( .data[[ split() ]] %in% input$filter_data )
-    # }
-  
-  if ( input$scale ) .d = .d %>%
-      ungroup() %>%
-      group_by( grouping_var ) %>%
-      mutate(
-        total = scale( total ) + 1
-    )
-  
-  cat( '\n- end trend data():'); # print( glimpse( .d ) ); # print(.d)
-
+      # .d = data.hts() %>% 
+      #     filter( 
+      #       ! is.na( !! rlang::sym( levelNames()[1] ) )
+      #       , is_aggregated( !! rlang::sym( levelNames()[1] ) )
+      #     ) 
+      
+      sub_agg = sub_agg_level() 
+      cat( "\n- sub agg level filter" , sub_agg )
+      
+      .d = .d %>% 
+          filter( 
+            ! is.na( !! rlang::sym( input$agg_level   ) ) 
+            # next line is good for level 0
+            , ! is_aggregated(  !! rlang::sym( input$agg_level   ) )
+          )
+              
+      cat( '\n- !is_empty(sub_agg)' , sub_agg )
+      cat( '\n- ' , !is_empty(sub_agg)) 
+      cat( '\n-',  class( sub_agg )) 
+      if ( !is_empty(sub_agg) ){
+        print( 'filtering by sub_agg' )
+        .d = .d %>% filter( 
+              is_aggregated( !! rlang::sym( sub_agg  ) )
+        )
+      }
+        
+        .d = .d %>%
+           mutate( 
+             grouping_var = 'Total' ) %>%
+          fill_gaps( .full = TRUE  )
+    
+         
+         cat( '\n- .d in trendData' ); # glimpse(.d)
+         
+         if ( num_datasets() > 1 ){
+           .d = .d %>%
+           filter( !is_aggregated( dataSet ) ) %>%
+           mutate( dataSet = as.character( dataSet ) %>%
+               str_remove_all( "<aggregated>" ) ,
+               grouping_var = dataSet )
+    
+         }
+    
+         if ( num_facilities() > 1 ){
+           .d = .d %>%
+           filter( !is_aggregated( Selected )  ) %>%
+           mutate( Selected = as.character( Selected ) %>%
+               str_remove_all( "<aggregated>" )  )
+    
+           cat( '\n- Facilities:' ,  unique(.d$Selected) )
+         }
+            
+        # if split, remove aggregate grouping
+         if ( !split() %in% 'None' ){
+           cat( '\n-input split:' , split() )
+           .d = .d %>%
+             filter( !is_aggregated( !! rlang::sym( split() ) ) 
+             ) %>%
+             mutate( grouping_var = as.character( 
+               !! rlang::sym( split() ) )
+             )
+           cat( '\n- .d  aggregated split' , unique(.d$grouping_var) )
+           # print( glimpse( .d ))
+           
+         } 
+    
+      cat( '\n- nrow(.d)' , nrow(.d))
+         
+        # if ( !split() %in% 'None' & !input$filter_data %in% 'All' ){
+        #     print( 'filter_data is not null' )
+        #     .d = .d %>% 
+        #       filter( .data[[ split() ]] %in% input$filter_data )
+        # }
+      
+      if ( input$scale ) .d = .d %>%
+          ungroup() %>%
+          group_by( grouping_var ) %>%
+          mutate(
+            total = scale( total ) + 1
+        )
+      
+      cat( '\n- end trend data():'); # print( glimpse( .d ) ); # print(.d)
+      # saveRDS( .d , 'trendData.rds' )
   
   return( .d )
 })
@@ -793,7 +791,7 @@ evaluation_widget_server <- function( id ,
     plotTrends = reactive({
           
           req( trendData() )
-          req( split() )
+          # req( split() )
           # req( input$evaluation_month )
           cat( '\n* plotTrends():' )
         
@@ -955,10 +953,11 @@ evaluation_widget_server <- function( id ,
          
           cat( '\n- end plotTrends():' )
           
+          saveRDS( g, 'plotTrends.rds')
           return( g )
         })
     
-    plotComponenets = reactive({
+    plotComponents = reactive({
   
       req( tsModel() )
       req( input$evaluation_month )
@@ -971,18 +970,22 @@ evaluation_widget_server <- function( id ,
       return( g )
 })
     
-    plotTrendOutput = reactive({
-      cat('\n* plotTrendOutput')
-    if ( input$components ){
-        cat('\n - components')
-        plotComponenets()  
-    } else {
-        cat('\n - plotTrends')
-        plotTrends()  
-    }
+    plotOutput = reactive({
+        # req( input$components )
+        cat('\n* plotTrendOutput')
+        cat('\n - input$components:' , input$components)
+        
+      if ( input$components ){
+          cat('\n - components')
+          g = plotComponents()  
+      } else {
+          cat('\n - plotTrends')
+          g = plotTrends()  
+      }
+      return( g )
 })
 
-    output$plot_trends <-  renderPlot({ plotTrendOutput()  })
+    output$plotOutput <-  renderPlot({ plotOutput()  })
         
     output$dynamic <- renderUI({
       req(input$plot_hover) 

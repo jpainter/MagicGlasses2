@@ -2,6 +2,8 @@ data_widget_ui = function ( id )
 {
         ns <- NS(id)  
         fillCol( height = 600, flex = c(NA ) , 
+        
+tagList( 
 
         h5('The files here are in the directory specified in the setup section') ,
         
@@ -12,7 +14,8 @@ data_widget_ui = function ( id )
                      # , style = "font-size: 50%;"
                      ) ,
         
-        selectInput( ns("formula.file") , label = "List of files with names like *Formula*.xls* ):" , 
+        selectInput( ns("formula.file") , 
+                     label = "List of files with names like *Formula*.xls* ):" , 
                       width = '95%',
                       choices = NULL , 
                       selected = FALSE,
@@ -21,7 +24,8 @@ data_widget_ui = function ( id )
                       size = 4  ##needed for `selected = FALSE` to work ) 
                      ) ,
           
-         selectInput( ns("indicator") , label = "Indicator:" , 
+         selectInput( ns("indicator") , 
+                      label = "Indicator:" , 
                       width = '95%',
                       choices = NULL , 
                       selected = FALSE,
@@ -33,7 +37,8 @@ data_widget_ui = function ( id )
         textInput( ns("file.keywords"), "key words for searching data files" ,
                    value = '_formulaData|Seasonal|dts|rds' ) ,
           
-        selectInput( ns("dataset") , label = "Data previously downloaded from DHIS2:" , 
+        selectInput( ns("dataset") , 
+                     label = "Data previously downloaded from DHIS2:" , 
               width = '95%',
               choices = NULL , 
               selected = FALSE,
@@ -42,32 +47,33 @@ data_widget_ui = function ( id )
               size = 4  ##needed for `selected = FALSE` to work ) 
              ) , 
 
-        
+)       
         ) # end fillColl
           
           } # ui
         
 
 data_widget_server <- function( id ,
-                                dataDir = NULL,
-                                data_request_output = 0 ) {
+                                dataDir = NULL
+                                # , data_request_output = 0 
+                                ) {
      moduleServer(
         id,
         function(input, output, session ,
-                 dataDirectory = dataDir ,
-                 data_request_update = data_request_output 
+                 dataDirectory = dataDir 
+                 # , data_request_update = data_request_output 
                  ) {
 
         data.folder = reactive({ dataDirectory$directory() })
-        completedRequest = reactive({ data_request_output$completedRequest() })
+        # completedRequest = reactive({ data_request_output$completedRequest() })
         
         formula.files = reactive({ 
           req( data.folder() )
-          cat( '\n*looking for formula files in' , data.folder() , '\n')
+          cat( '\n* looking for formula files in' , data.folder() , '\n')
         
           ff = files( search = 'Formula' , dir = data.folder() )  
           if ( is_empty( ff ) ){
-            print( 'no forumula files in directory' )
+            cat( '\n - no forumula files in directory' )
             return( )
           } 
           
@@ -75,19 +81,20 @@ data_widget_server <- function( id ,
           formula_file.mdate = file.info( paste0( data.folder() , ff  ) )$mtime
           ff = ff[ rev(order( formula_file.mdate )) ]
           
-          print( 'formula.files:' ) ; print( ff )
+          cat( '\n - formula.files:' , ff  )
           if ( !any(file.exists( paste0( data.folder() , ff  ) ) )) return()
+          
           return( ff )
           })
         
         observe({
-          cat('updating directory \n')
+          cat('\n* updating directory \n')
           # updateTextOutput( session, 'directory' , value = data.folder()  ) 
           output$directory = renderText({ data.folder() })
         })
         
         observe({
-          cat('\n updating formula.files input ')
+          cat('\n* updating formula.files input ')
           updateSelectInput( session, 'formula.file' , 
                                       choices = formula.files() , 
                                       selected = 1  ) 
@@ -96,7 +103,7 @@ data_widget_server <- function( id ,
         formulas =  reactive({
           req( input$formula.file )
         
-          cat( '\n formula file:' , input$formula.file )
+          cat( '\n - formula file:' , input$formula.file )
           
           file = paste0( data.folder() , input$formula.file )
           
@@ -106,7 +113,7 @@ data_widget_server <- function( id ,
             filter( !is.na(Formula.Name)) %>%
             arrange( desc( Formula.Name ) )
           
-          cat( '\n formula.Name:' , formulas$Formula.Name )
+          cat( '\n - formula.Name:' , formulas$Formula.Name )
           
           return( formulas )
         })
@@ -142,7 +149,7 @@ data_widget_server <- function( id ,
           dir.files = data.dir_files()
         
           indicator = paste0( input$indicator , "_" )
-          cat( '\n rds_data_file indicator: ' , input$indicator , '\n' )
+          cat( '\n* rds_data_file indicator: ' , input$indicator , '\n' )
           
           file.type = 'rds' # input$file.type 
           # file.other = ifelse( input$cleaned %in% "Cleaned" , '_Seasonal' , "" )  # input$file.other

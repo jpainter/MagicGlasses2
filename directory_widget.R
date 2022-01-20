@@ -5,9 +5,13 @@ directory_widget_ui = function ( id )
         fillCol( height = 600, flex = c(NA ) , 
 
          h4( 'Directory for storing/retrieving data files for this project:') ,
-                 
+         
+         shinyDirButton( ns('folder') , 'Folder select', 'Please select a folder', FALSE) ,
+         
+         br(),
+          
          textInput( ns("data.directory"), label = NULL , 
-                     value = "./" ,
+                     value = path.expand("~") ,
                      width = '95%'
                      ) ,
          
@@ -53,30 +57,63 @@ directory_widget_server <- function( id ) {
      moduleServer(
         id,
         function(input, output, session) {
-
-        data.folder = reactive({
-                  cat( '\n**data.folder:\n' )
-                  # req( input$country )
-                  req( input$data.directory  )
-                  data.dir = file.dir( # country = input$country , 
-                                          dir.base = input$data.directory )
-                  has.slash.at.end = str_locate_all( data.dir , "/") %>% 
-                  unlist %in% nchar( data.dir) %>% any 
-                
-                  if ( !has.slash.at.end  ){ data.dir = paste0( data.dir , "/" ) }
-                
-                cat( '-data.folder is ', data.dir , '\n')
-                return( data.dir )
-        })
-
-       observe({ 
+          
+        ns <- session$ns  # for shinyDirChoose (https://stackoverflow.com/questions/38747129/how-to-use-shinyfiles-package-within-shiny-modules-namespace-issue/)
+  
+        observe({
          isolate(
            if ( file.exists( "../HMIS/Formulas/" ) ){
               cat( '\n directory_widget -setting JP data.directory' )
-              updateTextInput( session, "data.directory" , value = "../HMIS/Formulas/" ) 
+              updateTextInput( session, "data.directory" ,
+                               value = "../HMIS/Formulas/" )
            }
          )
+        })
+          
+        observe({
+            isolate(
+              if ( file.exists( "~/_Malaria/Projects/HMIS/Formulas" ) ){
+                cat( '\n directory_widget -setting JP data.directory' )
+                updateTextInput( session, "data.directory" ,
+                                 value = "~/_Malaria/Projects/HMIS/Formulas/" )
+              }
+            )
           } )
+       
+        shinyDirChoose( input , id=ns("folder"), session = session ,
+                          roots = c( home = path.expand("~") )  ,
+                          filetypes=c('', 'txt')
+                          )
+        
+         
+        observe({
+          cat( '\n input$folder:' , input$folder )
+        })
+        
+       data.folder = reactive({
+                  cat( '\n* data.folder:\n' )
+                  # req( input$country )
+                  req( input$data.directory  )
+                  data.dir = file.dir( # country = input$country ,
+                                          dir.base = input$data.directory )
+                  has.slash.at.end = str_locate_all( data.dir , "/") %>%
+                  unlist %in% nchar( data.dir) %>% any
+
+                  if ( !has.slash.at.end  ){
+                    OS <- .Platform$OS.type
+                    cat('\n - OS is' , OS )
+                    if (OS == "unix"){
+                      data.dir = paste0( data.dir , "/" )
+                    } else if (OS == "windows"){
+                      data.dir = paste0( data.dir , "/" )
+                    } else {
+                      message("ERROR: OS could not be identified")
+                    }
+                }
+
+              cat( '\n - data.folder is ', data.dir , '\n')
+              return( data.dir )
+        })
         
         data.dir.files = reactive({ 
             req( data.folder() )

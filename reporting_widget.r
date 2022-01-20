@@ -183,19 +183,28 @@ reporting_widget_server <- function( id ,
       req( dataset.file() )
       req( data.folder() )
       req( formula_elements() )
-      cat('\n*Reading dataset file\n')
+      cat('\n* Reading dataset file\n')
       
       file = paste0( data.folder() , dataset.file() )
       if ( !file.exists( file ) ) return()
       
-      dataset = readRDS( file ) %>%
+      cat('\n - ' , file )
+      
+      
+      dataset = readRDS( file ) 
+      
+      # Get dataSet for each dataElement (if available_) 
+      if ( 'dataElement.id' %in% names( dataset ) ){
+        
+        dataset = dataset %>%
         as_tibble() %>%
         left_join( formula_elements() %>% 
                      select( dataElement.id  , dataSet ) %>%
                      distinct ,  
                    by = 'dataElement.id' )
+      }
 
-      cat( '\n-dataset read:' , dataset.file() , 'has' , nrow(dataset) , 'rows\n' )
+      cat( '\n - dataset read:' , dataset.file() , 'has' , nrow(dataset) , 'rows\n' )
       return( dataset )
     })
 
@@ -207,7 +216,7 @@ reporting_widget_server <- function( id ,
         
         if ( ! .period %in% names( dataset() ) ){
         cat('\n--dataset does not contain column:' , .period )
-        cat( '\ndataset columns are:' , names( dataset() ) )
+        cat( '\n - dataset columns are:' , names( dataset() ) )
         return()
       }
         dates = dataset() %>% pull( !! rlang::sym( .period )) %>%
@@ -269,28 +278,29 @@ reporting_widget_server <- function( id ,
   }
 } )
 
-  observe({
-    cat( '\n- updating data_choices' )
-    updateSelectInput( session, 'data_categories' ,
-                       choices =   unique( dataset()$data ) ,
-                       selected = 1 )
-    cat( '\n- done' )
-} )
+#   observEvent({
+#     cat( '\n- updating data_choices' )
+#     updateSelectInput( session, 'data_categories' ,
+#                        choices =   unique( dataset()$data ) ,
+#                        selected = 1 )
+#     cat( '\n- done' )
+# } )
 
-  observeEvent( input$all_categories , {
+  observeEvent( dataset()$data , {
+    req( dataset()$data )
     cat( '\n -updating data_categories to all' )
     if( input$all_categories == TRUE ){
-    updateSelectInput( session, 'data_categories' , 
-                       choices =   unique( dataset()$data ) ,
-                       selected = unique( dataset()$data ) ) 
+      updateSelectInput( session, 'data_categories' , 
+                         choices =   unique( dataset()$data ) ,
+                         selected = unique( dataset()$data ) ) 
     } else {
       updateSelectInput( session, 'data_categories' , 
-                       choices =   unique( dataset()$data ) ) 
+                         choices =   unique( dataset()$data ) ) 
     }
     cat( '\n- done' )
-} )
+  } )
   
-  # updata split
+  # update split
   observe({  updateSelectInput( session, 'split' , 
                               choices =  c('None', names( dataset() )) ) } )
   
@@ -344,7 +354,6 @@ reporting_widget_server <- function( id ,
       .period = period()
       data = dataset()  %>% mutate( period = !!rlang::sym( .period ))
       
-      
       if ( !is_empty( input$level2 ) ){
         #print( paste( 'filtering data by' , levelNames()[2] , "=" , input$level2 ) )
         data = data %>% 
@@ -397,25 +406,26 @@ reporting_widget_server <- function( id ,
       data = data %>% mutate( dataCol = original )
     }  
     
-    if ( input$source %in% 'Cleaned' ){
+    if ( input$source %in% 'Cleaned' & 'value' %in% names(data) ){
       cat( '\n-' , paste('cleaning removes', sum( data$value , na.rm = T ) - sum( data$seasonal3 , na.rm = T )  , 'data points' ) )
       data = data %>% mutate( dataCol = ifelse( seasonal3, original, NA  ) )
-  
+      
+      # Modify variables used for cleaning data so that FALSE when NA -- meaning it failed prior cleaning step, and TRUE means data is ok
+      if ('mad15' %in% names( data )) data = data %>% mutate( mad15 = ifelse( value & is.na( mad15)|!mad15, FALSE, TRUE ) )
+      if ('mad10' %in% names( data )) data = data %>% mutate( mad10 = ifelse( value & is.na( mad10)|!mad10, FALSE, TRUE ) )
+      if ('mad5' %in% names( data )) data = data %>% mutate( mad5 = ifelse( value & is.na( mad5)|!mad5, FALSE, TRUE ) )
+      if ('seasonal5' %in% names( data )) data = data %>% mutate( seasonal5 = ifelse( value & is.na( seasonal5)|!seasonal5, FALSE, TRUE ) )
+      if ('seasonal3' %in% names( data )) data = data %>% mutate( seasonal3 = ifelse( value & is.na( seasonal3)|!seasonal3, FALSE, TRUE ) )
+      
       cat( '\n-' , paste('cleaning changes total by', sum( data$original , na.rm = T ) - sum( data$dataCol , na.rm = T )) )
     }  
-  
+    
     # #print( 'd: max period ' ); #print( max( d$period ))
     cat( '\n-' , 'd: max period ' ); 
     cat( '\n-' , max( data %>% pull( period  ) , na.rm = TRUE ))
     # #print( max( data$Month , na.rm = TRUE ))
-  
-    # Modify variables used for cleaning data so that FALSE when NA -- meaning it failed prior cleaning step, and TRUE means data is ok
-    if ('mad15' %in% names( data )) data = data %>% mutate( mad15 = ifelse( value & is.na( mad15)|!mad15, FALSE, TRUE ) )
-    if ('mad10' %in% names( data )) data = data %>% mutate( mad10 = ifelse( value & is.na( mad10)|!mad10, FALSE, TRUE ) )
-    if ('mad5' %in% names( data )) data = data %>% mutate( mad5 = ifelse( value & is.na( mad5)|!mad5, FALSE, TRUE ) )
-    if ('seasonal5' %in% names( data )) data = data %>% mutate( seasonal5 = ifelse( value & is.na( seasonal5)|!seasonal5, FALSE, TRUE ) )
-    if ('seasonal3' %in% names( data )) data = data %>% mutate( seasonal3 = ifelse( value & is.na( seasonal3)|!seasonal3, FALSE, TRUE ) )
-      
+    
+    
     cat( '\n-' , 'end d()' )
     return( data )
 })
@@ -435,7 +445,7 @@ reporting_widget_server <- function( id ,
       
       cat('\n-orgunit.reports--data')
       data = d()
-      saveRDS( data, 'data.rds')
+      saveRDS( data, 'orgunits.reports.data.rds')
       
       if ( !input$count.any & !input$all_categories )  data = 
         data %>% filter( data %in% input$data_categories )
@@ -455,7 +465,7 @@ reporting_widget_server <- function( id ,
       ) %>%
       rename( year =  {{ year_var }} ) 
       
-      cat('\n-orgunit.reports--o.r.(DT')  
+      cat('\n-orgunit.reports--o.r.(DT)')  
       o.r. = setDT(o.r.)[, .( n_periods = uniqueN( base::get( .period ) )), 
                        by = c( 'year' , 'orgUnit' ) ] %>%
         as_tibble() %>%
@@ -699,6 +709,7 @@ reporting_widget_server <- function( id ,
        } 
       
        mr = data %>% 
+         filter( !is.na( original  ) ) %>%
          distinct( !! rlang::sym( period() ) , orgUnit ) %>%
          group_by( orgUnit ) %>%
          summarise( n = n() ) %>%
@@ -741,6 +752,7 @@ reporting_widget_server <- function( id ,
       }
   
         cat( "\n***end selectedOUs:", length(s), 'orgUnits' ); toc()  # #print( selectedOUs )
+        saveRDS( s, 'selectedOUs.rds')
         return( s )
       })
     
@@ -790,6 +802,8 @@ reporting_widget_server <- function( id ,
 
   plot2 = reactive({
     req( monthly.reports() )
+    req( period() )
+    
     cat('\n* plot2():')
     .period = period()
     
@@ -1012,7 +1026,7 @@ reporting_widget_server <- function( id ,
       # Set all dataSets to Combined and re-summaries taking mean
       # #print( 'data.total datasets' );  #print( dataSets() )
       cat( '\n- input$merge ', input$merge )
-      cat( '\n- data datsets ' , unique(data$dataSet) ) 
+      cat( '\n- data datsets ' , unique( data$dataSet) ) 
       
       mergeDatasets = input$merge %>% str_replace_all( fixed("\n"), "") 
       cat( '\n# mergeDatasets:' , mergeDatasets )
@@ -1074,7 +1088,7 @@ reporting_widget_server <- function( id ,
     #print( 'data.total finalized' ); # #print( toc())
   
     # test:
-    # saveRDS( data.total, 'data.total.rds')
+    saveRDS( data.total, 'data.total.rds')
     
     cat('\n- end data.total()')
     return( data.total )
@@ -1133,6 +1147,8 @@ reporting_widget_server <- function( id ,
     # if ( length( selectedOUs() ) > 0  & !input$split %in% 'None' ) hts =
     #   paste( input$split ,  ' * Facilities * (', hts , ')' )
     
+    saveRDS( hts, 'hts.rds' )
+    
     cat("\n- end hts():" ); #print( hts )
   
     return( hts )
@@ -1161,12 +1177,17 @@ reporting_widget_server <- function( id ,
     # }
     
     cat('\n- end data.hts():' ) ; toc()
-      return(.d)
+    saveRDS( .d, 'data.hts.rds' )
+    
+    return(.d)
   })
   
   aggregatePlotData = reactive({
-     req( data.hts() )
-     cat('\n* aggregatePlotData():' )
+    req( data.hts() )
+    cat('\n* aggregatePlotData():' )
+    
+    saveRDS( data.hts() , 'data.hts.rds' )
+    saveRDS( levelNames() , 'levelNames.rds')
     
     .d = data.hts() %>% 
         filter( 

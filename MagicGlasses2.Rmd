@@ -6,6 +6,7 @@ output:
   flexdashboard::flex_dashboard:
     orientation: columns
     vertical_layout: fill
+    # css: my-sass-rules.scss
     theme:
       version: 4
       bootswatch: sandstone
@@ -32,6 +33,8 @@ library(shinyjs)
 library(shinydashboard)
 library(shinyBS)
 library(shinyLP)
+library( shinyFiles )
+library( rstudioapi )
 library(leaflet)
 library( progressr )
 # library(mapview)
@@ -96,8 +99,12 @@ conflict_prefer("last", "dplyr")
 conflict_prefer("first", "dplyr")
 conflict_prefer("year", "lubridate")
 conflict_prefer("month", "lubridate")
+conflict_prefer("week", "lubridate")
 conflict_prefer("runExample", "shiny")
 
+
+home = getActiveProject()
+cat('\n ## getActiveProject():' , getActiveProject() )
 ```
 
 ```{r sources, include=FALSE}
@@ -126,6 +133,18 @@ useShinyjs()   # Set up shinyjs
 ```
 
 ```{css my-css , include = FALSE, eval = TRUE }
+
+# customize flexdashboard titles
+
+.navbar {
+  background-color:red;
+  border-color:black;
+}
+.navbar-brand {
+color:black!important;
+}
+
+# ---
 
 .fluid-row {
   font-size: 5.9vw;
@@ -357,8 +376,10 @@ metadata_widget_output =
             )
 ```
 
-Define Formula (data dictionary)
+
+Data Dictionary
 ========================
+
 Column
 -----------------------------------
 
@@ -373,6 +394,26 @@ data1_Widget_output =
                       dataDir = directory_widget_output )
 
 ```
+
+Column
+-----------------------------------
+
+### Data Elements
+
+```{r, echo = FALSE  }
+### Data definitions (formulas)
+
+source( 'formula_widget.r' )
+
+formula_widget_ui( "formula1" )
+
+formula1_Widget_output = 
+  formula_widget_server( "formula1" , 
+                      metadata_widget_output = metadata_widget_output )
+
+```
+
+
 
 Request Data
 ========================
@@ -389,7 +430,7 @@ data_widget_ui( "data2" )
 data2_Widget_output = 
   data_widget_server( "data2" , 
                       dataDir = directory_widget_output 
-                      , data_request_output = data_request_Output
+                      # , data_request_output = data_request_Output
                       )
 
 ```
@@ -432,8 +473,9 @@ Outliers and Errors
 ========================
 
 
-```{r , eval=FALSE}
+```{r }
 source( 'cleaning_widget.r' )
+
 cleaning_widget_ui( "cleaning1" )
 
 cleaning_widget_output = 
