@@ -8,30 +8,38 @@ tagList(
             # , margins = c(70, 1200)
           ) ,
 
-tabsetPanel( type = "tabs",
 
-      tabPanel( "Summary",  
-           selectInput( ns("dataElement") , label = "DataElement_Category:" ,
-                             choices =NULL ,
-                             selected = NULL ) , 
-           tableOutput( ns("dqaTable") ) 
-        ) ,
-             
-      tabPanel( "Inspect",  style = "height:90vh;" ,
                 
         sidebarLayout(
             sidebarPanel(
+              radioButtons( ns("dataElement") , label = "DataElement_Category:" ,
+                             choices = c('') ,
+                             selected = NULL )
             ) ,
             mainPanel( 
-              fluidPage( 
-                fluidRow( style = "height:80vh;",
-                  plotOutput( ns("inspect") )
-                ))
-            )
-          )
-        )
+              tabsetPanel( type = "tabs",
+
+                tabPanel( "Summary",  tableOutput( ns("dqaTable") ) ) ,
+               
+                tabPanel( "Inspect",  style = "height:90vh;" ,
+                        fluidPage( 
+                          fluidRow( style = "height:30vh;",
+                                    
+                            selectInput( ns('error'), 'Select error type' ,
+                                         choices = c('mad15', 'mad10', 'mad5', 'seasonal5', 'seasonal3' ) ) ,
+                            
+                            selectInput( ns( 'flaggedOrgUnit') , 'Select orgUnit having this error' ,
+                                         choices = "" )
+                          ) ,
+                          
+                          fluidRow( style = "height:55vh;",
+                            plotOutput( ns("inspect") )
+                          ))
+                      )
+                )
+              )
     
-     ) # tabsetPanel
+     ) 
 )
 } # ui
         
@@ -71,10 +79,10 @@ cleaning_widget_server <- function( id ,
     
   # Summary ####
     
-  observe({
-    cat('\n-update dataElement-') 
-    updateSelectInput( session, 'dataElement' ,
-                       choices =  data()  %>% pull(data) %>% unique 
+  observeEvent( nrow( data() ) > 0 , {
+    cat('\n-update dataElement-')
+    updateRadioButtons( session, 'dataElement' ,
+                       choices =  data()  %>% pull(data) %>% unique
     )
     cat('-done\n')
   })
@@ -106,13 +114,16 @@ cleaning_widget_server <- function( id ,
         filter( data %in% input$dataElement ) %>%
         group_by( data , mad15, mad10, mad5, seasonal5 , seasonal3 ) %>%
         summarise( n = sum( !is.na( original )) , 
-                   total = sum( original , na.rm = T ) 
+                   total = sum( original , na.rm = T ) ,
+                   max = max( total , na.rm = T ) %>% comma()
                    ) %>%
         inner_join( total , by = c( "data" ) ) %>%
-        summarise( 
+        mutate( 
                    `%N` = percent( n / N ) ,
                    `%Total` = percent( total / Total )
-                   )        
+                   )   %>%
+        ungroup %>%
+        select( mad15, mad10, mad5, seasonal5 , seasonal3, n , max , `%N` ,`%Total`  )
       
       cat('\n - summary has' , nrow(os) , 'rows')
       return( os )
@@ -121,23 +132,46 @@ cleaning_widget_server <- function( id ,
   output$dqaTable = renderTable( outlier.summary() ) 
   
   ## Visualize cleaning (Inspect )  ####
+  errorFlag = reactive({
+    req( data()) 
+    cat( '\n* errorFlag():')
+    # print( head( data() ) )
+    if ( input$error %in% names( data() ) ){
+            flag = unique( as_tibble( data() ) %>% 
+                   filter( !! rlang::sym( input$error )  == FALSE ,
+                           data %in% input$dataElement ) %>% 
+                   distinct( orgUnit , orgUnitName )  
+                 )
+            cat( '\n -  nrow errorFlag() :', nrow( flag ) )
+            
+    } else {  flag = tibble() }
+
+    return( flag )
+  })
+  
+  observe({
+    updateSelectInput( session, "flaggedOrgUnit" , 
+                       choices = paste0( errorFlag()$orgUnit )
+    )
+  })
+  
   plot.single.data.series = reactive({
     req( data() )
+
     cat('\n* plot.single.data.series' )
     
-    flag = unique( as_tibble( data() ) %>% 
-                   filter( mad5, !seasonal5 ) %>% 
-                   select( orgUnit, data ) 
-                 )
+    if ( length( errorFlag() ) == 0 ) return()
   
-    y = data() %>% as_tibble() %>%
-      semi_join( flag[30,] , by = c("orgUnit", "data") ) 
+    inspectOrgUnitData = data() %>% as_tibble() %>%
+      filter( orgUnit %in% input$flaggedOrgUnit )
   
-    g = y %>%
+    g = inspectOrgUnitData %>%
         ggplot( aes( x = Month, y = original,  group = data ) ) +
         geom_line( alpha = .25 , aes( linetype = data ) ) +
-        geom_point( aes( color = mad5 , shape = seasonal5 )) +
-        labs( title = paste( unique(y$orgUnitName), collapse = ",") )
+        geom_point( aes( color = !! rlang::sym( input$error ) 
+                         # , shape = seasonal3 
+                         )) +
+        labs( title = paste( unique( inspectOrgUnitData$orgUnitName ), collapse = ",") )
     
     return( g )
     
