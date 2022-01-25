@@ -446,7 +446,7 @@ data_request_widget_ui( "data_request1" )
 
 data_request_Output =
   data_request_widget_server( "data_request1" ,
-            loginDetails  =  loginWidgetOutput ,
+            loginDetails  =  login_widget_output ,
             dataDirectory = directory_widget_output ,
             metadata_widget_output = metadata_widget_output , 
             data_widget_output = data2_Widget_output
@@ -496,7 +496,7 @@ Evaluation and Trends
 source( 'evaluation_widget.r' )
 evaluation_widget_ui( "evaluation1" )
 
-evaluation_widget_output = 
+evaluation_widget_output =
   evaluation_widget_server( "evaluation1" ,
                          directory_widget_output = directory_widget_output ,
                          metadata_widget_output = metadata_widget_output ,

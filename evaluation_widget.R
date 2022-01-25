@@ -12,6 +12,45 @@ evaluation_widget_ui = function ( id ){
 tabsetPanel( type = "tabs",
 # add_busy_spinner(spin = "fading-circle", position = "bottom-right") ,
 
+  tabPanel( 'Impact' ,
+        sidebarLayout(
+          sidebarPanel(
+            
+              checkboxInput(ns('hts'), label = "Aggregate across full administrative hierarchy", 
+                     value = FALSE ) ,
+       
+              selectInput( ns("hts_level") , label = "Aggregate only from level:" ,
+                    choices = 1:6 ,
+                    selected = 1 ) ,
+            
+              selectInput( ns( "agg_level") , label = "Aggregate to" , 
+                choices = NULL , 
+                selected = 1  ) ,
+
+              checkboxInput( ns( "facet_admin" ) , label ="Facet by admin",
+                             value = FALSE  ) ,
+              
+              checkboxInput( ns( "facet_split" ) , label ="Facet by split",
+                             value = FALSE  ) ,
+              
+              checkboxInput( ns( "selected" ) , label ='Selected facilities only',
+                             value = TRUE  ) ,
+              
+              checkboxInput( ns( "legend" ) , label ='Show legend',
+                             value = FALSE  ) ,
+              
+              checkboxInput( ns( "plotly" ) , label ='Plotly Chart',
+                             value = FALSE  ) 
+          ),
+          
+          mainPanel( 
+            
+             plotOutput( ns( "plotOutput" ) , hover = "plot_hover"  )
+          )
+        )    
+        
+        ) ,
+    
   tabPanel( "Model",  
     inputPanel(
       
@@ -47,41 +86,8 @@ tabsetPanel( type = "tabs",
                    value = FALSE  ) 
     
           )
-) ,
-  
-  tabPanel( 'Impact' ,
-        sidebarLayout(
-          sidebarPanel(
-            
-              selectInput( ns( "agg_level") , label = "Aggregate to" , 
-                choices = NULL , 
-                selected = 1  ) ,
-
-              checkboxInput( ns( "facet_admin" ) , label ="Facet by admin",
-                             value = FALSE  ) ,
-              
-              checkboxInput( ns( "facet_split" ) , label ="Facet by split",
-                             value = FALSE  ) ,
-              
-              checkboxInput( ns( "selected" ) , label ='Selected facilities only',
-                             value = TRUE  ) ,
-              
-              checkboxInput( ns( "legend" ) , label ='Show legend',
-                             value = FALSE  ) ,
-              
-              checkboxInput( ns( "plotly" ) , label ='Plotly Chart',
-                             value = FALSE  ) 
-          ),
-          
-          mainPanel( 
-            
-             plotOutput( ns( "plotOutput" ) , hover = "plot_hover"  )
-          )
-        )    
-        
-        )
-
-        ))
+)
+))
 
 }
         
@@ -110,7 +116,7 @@ evaluation_widget_server <- function( id ,
     orgUnitLevels = reactive({ metadata_widget_output$orgUnitLevels() })
     dates = reactive({ reporting_widget_output$dates() })
     dataset = reactive({ reporting_widget_output$dataset() })
-    data.hts = reactive({ reporting_widget_output$data.hts() })
+    # data.hts = reactive({ reporting_widget_output$data.hts() })
     levelNames = reactive({ reporting_widget_output$levelNames() })
     period = reactive({ reporting_widget_output$period() })
     split = reactive({ reporting_widget_output$split() })
@@ -259,10 +265,14 @@ evaluation_widget_server <- function( id ,
     
       sub_agg_level = reactive({
           req( levels() )
-          levels() %>%
+          cat('\n* sub_agg_level:')
+          x = levels() %>%
              mutate( parent = dplyr::lag( levelName ) ) %>%
              filter( parent == input$agg_level ) %>%
              pull( levelName )
+          cat('\n - done:' , x )
+          if ( is.na( x ) ) return(NULL)
+          return( x )
         })
         
       MAPE = reactive({
@@ -669,7 +679,77 @@ evaluation_widget_server <- function( id ,
       })
     
 # Trend data ####
-    trendData = reactive({
+
+  hts = reactive({   
+    req( num_facilities() ) 
+    req( num_datasets() ) 
+    cat("\n* hts():" )
+
+    adms = backtick( levelNames() )
+    
+    if (input$hts){ 
+      hts = paste( adms, collapse = "/" ) 
+    } else {
+      hts = paste( adms[1:( as.integer(input$hts_level) + 1 )] , 
+                   collapse = "/" ) 
+    }
+    
+    hts = paste( "(" , hts , ")" )
+    
+    # if >1 Facilities (ie. selected)
+    if ( num_facilities() > 1 )  hts = paste( 
+             'Selected *' , hts 
+             )
+    
+    # if >1 dataset 
+    if ( num_datasets() > 1 )  hts = paste( 
+             'dataSet *' , hts
+             )
+    
+    # # Cross by split
+    if ( !split() %in% 'None' ) hts =
+      paste( split() , '*' ,  hts )
+    # 
+    # Cross by selected and split
+    # if ( length( selectedOUs() ) > 0  & !input$split %in% 'None' ) hts =
+    #   paste( input$split ,  ' * Facilities * (', hts , ')' )
+    
+    saveRDS( hts, 'hts.rds' )
+    
+    cat("\n - end hts():" , hts )
+  
+    return( hts )
+  })
+  
+  data.hts = reactive({
+    req( data.total() )
+  
+    cat('\n* data.hts():' );   tic()
+  
+    .d = data.total()
+    
+    # testing exogenous vaiables
+    # if ( input$covariates %in% c('ipti' , 'doses' ) ){
+    #   .d = .d %>%
+    #   aggregate_key(  .spec = !!rlang::parse_expr( hts() ) ,
+    #                   total = sum( total , na.rm = T ) ,
+    #                   ipti = sum( !!rlang::parse_expr( 'ipti' ) , na.rm = T ) ,
+    #                   doses = sum( !!rlang::parse_expr( 'doses' ) , na.rm = T )
+    #                   ) 
+    # } else {
+    .d = .d %>%
+      aggregate_key(  .spec = !!rlang::parse_expr( hts() ) ,
+                      total = sum( total , na.rm = T )
+                      ) 
+    # }
+    
+    cat('\n- end data.hts():' ) ; toc()
+    # saveRDS( .d, 'data.hts.rds' )
+    
+    return(.d)
+  })
+    
+  trendData = reactive({
       req( data.hts() )
       # req( aggregatePlotData() )
       cat( '\n* evaluation_widget: trendData(): ' )
@@ -697,30 +777,21 @@ evaluation_widget_server <- function( id ,
   } 
     
       cat( "\n- input$agg_level:", input$agg_level )
-
-      cat( "\n- sub_agg_level:" , sub_agg_level() )
-       
-      # .d = data.hts() %>% 
-      #     filter( 
-      #       ! is.na( !! rlang::sym( levelNames()[1] ) )
-      #       , is_aggregated( !! rlang::sym( levelNames()[1] ) )
-      #     ) 
-      
+  
       sub_agg = sub_agg_level() 
       cat( "\n- sub agg level filter" , sub_agg )
       
       .d = .d %>% 
           filter( 
-            ! is.na( !! rlang::sym( input$agg_level   ) ) 
+            ! is_empty( !! rlang::sym( input$agg_level   ) ) 
             # next line is good for level 0
             , ! is_aggregated(  !! rlang::sym( input$agg_level   ) )
           )
               
-      cat( '\n- !is_empty(sub_agg)' , sub_agg )
-      cat( '\n- ' , !is_empty(sub_agg)) 
-      cat( '\n-',  class( sub_agg )) 
-      if ( !is_empty(sub_agg) ){
-        print( 'filtering by sub_agg' )
+      cat( '\n- !is_empty(sub_agg)' , sub_agg , !is_empty(sub_agg) )
+
+      if ( !is_empty( sub_agg ) ){
+        cat( '\n - filtering by sub_agg' )
         .d = .d %>% filter( 
               is_aggregated( !! rlang::sym( sub_agg  ) )
         )
@@ -729,7 +800,7 @@ evaluation_widget_server <- function( id ,
         .d = .d %>%
            mutate( 
              grouping_var = 'Total' ) %>%
-          fill_gaps( .full = TRUE  )
+             fill_gaps( .full = TRUE  )
     
          
          cat( '\n- .d in trendData' ); # glimpse(.d)
@@ -953,7 +1024,7 @@ evaluation_widget_server <- function( id ,
          
           cat( '\n- end plotTrends():' )
           
-          saveRDS( g, 'plotTrends.rds')
+          # saveRDS( g, 'plotTrends.rds')
           return( g )
         })
     

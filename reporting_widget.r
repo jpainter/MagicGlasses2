@@ -11,18 +11,47 @@ reporting_widget_ui = function ( id ){
 tabsetPanel( type = "tabs",
 # add_busy_spinner(spin = "fading-circle", position = "bottom-right") ,
 
+  tabPanel( "Facilities Reporting",  style = "height:90vh;" ,
+            fluidPage( 
+            fluidRow( style = "height:40vh;",
+                    column(6, 
+                      ### Number of Facilties Reporting each Period (plot_reporting_by_month)
+                      plotOutput( ns('plot_reporting_by_month') , 
+                          click = "plot2_click" ,
+                          dblclick = "plot2_dblclick" ,
+                          hover = "plot2_hover" ,
+                          brush = "plot2_brush" )
+                      ) ,
+                      
+                     column(6,  
+                      # htmlOutput("x_value") ,
+
+                      ### Histogram of Annual Number of Months Reported (plot_reports_in_a_year)
+                      plotOutput( ns('plot_reports_in_a_year') ,
+                          click = "plot1_click" ,
+                          dblclick = "plot1_dblclick" ,
+                          hover = "plot1_hover" ,
+                          brush = "plot1_brush" ) 
+                     )
+                    ) ,
+            fluidRow( style = "height:40vh;"  ,
+                    
+                    column(12, 
+                      plotOutput( ns('plot_values') ,
+                          hover = "plotSelectedOusValues_hover" ,
+                          brush = "plotSelectedOusValues_brush"
+                          )
+                    )
+                    )
+            )
+  ) ,
+    
   tabPanel( "Monthly reporting",  
-    inputPanel(
+ 
+     inputPanel(
        selectInput( ns("level") , label = "Organization Level:" ,
                     choices = c( 'leaf' ) ,
                     selected = NULL ) ,
-       
-       checkboxInput(ns('hts'), label = "Aggregate across full administrative hierarchy", 
-                     value = FALSE ) ,
-       
-       selectInput( ns("hts_level") , label = "Aggregate only from level:" ,
-                    choices = 2:4 ,
-                    selected = 2 ) ,
        
       checkboxInput( ns("exclude_recent_month") , label ='Exclude most recent month?',
                  value = TRUE  ) ,
@@ -99,43 +128,7 @@ tabsetPanel( type = "tabs",
                 multiple = TRUE ,
                 selectize = TRUE ) 
          ) 
-  ) ,
-  # tagList(
-
-  tabPanel( "Facilities Reporting",  style = "height:90vh;" ,
-            fluidPage( 
-            fluidRow( style = "height:40vh;",
-                    column(6, 
-                      ### Number of Facilties Reporting each Period (plot_reporting_by_month)
-                      plotOutput( ns('plot_reporting_by_month') , 
-                          click = "plot2_click" ,
-                          dblclick = "plot2_dblclick" ,
-                          hover = "plot2_hover" ,
-                          brush = "plot2_brush" )
-                      ) ,
-                      
-                     column(6,  
-                      # htmlOutput("x_value") ,
-
-                      ### Histogram of Annual Number of Months Reported (plot_reports_in_a_year)
-                      plotOutput( ns('plot_reports_in_a_year') ,
-                          click = "plot1_click" ,
-                          dblclick = "plot1_dblclick" ,
-                          hover = "plot1_hover" ,
-                          brush = "plot1_brush" ) 
-                     )
-                    ) ,
-            fluidRow( style = "height:40vh"  ,
-                    
-                    column(12, 
-                      plotOutput( ns('plot_values') ,
-                          hover = "plotSelectedOusValues_hover" ,
-                          brush = "plotSelectedOusValues_brush"
-                          )
-                    )
-                    )
-            )
-  )
+  ) 
 )
 )
 }
@@ -176,8 +169,6 @@ reporting_widget_server <- function( id ,
           lemon::reposition_legend( p, "center", panel=names(pnls) )
           }
 
-    backtick <- function(x) paste0("`", x, "`")
-          
   # dataset/data  ####
     dataset = reactive({
       req( dataset.file() )
@@ -372,31 +363,31 @@ reporting_widget_server <- function( id ,
       # glimpse( data )
       }
   
-    if ( !is_empty( input$level4 ) ){
-        #print( paste( 'filtering data by' , levelNames()[4] , "=" , input$level4 ) )
-        data = data %>% 
-          filter( !! rlang::sym( levelNames()[4])  %in%   input$level4  )
-        
-        #print( paste( 'data filtered by level4 has' , nrow( data ), 'rows' ))
-        # glimpse( data )
-    }
-      
-    if ( !is_empty( input$level5 ) ){
-        #print( paste( 'filtering data by' , levelNames()[5] , "=" , input$level5 ) )
-        data = data %>% 
-          filter( !! rlang::sym( levelNames()[5])  %in%   input$level5  )
-        
-        #print( paste( 'data filtered by level4 has' , nrow( data ), 'rows' ))
-        # glimpse( data )
+      if ( !is_empty( input$level4 ) ){
+          #print( paste( 'filtering data by' , levelNames()[4] , "=" , input$level4 ) )
+          data = data %>% 
+            filter( !! rlang::sym( levelNames()[4])  %in%   input$level4  )
+          
+          #print( paste( 'data filtered by level4 has' , nrow( data ), 'rows' ))
+          # glimpse( data )
       }
-  
-    cat( '\n-nrow( d ):' , nrow( data ))
+        
+      if ( !is_empty( input$level5 ) ){
+          #print( paste( 'filtering data by' , levelNames()[5] , "=" , input$level5 ) )
+          data = data %>% 
+            filter( !! rlang::sym( levelNames()[5])  %in%   input$level5  )
+          
+          #print( paste( 'data filtered by level4 has' , nrow( data ), 'rows' ))
+          # glimpse( data )
+        }
     
-    if ( input$level %in% 'leaf'){  
-      data = data %>% filter( effectiveLeaf == TRUE )
-    } else {
-      data = data %>% filter( levelName  %in% input$level  )
-    }
+      cat( '\n-nrow( d ):' , nrow( data ))
+      
+      if ( input$level %in% 'leaf'){  
+        data = data %>% filter( effectiveLeaf == TRUE )
+      } else {
+        data = data %>% filter( levelName  %in% input$level  )
+      }
   
   # if ( input$exclude_recent_month ) data = data %>% 
   #   filter( !! rlang::sym( period() ) <= most_recent_period() )
@@ -975,7 +966,7 @@ reporting_widget_server <- function( id ,
     
     cat( '\n- end  plotData()')  ; # #print( names( data )) 
     # TESTING
-    saveRDS( data , "plotData.rds" )
+    # saveRDS( data , "plotData.rds" )
   return( data )
 })
 
@@ -1047,7 +1038,7 @@ reporting_widget_server <- function( id ,
                 .[ , .(dataCol = sum( dataCol , na.rm = TRUE  )) , by =  .group_by_cols ] 
       
       cat('\n*Combining dataSets %in% input$merge:' , mergeDatasets )
-      saveRDS( combineSelectDatasets , 'combineSelectDatasets.rds' )
+      # saveRDS( combineSelectDatasets , 'combineSelectDatasets.rds' )
       # Save dataSets for testing/developmen
   
       } else { combineSelectDatasets = data }
@@ -1088,7 +1079,7 @@ reporting_widget_server <- function( id ,
     #print( 'data.total finalized' ); # #print( toc())
   
     # test:
-    saveRDS( data.total, 'data.total.rds')
+    # saveRDS( data.total, 'data.total.rds')
     
     cat('\n- end data.total()')
     return( data.total )
@@ -1114,20 +1105,14 @@ reporting_widget_server <- function( id ,
     return( l )
   })
   
-  hts = reactive({   
-    cat("\n* hts():" )
+  backtick <- function(x) paste0("`", x, "`")
   
+  aggregateDataKey = reactive({
+    cat('\n* aggregateDataKey():' )
     
     adms = backtick( levelNames() )
     
-    if (input$hts){ 
-      hts = paste( adms, collapse = "/" ) 
-    } else {
-      hts = paste( adms[1:as.integer(input$hts_level)] , 
-                   collapse = "/" ) 
-    }
-    
-    hts = paste( "(" , hts , ")" )
+    hts = paste( "(" , adms[1] , ")" )
     
     # if >1 Facilities (ie. selected)
     if ( num_facilities() > 1 )  hts = paste( 
@@ -1142,62 +1127,31 @@ reporting_widget_server <- function( id ,
     # # Cross by split
     if ( !input$split %in% 'None' ) hts =
       paste( input$split , '*' ,  hts )
-    # 
-    # Cross by selected and split
-    # if ( length( selectedOUs() ) > 0  & !input$split %in% 'None' ) hts =
-    #   paste( input$split ,  ' * Facilities * (', hts , ')' )
     
-    saveRDS( hts, 'hts.rds' )
-    
-    cat("\n- end hts():" ); #print( hts )
-  
+    cat('\n - done:' , hts )
     return( hts )
-  })
-  
-  data.hts = reactive({
-    req( data.total() )
-  
-    cat('\n* data.hts():' );   tic()
-  
-    .d = data.total()
-    
-    # testing exogenous vaiables
-    # if ( input$covariates %in% c('ipti' , 'doses' ) ){
-    #   .d = .d %>%
-    #   aggregate_key(  .spec = !!rlang::parse_expr( hts() ) ,
-    #                   total = sum( total , na.rm = T ) ,
-    #                   ipti = sum( !!rlang::parse_expr( 'ipti' ) , na.rm = T ) ,
-    #                   doses = sum( !!rlang::parse_expr( 'doses' ) , na.rm = T )
-    #                   ) 
-    # } else {
-        .d = .d %>%
-      aggregate_key(  .spec = !!rlang::parse_expr( hts() ) ,
-                      total = sum( total , na.rm = T )
-                      ) 
-    # }
-    
-    cat('\n- end data.hts():' ) ; toc()
-    saveRDS( .d, 'data.hts.rds' )
-    
-    return(.d)
+
   })
   
   aggregatePlotData = reactive({
-    req( data.hts() )
+    # req( data.hts() )
+    req( data.total() )
     cat('\n* aggregatePlotData():' )
     
-    saveRDS( data.hts() , 'data.hts.rds' )
+    # saveRDS( data.hts() , 'data.hts.rds' )
     saveRDS( levelNames() , 'levelNames.rds')
     
-    .d = data.hts() %>% 
-        filter( 
+    .d = data.total() %>% 
+      aggregate_key(  .spec = !!rlang::parse_expr( aggregateDataKey() ) ,
+                      total = sum( total , na.rm = T )
+                      ) %>%
+      filter(
           ! is.na( !! rlang::sym( levelNames()[1] ) )
           , is_aggregated( !! rlang::sym( levelNames()[1] ) )
         ) %>%
-         mutate( 
-           grouping_var = 'Total' )
+      mutate( grouping_var = 'Total' )
        
-       if ( num_datasets() > 1 ){
+      if ( num_datasets() > 1 ){
          #print( 'num_datasets()>1:') ;
          .d = .d %>% 
          filter( !is_aggregated( dataSet ) ) %>%
@@ -1322,7 +1276,7 @@ reporting_widget_server <- function( id ,
       theme_minimal()  
       
     #print( ' end plotAgregateValue()' )
-  
+    cat('\n - done' )
     return( g )
   })
   
@@ -1338,7 +1292,7 @@ reporting_widget_server <- function( id ,
       dates = dates ,
       dataset = dataset , 
       d = d ,
-      data.hts = data.hts ,
+      # data.hts = data.hts ,
       data.total = data.total , 
       period = period , 
       levelNames = levelNames ,

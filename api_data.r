@@ -372,10 +372,10 @@ api_url = function( baseurl, de ,  periods, orgUnits , aggregationType ){
                  # username, password ,
                  "api/analytics/dataValueSet.json?" ,
                  # "api/analytics.json?" ,
-                 "&dimension=ou:", orgUnits , 
+                 "dimension=ou:", orgUnits , 
                  "&dimension=pe:" , periods ,
                  "&dimension=dx:" , de ,
-                 "&displayProperty=NAME",
+                 # "&displayProperty=NAME",
                  "&aggregationType=" , aggregationType )
   
   # print( url )

@@ -35,7 +35,8 @@ tagList(
                      ) ,
         
         textInput( ns("file.keywords"), "key words for searching data files" ,
-                   value = '_formulaData|Seasonal|dts|rds' ) ,
+                   # value = '_formulaData|Seasonal|dts|rds' 
+                   value = 'Seasonal|dts' ) ,
           
         selectInput( ns("dataset") , 
                      label = "Data previously downloaded from DHIS2:" , 
@@ -196,7 +197,7 @@ data_widget_server <- function( id ,
             cat( '\n updating dataset list' )
             updateSelectInput( session, 'dataset' , 
                                       choices = rds_data_file() , 
-                                      selected = rds_data_file()[1] ) 
+                                      selected = NULL ) # rds_data_file()[1] ) 
           } )
             
 

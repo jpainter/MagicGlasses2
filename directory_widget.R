@@ -143,6 +143,10 @@ directory_widget_server <- function( id ) {
           
           mf = dir.files[ search.index ]
           
+           # Arrange by modified date
+          mf.mdate = file.info( paste0( data.folder() , mf ) )$mtime
+          mf = mf[ rev(order( mf.mdate )) ]
+          
           cat( '-', length(mf) , 'metadata files \n')
            
           cat( 'mf:' , mf , '\n')
@@ -170,6 +174,10 @@ directory_widget_server <- function( id ) {
           } 
           
           gf = dir.files[ search.index ]
+          
+          # Arrange by modified date
+          gf.mdate = file.info( paste0( data.folder() , gf ) )$mtime
+          gf = gf[ rev(order( gf.mdate )) ]
           
           cat( '-', length(gf) , 'geofeatures files \n')
            

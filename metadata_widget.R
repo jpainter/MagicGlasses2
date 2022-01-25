@@ -317,7 +317,7 @@ metadata_widget_server <- function( id ,
                      )
         )
       cols = c( 'id', 'name' , 'periodType' , 
-                'dataSetElements',
+                'dataSetElements', # format of this causes problem (drc)
                 'timelyDays' )
       
       url <- paste0( baseurl() ,"api/dataSets.json?fields=" ,
@@ -1268,7 +1268,7 @@ metadata_widget_server <- function( id ,
       writeDataTable( wb, sheet4, orgUnits() , rowNames = FALSE )
       writeDataTable( wb, sheet5, dataElementDictionary() , rowNames = FALSE )
       writeDataTable( wb, sheet6, indicatorDictionary() , rowNames = FALSE )
-      writeDataTable( wb, sheet7, dataSets() , rowNames = FALSE )
+      writeDataTable( wb, sheet7, dataSets() %>% select( - dataSetElements ) , rowNames = FALSE )
       writeDataTable( wb, sheet8, categories() , rowNames = FALSE )
       writeDataTable( wb, sheet9, dataElementGroups() , rowNames = FALSE )
 

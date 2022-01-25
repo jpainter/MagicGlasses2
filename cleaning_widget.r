@@ -144,12 +144,12 @@ cleaning_widget_server <- function( id ,
                  )
             cat( '\n -  nrow errorFlag() :', nrow( flag ) )
             
-    } else {  flag = tibble() }
+    } else {  return() }
 
     return( flag )
   })
   
-  observe({
+  observeEvent(  nrow( errorFlag() ) > 0 , {
     updateSelectInput( session, "flaggedOrgUnit" , 
                        choices = paste0( errorFlag()$orgUnit )
     )
