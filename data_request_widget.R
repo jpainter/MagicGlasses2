@@ -22,15 +22,6 @@ data_request_widget_ui = function ( id )
                       size = 4  ##needed for `selected = FALSE` to work ) 
                      ) ,
          
-         # selectInput( ns("formula") , label = "Select formula:" , 
-         #              width = '95%',
-         #              choices = NULL , 
-         #              selected = NULL ,
-         #              multiple = FALSE ,
-         #              selectize = FALSE, 
-         #              size = 4  ##needed for `selected = FALSE` to work ) 
-         #             ) ,
-         
         actionButton( ns("requestDataButton") , 
                       "Request data" , style='margin-top:25px' 
                       )         
@@ -60,6 +51,7 @@ data_request_widget_server <- function( id ,
       indicator = reactive({ data_widget_output$indicator() })
       formulas = reactive({ data_widget_output$formulas() })
       formula_elements = reactive({ data_widget_output$formula_elements() })
+      dataset = reactive({ data_widget_output$dataset() })
       orgUnitLevels = reactive({ metadata_widget_output$orgUnitLevels() })
       
   
@@ -78,7 +70,7 @@ data_request_widget_server <- function( id ,
             cat( '\nupdating levels' )
             if ( !is.null(orgUnitLevels() )){
               oulvls = orgUnitLevels() %>% pull( levelName )
-              oulvls = c(oulvls , 'All-levels')
+              oulvls = c( 'All-levels' , oulvls )
               updateSelectInput( session, 'level' ,
                                choices = oulvls,
                                selected = 1 )
@@ -118,7 +110,7 @@ data_request_widget_server <- function( id ,
       
       ou = case_when(
         
-        input$level %in% 'All levels' ~ 
+        input$level %in% 'All-levels' ~ 
           list( .orgUnitLevels %>% arrange( desc( level )) %>% pull( level ) %>%
           paste0( "LEVEL-" , .  ) )  ,
       
@@ -160,7 +152,7 @@ data_request_widget_server <- function( id ,
      } 
       
     if ( login() & request() ){
-        cat( '\n*formula.request reactive')
+        cat( '\n* formula.request reactive')
           
           .dir = data.folder()
           .baseurl = baseurl() 
@@ -178,6 +170,10 @@ data_request_widget_server <- function( id ,
           cat( '\n formula.request elements:' , length( .elements ) , ':\n' ,
                .elements )
           
+          # Previous dataset file: 
+          .previous_dataset_file =  paste0( data.folder() , dataset() )
+          cat( '\n - previous_dataset_file:' , .previous_dataset_file )
+          cat( '\n - previous file exists:' , file.exists( .previous_dataset_file ) )
           
           x  = api_data( 
                          update = TRUE , 
@@ -188,7 +184,7 @@ data_request_widget_server <- function( id ,
                          orgUnits = .orgUnits ,
                          periods = .periods , 
                          formula = .formula.name ,
-                  
+                         previous_dataset_file = .previous_dataset_file ,
                          shinyApp = TRUE,
                          parallel = FALSE )
           

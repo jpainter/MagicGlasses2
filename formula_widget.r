@@ -14,14 +14,23 @@ formula_widget_ui <- function( id ) {
     tabsetPanel(type = "tabs",
 
 
-                tabPanel("dataElements", 
+                tabPanel("Formula Elements", 
+                         wellPanel(
+                           
+                           verbatimTextOutput( ns("formulaName") ),
+                           
+                           DTOutput( ns('forumlaDictionaryTable') ) 
+                         )
+                         ) ,
+                
+                tabPanel("All Elements", 
                          wellPanel(
                            
                            verbatimTextOutput( ns("selected") ),
                            
                            DTOutput( ns('dataElementDictionaryTable') ) 
                          )
-                         ) 
+                ) 
 
 
                 ) 
@@ -34,7 +43,8 @@ formula_widget_ui <- function( id ) {
 
 # Server function ####
 formula_widget_server <- function( id , 
-                                    metadata_widget_output = NULL  ){
+                                    metadata_widget_output = NULL ,
+                                   data_Widget_output = NULL ){
   moduleServer(
     id ,
     function( input, output, session 
@@ -45,9 +55,11 @@ formula_widget_server <- function( id ,
   # reactives to toggle login status
   dataElementDictionary = reactive({ metadata_widget_output$dataElements() })
   categories = reactive({ metadata_widget_output$categories() })
+  formula_elements = reactive({ data_Widget_output$formula_elements() })
+  formulaName = reactive({ data_Widget_output$formulaName() })
 
 
-## data Elements ####
+## All data Elements ####
 
   output$dataElementDictionaryTable = 
     DT::renderDT(DT::datatable(
@@ -72,6 +84,29 @@ formula_widget_server <- function( id ,
     }
     
   })
+  
+  
+  ## Formula data Elements ####
+  
+  output$forumlaDictionaryTable = 
+    DT::renderDT(DT::datatable(
+      
+      formula_elements()   ,
+      rownames = FALSE, 
+      filter = 'top' ,
+      options = DToptions_no_buttons()
+    ))
+  
+  output$formula = renderPrint({
+    r = input$formulaName
+    if (length(r)) {
+      cat('Formula name:' )
+    }
+    
+  })
+  
+  
+  
   
 
 

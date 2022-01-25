@@ -383,7 +383,7 @@ Data Dictionary
 Column
 -----------------------------------
 
-### Data definitions (formulas)
+### Dataset dictionaries (formulas)
 
 ```{r, echo = FALSE  }
 source( 'data_widget.r' )
@@ -409,7 +409,8 @@ formula_widget_ui( "formula1" )
 
 formula1_Widget_output = 
   formula_widget_server( "formula1" , 
-                      metadata_widget_output = metadata_widget_output )
+                      metadata_widget_output = metadata_widget_output ,
+                      data_Widget_output = data1_Widget_output )
 
 ```
 
@@ -453,6 +454,8 @@ data_request_Output =
             )
 ```
 
+### Reporting
+
 Reporting Rate
 ========================
 
@@ -468,7 +471,7 @@ reporting_widget_output =
 ```
 
 
-
+### Outliers
 Outliers and Errors
 ========================
 
@@ -488,7 +491,7 @@ cleaning_widget_output =
 ```
 
 
-
+### Trends
 Evaluation and Trends
 ========================
 

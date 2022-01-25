@@ -205,7 +205,9 @@ data_widget_server <- function( id ,
           dataset = reactive({ input$dataset }) ,
           indicator = reactive({ input$indicator }) ,
           formulas = formulas ,
-          formula_elements = formula_elements 
+          formulaName =  reactive({ input$indicator }) ,
+          formula_elements = formula_elements ,
+          dataset = reactive({ input$dataset })
             )
             )
         })

@@ -365,7 +365,7 @@ fetch <- function( baseurl. , de. , periods. , orgUnits. , aggregationType. , .p
 
 api_url = function( baseurl, de ,  periods, orgUnits , aggregationType ){
   
-  cat( '\na*api_url:' , baseurl ,  de , periods , orgUnits ) 
+  cat( '\n* api_url:' , baseurl ,  de , periods , orgUnits ) 
   # # print( orgUnits ); print( aggregationType )
   
   url <- paste0( baseurl , 
@@ -387,7 +387,7 @@ fetch_get <- function( baseurl. , de. , periods. , orgUnits. ,
                        aggregationType. ,
                        get.print = FALSE, username. = NULL , password. = NULL ){
   
-    cat( '\n*fetch_get:' , baseurl. ,  de. , periods. , orgUnits.) 
+    cat( '\n* fetch_get:' , baseurl. ,  de. , periods. , orgUnits.) 
     url = api_url( baseurl. , de. , periods. , orgUnits. , aggregationType. )
     
     
@@ -534,11 +534,14 @@ api_data = function(      periods = "LAST_YEAR" ,
   ## UPDATE data options ####
   if ( update & file.exists( previous_dataset_file ) ){
       
+      cat('\n - retrieving details of previous dataset ')
       
       # check for last x years only 
       if ( periodType == 'Monthly') periods = date_code( YrsPrevious = check_previous_years ) # 'months_last_5_years' # 
       if ( periodType == 'Weekly') periods = date_code_weekly( YrsPrevious = check_previous_years )
 
+      cat('\n - periodType is' ,  periodType)
+      
       period_vectors = strsplit( periods , ";" , fixed = TRUE )[[1]]
       
       # excel version
@@ -546,10 +549,10 @@ api_data = function(      periods = "LAST_YEAR" ,
       #                          sheet = 'formulaData') %>%
       #           filter( !is.na( dataElement  ) )
       
-      prev.data = readRDS( previous_dataset_file ) %>% select( - starts_with('aggr'))
+      prev.data = readRDS( previous_dataset_file ) # %>% select( - starts_with('aggr'))
       
       if ( nrow( prev.data ) == 0 ){
-         cat('previous data file empty'); next()
+         cat('\n - previous data file empty'); next()
       }  
       
       first.month = min(prev.data$period  )
@@ -559,6 +562,8 @@ api_data = function(      periods = "LAST_YEAR" ,
       # des = prev.data %>% select( dataElement, dataElement.id , Categories ,
       #                      categoryOptionCombo.ids ) %>%
       #   unique 
+      
+      cat('\n - date range:' , first.month , last.month )
       
       des = prev.data %>% 
         filter( !is.na( COUNT ) ) %>%
