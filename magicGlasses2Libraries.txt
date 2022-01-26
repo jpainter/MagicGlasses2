@@ -1,0 +1,66 @@
+
+
+conflicted 
+tidyverse
+data.table 
+shiny
+shinyjs
+shinydashboard
+shinyBS
+shinyLP
+shinybusy
+shinyFiles 
+rstudioapi 
+progressr 
+
+RColorBrewer
+plotly
+
+#  tidyfast 
+#  tidytable 
+# googleVis
+ ggrepel 
+scales
+ zoo 
+knitr
+rlang
+stringi
+tidyselect
+geojsonsf
+geojsonio
+jsonlite
+httr
+curl
+assertthat
+
+futile.logger
+# utils
+DT
+# textutils
+readxl
+openxlsx
+anytime
+lubridate
+ tictoc 
+
+ipc
+future
+furrr
+ purrr 
+promises
+
+# knitrProgressBar
+#  progressr 
+progress
+sf
+mapview
+leaflet 
+# rmapshaper
+
+ tsibble  
+ fable 
+ fabletools 
+ feasts 
+ fable.prophet 
+#  fable.bsts 
+
