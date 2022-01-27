@@ -381,7 +381,7 @@ metadata_widget_output =
 Data Dictionary
 ========================
 
-Column
+Column {data-width=400}
 -----------------------------------
 
 ### Dataset dictionaries (formulas)
@@ -396,10 +396,10 @@ data1_Widget_output =
 
 ```
 
-Column
+Column {data-width=600}
 -----------------------------------
 
-### Data Elements
+### Data Elements 
 
 ```{r, echo = FALSE  }
 ### Data definitions (formulas)

@@ -184,6 +184,9 @@ reporting_widget_server <- function( id ,
       
       dataset = readRDS( file ) 
       
+      # Stop if not prepared as tibble time dataset
+      if ( !any( "tbl_ts"  %in%  class( dataset() ) ) ) return()
+            
       # Get dataSet for each dataElement (if available_) 
       if ( 'dataElement.id' %in% names( dataset ) ){
         
@@ -299,7 +302,7 @@ reporting_widget_server <- function( id ,
     req( dataset() )
     if ( ! 'dataSet' %in% names( dataset() ) ){
       message( 'dataSet not in names( dataset) ')
-      cat('\n names( dataset():' , names(dataset()) )
+      cat('\n names( dataset()) :' , names(dataset()) )
       return()
     }
     dataset() %>% filter( !is.na( dataSet ) ) %>%
@@ -336,11 +339,24 @@ reporting_widget_server <- function( id ,
       return( mrp )
     })
 
+  # datasetPrepared = reactive({
+  #   req( dataset() )
+  #   cat('\n* datasetPrepared:')
+  #   
+  #   x = FALSE
+  #   if ( any( "tbl_ts"  %in%  class( dataset() ) ) )  x = TRUE
+  #   cat('\n -  ', x )
+  #   return( x )
+  #   
+  # })
+  
   d = reactive({
 
       req( dataset() )
       req( period() )
       cat( '\n* d:')
+    
+      # if (!datasetPrepared ) return()
   
       .period = period()
       data = dataset()  %>% mutate( period = !!rlang::sym( .period ))

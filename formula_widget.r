@@ -15,6 +15,9 @@ formula_widget_ui <- function( id ) {
 
 
                 tabPanel("Formula Elements", 
+                         actionButton( ns("removeSelected") , 
+                                                     "Remove Selected Elements" , style='margin-top:25px' 
+                                                 ) ,
                          wellPanel(
                            
                            verbatimTextOutput( ns("formulaName") ),
@@ -24,6 +27,9 @@ formula_widget_ui <- function( id ) {
                          ) ,
                 
                 tabPanel("All Elements", 
+                         actionButton( ns("addSelected") , 
+                                                     "Add Selected Elements" , style='margin-top:25px' 
+                                                 ) ,
                          wellPanel(
                            
                            verbatimTextOutput( ns("selected") ),

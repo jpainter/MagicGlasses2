@@ -150,7 +150,9 @@ login_widget_server <- function( id ){
 # Instance--selection ####
    # instance
   instance = reactive({
-     req( instances )
+
+    cat('\n* instances:')
+    if( input$demo ){
    
           i_row = which( instances()$Instance %in% input$instance )
 
@@ -160,18 +162,13 @@ login_widget_server <- function( id ){
           Instance = instances()$Instance[ i_row ]
           cat( 'Instance:' , Instance , '\n')
  
-          return( Instance )
           
-     
-     # cat( 'input$input_metadataFile:' , input$input_metadataFile )
-     # 
-     # if ( !is.na( input$input_metadataFile ) &&
-     #      nchar( input$input_metadataFile ) > 0 ){
-     #   
-     #   Instance = str_split(input$input_metadataFile , "_")[[1]][1]
-     #   print('END: reactive instance')
-     #   return( Instance )
-     # }
+    } else {
+       Instance = input$baseurl
+     }
+      
+    cat('\n - done ')    
+    return( Instance )
 
    })
    

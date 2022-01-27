@@ -495,6 +495,12 @@ metadata_widget_server <- function( id ,
     
     cat( '\n -creating dsde..' )
     
+    # testing
+    saveRDS( ds , 'ds.rds')
+    saveRDS( de , 'de.rds')
+    saveRDS( deg ,  'deg.rds' )
+    
+    
     showModal(
         modalDialog( title = "Compiling data element dictionary", 
                      easyClose = TRUE ,
@@ -508,10 +514,10 @@ metadata_widget_server <- function( id ,
         dsde = map_df( 1:length( ds$dataSetElements),
                        ~map_df( ds$dataSetElements[[.x]],
                                 ~as.matrix(.x) )) %>%
-          select( -categoryCombo ) 
+          select( dataSet, dataElement ) 
       } else {
         # empty data.frame for demo instances with missing ds
-        dsde = data.frame( dataElement = NULL )
+        dsde = data.frame( dataSet = NULL , dataElement = NULL )
       }
       
     cat( '\nglimpse(dsde):\n') ; glimpse(dsde)
