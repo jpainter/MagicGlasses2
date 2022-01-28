@@ -132,7 +132,7 @@ login_widget_server <- function( id ){
     } else if ( file.exists( '../HMIS/_Instances_jp.xlsx') ){
       
       iFilePrivate = '_Instances.xlsx'
-      i = bind_rows( read_excel( iFilePrivate ) , read_excel( iFilePrivate ) )
+      i = read_excel( iFilePrivate ) 
       
     } else {
       
