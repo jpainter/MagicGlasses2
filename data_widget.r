@@ -24,13 +24,14 @@ tagList(
                       size = 4  ##needed for `selected = FALSE` to work ) 
                      ) ,
           
-         selectInput( ns("indicator") , 
+         selectizeInput( ns("indicator") , 
                       label = "Indicator:" , 
                       width = '95%',
-                      choices = NULL , 
+                      choices = "" ,
+                      options = list(create = TRUE) , 
                       selected = FALSE,
                       multiple = FALSE ,
-                      selectize = FALSE, 
+                      # selectize = FALSE, 
                       size = 4  ##needed for `selected = FALSE` to work ) 
                      ) ,
         

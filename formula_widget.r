@@ -66,6 +66,7 @@ formula_widget_server <- function( id ,
 
 
 ## All data Elements ####
+  
 
   output$dataElementDictionaryTable = 
     DT::renderDT(DT::datatable(
@@ -91,13 +92,56 @@ formula_widget_server <- function( id ,
     
   })
   
+  selected_elements = reactive({
+    
+    row_selected = input$dataElementDictionaryTable_rows_selected 
+    
+    if (length(row_selected)) {
+      cat('These rows were selected:' )
+      cat( row_selected , sep = ', ')
+      selected = dataElementDictionary() %>% 
+             filter( row_number() %in% row_selected ) 
+      return( selected )
+    } else {
+      return()
+    }
+    
+  })
+  
   
   ## Formula data Elements ####
+  
+  
+  
+  updated_formula_elements = reactive({
+    req( formula_elements )
+    cat( '\n* updated_formula_elements starting with', nrow(formula_elements()) , 'elements')
+    
+    ufe = formula_elements()
+    
+    if ( !is_empty( selected_elements() ) ){
+      
+      selected_categories = selected_elements %>%
+        separate_rows( Categories , categoryOptionCombo.ids, sep = ";" ) %>%
+        mutate( Categories = Categories %>% str_trim  ,
+                categoryOptionCombo.ids = categoryOptionCombo.ids %>% str_trim )
+      
+      cat('\n - adding' , nrow( selected_categories ), 'selected elements' )
+      
+      ufe = bind_rows( ufe , selected_categories ) %>%
+        arrange( dataElement )
+      
+    }
+    
+    cat( '\n - done')
+    return( ufe )
+    
+  })
   
   output$forumlaDictionaryTable = 
     DT::renderDT(DT::datatable(
       
-      formula_elements()   ,
+      updated_formula_elements()   ,
       rownames = FALSE, 
       filter = 'top' ,
       options = DToptions_no_buttons()
@@ -118,7 +162,8 @@ formula_widget_server <- function( id ,
 
 # Return ####
   return( list( 
-                formulaElements = dataElementDictionary 
+    updated_formula_elements = updated_formula_elements
+                
                 ) )
     
     }

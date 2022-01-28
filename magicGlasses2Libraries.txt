@@ -25,6 +25,7 @@ scales
 knitr
 rlang
 stringi
+flexdashboard
 tidyselect
 geojsonsf
 geojsonio
