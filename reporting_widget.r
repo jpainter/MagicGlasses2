@@ -174,7 +174,7 @@ reporting_widget_server <- function( id ,
       req( dataset.file() )
       req( data.folder() )
       req( formula_elements() )
-      cat('\n* Reading dataset file\n')
+      cat('\n* Reading dataset file')
       
       file = paste0( data.folder() , dataset.file() )
       if ( !file.exists( file ) ) return()
@@ -183,9 +183,10 @@ reporting_widget_server <- function( id ,
       
       
       dataset = readRDS( file ) 
+      cat( '\n - dataset read:' , dataset.file() , 'has' , nrow(dataset) , 'rows\n' )
       
       # Stop if not prepared as tibble time dataset
-      if ( !any( "tbl_ts"  %in%  class( dataset() ) ) ) return()
+      if ( !any( "tbl_ts"  %in%  class( dataset ) ) ) return()
             
       # Get dataSet for each dataElement (if available_) 
       if ( 'dataElement.id' %in% names( dataset ) ){
@@ -198,7 +199,7 @@ reporting_widget_server <- function( id ,
                    by = 'dataElement.id' )
       }
 
-      cat( '\n - dataset read:' , dataset.file() , 'has' , nrow(dataset) , 'rows\n' )
+      cat( '\n - dataset has' , nrow(dataset) , 'rows' )
       return( dataset )
     })
 
@@ -235,12 +236,12 @@ reporting_widget_server <- function( id ,
       } )
 
     observeEvent(  dates() , {
-      cat('\n-observeEvent dates() update endingMonth-' ) 
+      cat('\n- observeEvent dates() update endingMonth-' ) 
       updateSelectInput( session, 'endingMonth' ,
               choices =  dates()  %>% as.character() ,
               selected = max( dates() , na.rm = TRUE ) %>% as.character() 
       )
-      cat('-done\n')
+      cat('\n -done\n')
       } )
 
   # Update data
