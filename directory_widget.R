@@ -63,22 +63,24 @@ directory_widget_server <- function( id ) {
         observe({
          isolate(
            if ( file.exists( "../HMIS/Formulas/" ) ){
-              cat( '\n directory_widget -setting JP data.directory' )
+              cat( '\n directory_widget -setting JP data.directory to\n' ,
+                   "../HMIS/Formulas/" )
               updateTextInput( session, "data.directory" ,
                                value = "../HMIS/Formulas/" )
            }
          )
         })
           
-        observe({
-            isolate(
-              if ( file.exists( "~/_Malaria/Projects/HMIS/Formulas" ) ){
-                cat( '\n directory_widget -setting JP data.directory' )
-                updateTextInput( session, "data.directory" ,
-                                 value = "~/_Malaria/Projects/HMIS/Formulas/" )
-              }
-            )
-          } )
+        # observe({
+        #     isolate(
+        #       if ( file.exists( "~/OneDrive - CDC/_Malaria/Projects/HMIS/Formulas" )){
+        #         cat( '\n directory_widget -setting JP data.directory to:\n' ,
+        #              "~/OneDrive - CDC/_Malaria/Projects/HMIS/Formulas" )
+        #         updateTextInput( session, "data.directory" ,
+        #                          value = "~/OneDrive - CDC/_Malaria/Projects/HMIS/Formulas/" )
+        #       }
+        #     )
+        #   } )
        
         shinyDirChoose( input , id=ns("folder"), session = session ,
                           roots = c( home = path.expand("~") )  ,
@@ -86,9 +88,9 @@ directory_widget_server <- function( id ) {
                           )
         
          
-        observe({
-          cat( '\n input$folder:' , input$folder )
-        })
+        # observe({
+        #   cat( '\n input$folder:' , input$folder )
+        # })
         
        data.folder = reactive({
                   cat( '\n* data.folder:\n' )

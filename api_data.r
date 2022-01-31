@@ -365,7 +365,7 @@ fetch <- function( baseurl. , de. , periods. , orgUnits. , aggregationType. , .p
 
 api_url = function( baseurl, de ,  periods, orgUnits , aggregationType ){
   
-  cat( '\n* api_url:' , baseurl ,  de , periods , orgUnits ) 
+  # cat( '\n* api_url:' ) 
   # # print( orgUnits ); print( aggregationType )
   
   url <- paste0( baseurl , 
@@ -378,7 +378,7 @@ api_url = function( baseurl, de ,  periods, orgUnits , aggregationType ){
                  # "&displayProperty=NAME",
                  "&aggregationType=" , aggregationType )
   
-  # print( url )
+  cat( '\n* api_url:' , url )
   return( url )
 }
 
@@ -387,7 +387,7 @@ fetch_get <- function( baseurl. , de. , periods. , orgUnits. ,
                        aggregationType. ,
                        get.print = FALSE, username. = NULL , password. = NULL ){
   
-    cat( '\n* fetch_get:' , baseurl. ,  de. , periods. , orgUnits.) 
+    cat( '\n* fetch_get:' ) 
     url = api_url( baseurl. , de. , periods. , orgUnits. , aggregationType. )
     
     
@@ -507,6 +507,7 @@ api_data = function(      periods = "LAST_YEAR" ,
                           update = FALSE ,
                           check_previous_years = 2 , 
                           previous_dataset_file = '' ,
+                          level1.id = NA , #when comparing current data with previous
                           dir = country.dir ,
                           shinyApp = FALSE ,
                           ...
@@ -532,7 +533,7 @@ api_data = function(      periods = "LAST_YEAR" ,
   } 
   
   ## UPDATE data options ####
-  if ( update & file.exists( previous_dataset_file ) ){
+  if ( update & file_test("-f", previous_dataset_file ) ){
       
       cat('\n - retrieving details of previous dataset ')
       
@@ -591,8 +592,12 @@ api_data = function(      periods = "LAST_YEAR" ,
       
       ## for rds, need orgunit for level 1 
       # prev = prev.data %>% filter( orgUnit == 'LEVEL-1' , period %in% period_vectors )
-      level1 = ous %>% filter( level == 1 ) %>% pull( id )
-      prev = prev.data %>% filter( orgUnit == level1  , period %in% period_vectors ) 
+      if ( is_empty( level1.id ) ){
+        message('\n api_data function: need level1.id')
+        return()
+      }
+      
+      prev = prev.data %>% filter( orgUnit == level1.id  , period %in% period_vectors ) 
       
       prev.periods = prev %>% pull( period ) %>% unique %>%  paste(. , collapse = ';')
       
@@ -783,8 +788,9 @@ api_data = function(      periods = "LAST_YEAR" ,
           for ( i in 1:nrow( pmap.df )){
               setProgress( 
                 # value = 1 / nrow( pmap.df ) ,
-                detail = sprintf("requesting SUM and COUNT for %d elements in %s (%d of %d requests)", 
-                                 length(pmap.df[i, 3]) , pmap.df[i, 1] , i , nrow( pmap.df )   ) 
+                detail = sprintf("requesting SUM and COUNT for %s (%d of %d requests)", 
+                                 # length(pmap.df[i, 3]) , 
+                                 pmap.df[i, 1] , i , nrow( pmap.df )   ) 
                 )
             
              incProgress( amount = 1 / nrow( pmap.df ) )

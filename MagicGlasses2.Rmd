@@ -40,6 +40,8 @@ library( progressr )
 # library(mapview)
 library(RColorBrewer)
 library(plotly)
+# library( summarytools )
+library( describer )
 
 # library( tidyfast )
 # library( tidytable )
@@ -134,6 +136,14 @@ useShinyjs()   # Set up shinyjs
 ```
 
 ```{css my-css , include = FALSE, eval = TRUE }
+
+# Scroll within tabs
+# https://stackoverflow.com/questions/64777606/scrollable-tab-in-flexdashboard
+#section-notes-and-formulas
+  .chart-shim {
+    overflow-y: scroll;
+    }
+
 
 # customize flexdashboard titles
 
@@ -363,7 +373,7 @@ login_widget_output = login_widget_server( "login1" )
 
 ```
 
-Metadata Dictionary
+Metadata
 ========================
 
 ```{r , eval=TRUE}
@@ -378,7 +388,7 @@ metadata_widget_output =
 ```
 
 
-Data Dictionary
+Dictionary
 ========================
 
 Column {data-width=400}
@@ -401,17 +411,18 @@ Column {data-width=600}
 
 ### Data Elements 
 
-```{r, echo = FALSE  }
+```{r, echo = FALSE }
 ### Data definitions (formulas)
 
 source( 'formula_widget.r' )
 
 formula_widget_ui( "formula1" )
 
-formula1_Widget_output = 
-  formula_widget_server( "formula1" , 
+formula1_Widget_output =
+  formula_widget_server( "formula1" ,
                       metadata_widget_output = metadata_widget_output ,
-                      data_Widget_output = data1_Widget_output )
+                      data_Widget_output = data1_Widget_output ,
+                      directory_widget_output = directory_widget_output)
 
 ```
 
@@ -455,24 +466,8 @@ data_request_Output =
             )
 ```
 
-### Reporting
-
-Reporting Rate
-========================
-
-```{r  }
-source( 'reporting_widget.r' )
-reporting_widget_ui( "reporting1" )
-
-reporting_widget_output = 
-  reporting_widget_server( "reporting1" ,
-                         dataDirectory = directory_widget_output ,
-                         metadata_widget_output = metadata_widget_output ,
-                         data_widget_output = data2_Widget_output )
-```
 
 
-### Outliers
 Outliers and Errors
 ========================
 
@@ -492,11 +487,27 @@ cleaning_widget_output =
 ```
 
 
-### Trends
+
+Reporting
+========================
+
+```{r  }
+source( 'reporting_widget.r' )
+reporting_widget_ui( "reporting1" )
+
+reporting_widget_output = 
+  reporting_widget_server( "reporting1" ,
+                         dataDirectory = directory_widget_output ,
+                         metadata_widget_output = metadata_widget_output ,
+                         data_widget_output = data2_Widget_output )
+```
+
+
+
 Evaluation and Trends
 ========================
 
-```{r }
+```{r , eval = FALSE }
 source( 'evaluation_widget.r' )
 evaluation_widget_ui( "evaluation1" )
 

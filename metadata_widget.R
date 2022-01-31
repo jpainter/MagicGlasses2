@@ -317,7 +317,7 @@ metadata_widget_server <- function( id ,
                      )
         )
       cols = c( 'id', 'name' , 'periodType' , 
-                'dataSetElements', # format of this causes problem (drc)
+                # 'dataSetElements', # format of this causes problem (drc)
                 'timelyDays' )
       
       url <- paste0( baseurl() ,"api/dataSets.json?fields=" ,
@@ -596,7 +596,7 @@ metadata_widget_server <- function( id ,
   output$dataSets = 
     DT::renderDT(DT::datatable(
 
-    if ( !is.null( dataSets() ) ) dataSets() %>% select( - dataSetElements ) ,
+    if ( !is.null( dataSets() ) ) dataSets()  ,
 
     rownames = FALSE,
     filter = 'top' ,

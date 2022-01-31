@@ -37,7 +37,7 @@ tagList(
         
         textInput( ns("file.keywords"), "key words for searching data files" ,
                    # value = '_formulaData|Seasonal|dts|rds' 
-                   value = 'Seasonal|dts' ) ,
+                   value = 'Seasonal|dts|rds' ) ,
           
         selectInput( ns("dataset") , 
                      label = "Data previously downloaded from DHIS2:" , 

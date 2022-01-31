@@ -9,37 +9,53 @@ tagList(
           ) ,
 
 
-                
-        sidebarLayout(
-            sidebarPanel(
-              radioButtons( ns("dataElement") , label = "DataElement_Category:" ,
-                             choices = c('') ,
-                             selected = NULL )
-            ) ,
-            mainPanel( 
-              tabsetPanel( type = "tabs",
-
-                tabPanel( "Summary",  tableOutput( ns("dqaTable") ) ) ,
-               
-                tabPanel( "Inspect",  style = "height:90vh;" ,
-                        fluidPage( 
-                          fluidRow( style = "height:30vh;",
-                                    
-                            selectInput( ns('error'), 'Select error type' ,
-                                         choices = c('mad15', 'mad10', 'mad5', 'seasonal5', 'seasonal3' ) ) ,
-                            
-                            selectInput( ns( 'flaggedOrgUnit') , 'Select orgUnit having this error' ,
-                                         choices = "" )
-                          ) ,
-                          
-                          fluidRow( style = "height:55vh;",
-                            plotOutput( ns("inspect") )
-                          ))
-                      )
-                )
+    tabsetPanel( type = "tabs", 
+        tabPanel( "Prep" , 
+                  
+            checkboxInput( ns('hasIntegerValues'), "SUM and COUNT converted from Character to Integer")  ,
+            
+            tabsetPanel( type = "tabs",   
+              tabPanel( "Table", tableOutput( ns("contents") ) ),
+              tabPanel( "Summary", 
+                          htmlOutput( ns("profileSummary") ) 
               )
-    
-     ) 
+            )
+                  
+        ) ,
+        tabPanel( "Outliers",  
+                     
+                sidebarLayout(
+                    sidebarPanel(
+                      radioButtons( ns("dataElement") , label = "DataElement_Category:" ,
+                                     choices = c('') ,
+                                     selected = NULL )
+                    ) ,
+                    mainPanel( 
+                      tabsetPanel( type = "tabs",
+        
+                        tabPanel( "Summary",  tableOutput( ns("dqaTable") ) ) ,
+                       
+                        tabPanel( "Inspect",  style = "height:90vh;" ,
+                                fluidPage( 
+                                  fluidRow( style = "height:30vh;",
+                                            
+                                    selectInput( ns('error'), 'Select error type' ,
+                                                 choices = c('mad15', 'mad10', 'mad5', 'seasonal5', 'seasonal3' ) ) ,
+                                    
+                                    selectInput( ns( 'flaggedOrgUnit') , 'Select orgUnit having this error' ,
+                                                 choices = "" )
+                                  ) ,
+                                  
+                                  fluidRow( style = "height:55vh;",
+                                    plotOutput( ns("inspect") )
+                                  ))
+                              )
+                        )
+                      )
+            
+             ) 
+        )
+    )
 )
 } # ui
         
@@ -54,7 +70,7 @@ cleaning_widget_server <- function( id ,
     function( input, output, session 
               ) {
 
-    # Dependencies ####
+  # Dependencies ####
     data.folder = reactive({ directory_widget_output$directory() })
     indicator = reactive({ data_widget_output$indicator() })
     formulas = reactive({ data_widget_output$formulas() })
@@ -78,12 +94,63 @@ cleaning_widget_server <- function( id ,
     data.total = reactive({ reporting_widget_output$data.total() })
     
   # Summary ####
+  dataset = reactive({ 
+    req( dataset.file() )
+    cat('\n* cleaning_widget  dataset():')
     
-  observeEvent( nrow( data() ) > 0 , {
-    cat('\n-update dataElement-')
-    updateRadioButtons( session, 'dataElement' ,
-                       choices =  data()  %>% pull(data) %>% unique
-    )
+    file = paste0( data.folder() , dataset.file() )
+    if ( file_test("-f",  file) ){
+      d = readRDS( file )
+      cat('\n - dataset has' , nrow(d),  'rows')
+      return( d )
+    } else {
+      cat('\n - dataset.file() not found')
+    }
+    })
+    
+  output$contents <- renderTable({
+    req(dataset())
+    head( dataset() , n = 100 )
+  })
+  
+  temporaryFile = reactive({ tempfile() })
+  
+  describeData = reactive({
+    req( dataset() )
+    dat_descr <- describe_data( dataset() )
+    describer( dat_descr )
+    
+  })
+  output$profileSummary <- renderUI({ #describeData()
+    
+    # out <- print( dfSummary( dataset() , 
+    #                    graph.magnif = 0.75),
+    #          style = "grid" ,
+    #          method = 'render',
+    #          omit.headings = TRUE,
+    #          bootstrap.css = FALSE)
+    # out
+  })
+  
+  observe({
+    req( dataset() )
+    cat('\n* observe dataset and set hasIntegerValues')
+    if ( !all( c('SUM', 'COUNT')  %in% names( dataset() ) ) ){
+      message( '\n - missing SUM and COUNT fields')
+    } else {
+      if ( all( 'integer' %in% c( class( dataset()$SUM ), class( dataset()$COUNT ) ) ) ){
+      updateCheckboxInput('hasIntegerValues', value = TRUE )
+    } 
+    }
+  })
+    
+  observeEvent( data()  , {
+    
+    if( nrow( data() ) > 0 ){
+      cat('\n-update dataElement-')
+      updateRadioButtons( session, 'dataElement' ,
+                       choices =  data()  %>% pull(data) %>% unique )
+    }
     cat('-done\n')
   })
     

@@ -12,13 +12,15 @@ shinybusy
 shinyFiles 
 rstudioapi 
 progressr 
+#  summarytools
+describer
 
 RColorBrewer
 plotly
 
 #  tidyfast 
 #  tidytable 
-# googleVis
+#  googleVis
  ggrepel 
 scales
  zoo 

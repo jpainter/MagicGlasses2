@@ -53,6 +53,7 @@ data_request_widget_server <- function( id ,
       formula_elements = reactive({ data_widget_output$formula_elements() })
       dataset = reactive({ data_widget_output$dataset() })
       orgUnitLevels = reactive({ metadata_widget_output$orgUnitLevels() })
+      orgUnits = reactive({ metadata_widget_output$orgUnits() })
       
   
       formula.names = reactive({ 
@@ -103,7 +104,7 @@ data_request_widget_server <- function( id ,
         }
   })
       
-    orgUnits = reactive({
+    orgUnitRequest = reactive({
       req( input$level )
       cat( '\n* data_request_widget orgUnits reactive')
       .orgUnitLevels = orgUnitLevels()
@@ -161,11 +162,12 @@ data_request_widget_server <- function( id ,
           .periods = input$period
           .level = input$level
           # .orgUnitLevels = orgUnitLevels()
-          .orgUnits = orgUnits()
+          .orgUnits = orgUnitRequest()
           .formula.name = indicator()
           .elements = formula_elements() %>% 
             unite( id , dataElement.id, categoryOptionCombo.ids , sep="." ) %>%
             pull( id )
+          .level1.id = orgUnits() %>% filter( level == 1 ) %>% pull( id )
             
           cat( '\n formula.request elements:' , length( .elements ) , ':\n' ,
                .elements )
@@ -173,7 +175,7 @@ data_request_widget_server <- function( id ,
           # Previous dataset file: 
           .previous_dataset_file =  paste0( data.folder() , dataset() )
           cat( '\n - previous_dataset_file:' , .previous_dataset_file )
-          cat( '\n - previous file exists:' , file.exists( .previous_dataset_file ) )
+          cat( '\n - previous file exists:' , file_test("-f", .previous_dataset_file ) )
           
           x  = api_data( 
                          update = TRUE , 
@@ -185,6 +187,7 @@ data_request_widget_server <- function( id ,
                          periods = .periods , 
                          formula = .formula.name ,
                          previous_dataset_file = .previous_dataset_file ,
+                         level1.id = .level1.id ,
                          shinyApp = TRUE,
                          parallel = FALSE )
           
