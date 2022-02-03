@@ -50,6 +50,11 @@ metadata_widget_ui <- function( id ) {
                          
                          DTOutput( ns('dataElementDictionary') ) 
                          ) ,
+                
+                tabPanel("Categories", 
+                         
+                         DTOutput( ns('categories') ) 
+                         ) ,
 
                 tabPanel("dataSets",
 
@@ -317,7 +322,7 @@ metadata_widget_server <- function( id ,
                      )
         )
       cols = c( 'id', 'name' , 'periodType' , 
-                # 'dataSetElements', # format of this causes problem (drc)
+                'dataSetElements', # format of this causes problem (drc)
                 'timelyDays' )
       
       url <- paste0( baseurl() ,"api/dataSets.json?fields=" ,
@@ -331,7 +336,7 @@ metadata_widget_server <- function( id ,
       dataSets =  x %>% select( !!cols ) %>%
         rename( dataSet.id = id, 
                 dataSet = name 
-                # , dataSetElements.id = dataSetElements
+                , dataSetElements.id = dataSetElements
                 )
 
       removeModal()
@@ -482,7 +487,7 @@ metadata_widget_server <- function( id ,
     return( categories )
   })
   
-  # dataElementDictionary and dsde
+# dataElementDictionary and dsde
   dataElementDictionary = reactive({
 
     if (  login()  & loginFetch() ){ 
@@ -498,6 +503,7 @@ metadata_widget_server <- function( id ,
     # testing
     saveRDS( ds , 'ds.rds')
     saveRDS( de , 'de.rds')
+    saveRDS( cats ,  'cats.rds' )
     saveRDS( deg ,  'deg.rds' )
     
     
@@ -510,12 +516,15 @@ metadata_widget_server <- function( id ,
         )
     
       # DSDE : create matrix of data elements within each dataset
-      if ( nrow(ds) > 0 && 'dataSetElements' %in% names( ds )){
-        dsde = map_df( 1:length( ds$dataSetElements),
-                       ~map_df( ds$dataSetElements[[.x]],
+      if ( nrow(ds) > 0 && 'dataSetElements.id' %in% names( ds )){
+        dsde = map_df( 1:length( ds$dataSet),
+                       ~map_df( ds$dataSetElements.id[[.x]],
                                 ~as.matrix(.x) )) %>%
-          select( dataSet, dataElement ) 
-      } else {
+          select( dataSet, dataElement ) %>%
+          rename( dataElement.id = dataElement )
+      } else if ( nrow(ds) > 0) {
+        dsde = ds
+      } else { 
         # empty data.frame for demo instances with missing ds
         dsde = data.frame( dataSet = NULL , dataElement = NULL )
       }
@@ -525,15 +534,15 @@ metadata_widget_server <- function( id ,
     # Base Dictionary Line List (with categories collapsed)
     cat( '\n -creating dictionary..' )
    
-    dictionary = de  %>%  rename( dataElement = id ) %>%
+    dictionary = de  %>%  rename( dataElement.id = id ) %>%
       
-      left_join( dsde , by = 'dataElement' ) %>%
+      left_join( dsde , by = 'dataElement.id' ) %>%
       
-      rename( dataElement.id = dataElement ,
+      rename(  
               dataElement = name ,
               dataSet.id = dataSet  ) %>%
       
-      left_join( ds %>% select( - dataSetElements ) , by = 'dataSet.id' ) %>%
+      left_join( ds  , by = 'dataSet.id' ) %>%
       
       left_join( deg , by = 'dataElement.id' ) %>%
       
@@ -593,6 +602,26 @@ metadata_widget_server <- function( id ,
     options = DToptions_no_buttons()
   ))
   
+  output$dataElementGroups = 
+    DT::renderDT(DT::datatable(
+
+    if ( !is.null( dataElementGroups() ) ) dataElementGroups()  ,
+
+    rownames = FALSE,
+    filter = 'top' ,
+    options = DToptions_no_buttons()
+  ))
+    
+  output$categories = 
+    DT::renderDT(DT::datatable(
+
+    if ( !is.null( categories() ) ) categories()  ,
+
+    rownames = FALSE,
+    filter = 'top' ,
+    options = DToptions_no_buttons()
+  ))
+  
   output$dataSets = 
     DT::renderDT(DT::datatable(
 
@@ -602,6 +631,8 @@ metadata_widget_server <- function( id ,
     filter = 'top' ,
     options = DToptions_no_buttons()
   ))
+  
+  
   
 ## Indicators ####
   
@@ -1408,6 +1439,8 @@ metadata_widget_server <- function( id ,
 # Return ####
   return( list( 
                 dataElements = dataElementDictionary ,
+                dataElementGroups = dataElementGroups ,
+                categories = categories , 
                 orgUnitLevels = orgUnitLevels ,
                 orgUnits = orgUnits ,
                 # uploaded_DataElements = uploaded_DataElements ,

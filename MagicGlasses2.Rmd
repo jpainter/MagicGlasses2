@@ -40,8 +40,8 @@ library( progressr )
 # library(mapview)
 library(RColorBrewer)
 library(plotly)
-# library( summarytools )
-library( describer )
+library( summarytools )
+# library( describer )
 
 # library( tidyfast )
 # library( tidytable )
@@ -428,7 +428,7 @@ formula1_Widget_output =
 
 
 
-Request Data
+Data
 ========================
 
 Column

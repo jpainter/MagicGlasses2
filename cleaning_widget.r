@@ -11,13 +11,21 @@ tagList(
 
     tabsetPanel( type = "tabs", 
         tabPanel( "Prep" , 
-                  
-            checkboxInput( ns('hasIntegerValues'), "SUM and COUNT converted from Character to Integer")  ,
+            fluidRow(      
+              column( 12 ,
+              checkboxInput( ns('hasIntegerValues'), "SUM and COUNT converted from Character to Integer")  ,
+              checkboxInput( ns('uniteDataElementCategoryCombo'), "Combine dataElement and categoryOptionCombo")  ,
+              actionButton( ns("updateDataset") , label = "Update dataset") 
+              ) ) ,
             
             tabsetPanel( type = "tabs",   
+              
               tabPanel( "Table", tableOutput( ns("contents") ) ),
-              tabPanel( "Summary", 
-                          htmlOutput( ns("profileSummary") ) 
+              tabPanel( "Summary",
+                        html("<div style='display:flex;'>") ,
+                          htmlOutput( ns("profileSummary") ) ,
+                        html("<div>") ,
+
               )
             )
                   
@@ -76,6 +84,8 @@ cleaning_widget_server <- function( id ,
     formulas = reactive({ data_widget_output$formulas() })
     dataset.file = reactive({ data_widget_output$dataset() })
     formula_elements = reactive({ data_widget_output$formula_elements() })
+    dataElements = reactive({ metadata_widget_output$dataElements() })  
+    categories = reactive({ metadata_widget_output$categories() })  
     orgUnits = reactive({ metadata_widget_output$orgUnits() })  
     orgUnitLevels = reactive({ metadata_widget_output$orgUnitLevels() })
     dates = reactive({ reporting_widget_output$dates() })
@@ -93,7 +103,11 @@ cleaning_widget_server <- function( id ,
     data = reactive({ reporting_widget_output$d() })
     data.total = reactive({ reporting_widget_output$data.total() })
     
+  
   # Summary ####
+    
+  updated = reactiveVal( 0 )
+ 
   dataset = reactive({ 
     req( dataset.file() )
     cat('\n* cleaning_widget  dataset():')
@@ -102,18 +116,62 @@ cleaning_widget_server <- function( id ,
     if ( file_test("-f",  file) ){
       d = readRDS( file )
       cat('\n - dataset has' , nrow(d),  'rows')
+      # updated( updated() + 1 )
       return( d )
     } else {
       cat('\n - dataset.file() not found')
     }
     })
     
+  # Update dataset
+  observeEvent( input$updateDataset ,{
+    req( dataset() )
+    cat('\n* updating dataset')
+    initialUpdated = updated()
+    cat('\n - initial updated =' , initialUpdated )
+    
+    # Integer values
+    if ( !input$hasIntegerValues && all( c('SUM', 'COUNT')  %in% names( dataset() ) ) ){
+      cat('\n - converting SUM and COUNT to integers')
+      d = dataset() %>% 
+        mutate( SUM = as.integer( SUM ) ,
+                COUNT = as.integer( COUNT )
+      )
+    updated( updated() + 1 )
+    }
+    
+    # data column
+    if ( ! 'data'  %in% names( dataset() ) ){
+      cat('\n - creating data column')
+      d = dataset() %>% 
+        rename( dataElement.id = dataElement , categoryOptionCombo.ids = categoryOptionCombo ) %>%
+        left_join( formula_elements() %>% 
+                     select( dataSet, periodType, zeroIsSignificant, 
+                             dataElement.id, categoryOptionCombo.ids, dataElement, Categories ) , 
+                   by = c("dataElement.id", "categoryOptionCombo.ids")
+                   ) %>%
+        # left_join( dataElements() , by = c("dataElement.id") ) %>%
+        # left_join( categories() , by = c( "categoryOptionCombo.ids") ) %>%
+        unite( 'data' , c(dataElement , Categories ) , sep = "_")
+      
+      updated( updated() + 1 )
+    }
+    
+    cat('\n - final updated =' , updated() )
+    if ( updated() > initialUpdated ){
+          file = paste0( data.folder() , dataset.file() )
+          file = str_replace( file, fixed('.rds') , '.RDS'  )
+          cat('\n - saving dataset ')
+          saveRDS( d, file )
+    }
+
+  cat('\n - end updateDataset')
+  })
+  
   output$contents <- renderTable({
     req(dataset())
     head( dataset() , n = 100 )
   })
-  
-  temporaryFile = reactive({ tempfile() })
   
   describeData = reactive({
     req( dataset() )
@@ -121,54 +179,72 @@ cleaning_widget_server <- function( id ,
     describer( dat_descr )
     
   })
+  
   output$profileSummary <- renderUI({ #describeData()
     
-    # out <- print( dfSummary( dataset() , 
-    #                    graph.magnif = 0.75),
-    #          style = "grid" ,
-    #          method = 'render',
-    #          omit.headings = TRUE,
-    #          bootstrap.css = FALSE)
-    # out
+    out <- print( dfSummary( dataset() ,
+                       graph.magnif = 0.75),
+             style = "grid" ,
+             method = 'render',
+             omit.headings = TRUE,
+             bootstrap.css = FALSE)
+    out
   })
   
-  observe({
+  # Update hasIntegerValues
+  observeEvent( updated() , {
     req( dataset() )
     cat('\n* observe dataset and set hasIntegerValues')
     if ( !all( c('SUM', 'COUNT')  %in% names( dataset() ) ) ){
       message( '\n - missing SUM and COUNT fields')
     } else {
       if ( all( 'integer' %in% c( class( dataset()$SUM ), class( dataset()$COUNT ) ) ) ){
-      updateCheckboxInput('hasIntegerValues', value = TRUE )
+      cat('\n - all are integer')
+      updateCheckboxInput( session , 'hasIntegerValues', value = TRUE )
     } 
     }
   })
+  
+  # Update uniteDataElementCategoryCombo
+  observeEvent( updated() , {
+    req( dataset() )
+    cat('\n* observe dataset and set uniteDataElementCategoryCombo')
+    if ( ! 'data' %in% names( dataset() )  ){
+      message( '\n - no data column')
+    } else {
+      if ( 'data' %in% names( dataset() ) ){
+      cat('\n - has data column')
+      updateCheckboxInput( session , 'uniteDataElementCategoryCombo', value = TRUE )
+    } 
+    }
+  })
+  
+  # Outliers tab  
+  observeEvent( dataset()  , {
     
-  observeEvent( data()  , {
-    
-    if( nrow( data() ) > 0 ){
+    if( nrow( dataset() ) > 0 ){
       cat('\n-update dataElement-')
       updateRadioButtons( session, 'dataElement' ,
-                       choices =  data()  %>% pull(data) %>% unique )
+                       choices =  dataset()  %>% pull(data) %>% unique )
     }
     cat('-done\n')
   })
     
   outlier.summary = reactive({
-      req( data() )
+      req( dataset() )
       req( input$dataElement )
       
       cat('\n* outlier.summary' )
-      cat('\n - data has' , nrow( data() ) , 'rows' )
+      cat('\n - data has' , nrow( dataset() ) , 'rows' )
       
       cols = c('data' , 'Month', 'mad15', 'mad10', 'mad5', 'seasonal5' , 'seasonal3')
-      if ( !all( cols %in% names( data()) ) ){
+      if ( !all( cols %in% names( dataset()) ) ){
         message('missing outlier columns')
         return()
       } 
       
       cat('\n - totals' )
-      total = data() %>%  as_tibble() %>%
+      total = dataset() %>%  as_tibble() %>%
         filter( data %in% input$dataElement ) %>%
         group_by( data ) %>%
         summarise( Total = sum( original , na.rm = T ) ,
@@ -177,7 +253,7 @@ cleaning_widget_server <- function( id ,
 
       
       cat('\n - summary' )
-      os = data() %>% as_tibble() %>% 
+      os = dataset() %>% as_tibble() %>% 
         filter( data %in% input$dataElement ) %>%
         group_by( data , mad15, mad10, mad5, seasonal5 , seasonal3 ) %>%
         summarise( n = sum( !is.na( original )) , 
@@ -200,11 +276,11 @@ cleaning_widget_server <- function( id ,
   
   ## Visualize cleaning (Inspect )  ####
   errorFlag = reactive({
-    req( data()) 
+    req( dataset()) 
     cat( '\n* errorFlag():')
     # print( head( data() ) )
-    if ( input$error %in% names( data() ) ){
-            flag = unique( as_tibble( data() ) %>% 
+    if ( input$error %in% names( dataset() ) ){
+            flag = unique( as_tibble( dataset() ) %>% 
                    filter( !! rlang::sym( input$error )  == FALSE ,
                            data %in% input$dataElement ) %>% 
                    distinct( orgUnit , orgUnitName )  
@@ -223,13 +299,13 @@ cleaning_widget_server <- function( id ,
   })
   
   plot.single.data.series = reactive({
-    req( data() )
+    req( dataset() )
 
     cat('\n* plot.single.data.series' )
     
     if ( length( errorFlag() ) == 0 ) return()
   
-    inspectOrgUnitData = data() %>% as_tibble() %>%
+    inspectOrgUnitData = dataset() %>% as_tibble() %>%
       filter( orgUnit %in% input$flaggedOrgUnit )
   
     g = inspectOrgUnitData %>%

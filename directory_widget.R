@@ -62,7 +62,7 @@ directory_widget_server <- function( id ) {
   
         observe({
          isolate(
-           if ( file.exists( "../HMIS/Formulas/" ) ){
+           if ( dir.exists( "../HMIS/Formulas/" ) ){
               cat( '\n directory_widget -setting JP data.directory to\n' ,
                    "../HMIS/Formulas/" )
               updateTextInput( session, "data.directory" ,
@@ -71,16 +71,16 @@ directory_widget_server <- function( id ) {
          )
         })
           
-        # observe({
-        #     isolate(
-        #       if ( file.exists( "~/OneDrive - CDC/_Malaria/Projects/HMIS/Formulas" )){
-        #         cat( '\n directory_widget -setting JP data.directory to:\n' ,
-        #              "~/OneDrive - CDC/_Malaria/Projects/HMIS/Formulas" )
-        #         updateTextInput( session, "data.directory" ,
-        #                          value = "~/OneDrive - CDC/_Malaria/Projects/HMIS/Formulas/" )
-        #       }
-        #     )
-        #   } )
+        observe({
+            isolate(
+              if ( dir.exists( "~/_Malaria/Projects/HMIS/Formulas" )){
+                cat( '\n directory_widget -setting JP data.directory to:\n' ,
+                     "~/OneDrive - CDC/_Malaria/Projects/HMIS/Formulas" )
+                updateTextInput( session, "data.directory" ,
+                                 value = "~/_Malaria/Projects/HMIS/Formulas/" )
+              }
+            )
+          } )
        
         shinyDirChoose( input , id=ns("folder"), session = session ,
                           roots = c( home = path.expand("~") )  ,
