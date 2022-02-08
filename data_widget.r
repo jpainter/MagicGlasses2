@@ -73,7 +73,7 @@ data_widget_server <- function( id ,
           req( data.folder() )
           cat( '\n* looking for formula files in' , data.folder() , '\n')
         
-          ff = files( search = 'Formula' , dir = data.folder() )  
+          ff = files( search = 'Formula' , dir = data.folder() , type = 'xlsx|rds' )  
           if ( is_empty( ff ) ){
             cat( '\n - no forumula files in directory' )
             return( )
@@ -104,18 +104,24 @@ data_widget_server <- function( id ,
         
         formulas =  reactive({
           req( input$formula.file )
-        
-          cat( '\n - formula file:' , input$formula.file )
+          cat( '\n* formulas:' )
           
           file = paste0( data.folder() , input$formula.file )
+          cat( '\n - formula file:' , file )
           
           if ( !any(file.exists( file ) )) return( NULL )
           
-          formulas = read_excel( file , sheet = 'Formula') %>% 
-            filter( !is.na(Formula.Name)) %>%
-            arrange( desc( Formula.Name ) )
+          if ( grepl( fixed('.xlsx'), file )  ){
+            cat( '\n - read xls file')
+            formulas = read_excel( file , sheet = 'Formula') %>% 
+              filter( !is.na(Formula.Name)) %>%
+              arrange( desc( Formula.Name ) ) 
+          } else {
+            cat( '\n - read rds file')
+            formulas = readRDS( file )
+          }
           
-          cat( '\n - formula.Name:' , formulas$Formula.Name )
+          cat( '\n - formula.Name:' , unique( formulas$Formula.Name ) )
           
           return( formulas )
         })
@@ -125,9 +131,20 @@ data_widget_server <- function( id ,
         formula_elements =  reactive({
           req( input$formula.file )
           req( input$indicator )
+          cat( '\n* formula_elements:')
           
-          read_excel( paste0( data.folder() , input$formula.file ) , sheet = 'Formula Elements')  %>%
-            filter( Formula.Name %in% input$indicator )
+          file = paste0( data.folder() , input$formula.file )
+          cat( '\n - formula file' , input$formula.file )
+          
+          if ( grepl( fixed('.xlsx'), file ) ){
+          cat( '\n - read xls file' )
+            formulas = read_excel( file , sheet = 'Formula Elements')  %>%
+            filter( Formula.Name %in% input$indicator ) 
+          
+            } else{
+            cat( '\n - read rds file')
+            formulas = readRDS( file ) %>% filter( Formula.Name %in% input$indicator )
+          }
         
         })
         
@@ -168,11 +185,17 @@ data_widget_server <- function( id ,
           
           f.indicator = grepl( indicator , data.files , fixed = TRUE )
           
-          # cat("\n f.indicator:" , f.indicator ) 
+          cat("\n f.indicator:" , f.indicator ) 
           
-          if ( sum( f.indicator ) == 0 ) return( NULL )
+          if ( sum( f.indicator ) == 0 ){
+            cat( '\n - no data files for this indicator' )
+            return( NULL )
+          } 
           
-          if ( !dir.exists( data.folder() )) return( NULL )
+          if ( !dir.exists( data.folder() )){
+            cat( '\n - no folder matching data.folder()' )
+            return( NULL )
+          } 
           
           data_files = data.files[f.indicator] # %>% most_recent_file()
           
@@ -181,6 +204,8 @@ data_widget_server <- function( id ,
           # Arrange by modified date
           data_file.mdate = file.info( paste0( data.folder() , data_files ) )$mtime
           data_files = data_files[ rev(order( data_file.mdate )) ]
+          
+          cat( '\n - done:' , length( data_files ) , 'files')
           return( data_files )
 
 })
@@ -188,7 +213,7 @@ data_widget_server <- function( id ,
 
         # update indicators 
         observe({  
-            cat( '\n updating indicator list' )
+            cat( '\n* updating indicator list' )
             updateSelectInput( session, 'indicator' , 
                                       choices =  formula.names() ,
                                       selected = 1 ) } )
@@ -196,9 +221,12 @@ data_widget_server <- function( id ,
         # Update list of data files
         observe({  
             cat( '\n updating dataset list' )
-            updateSelectInput( session, 'dataset' , 
-                                      choices = rds_data_file() , 
-                                      selected = NULL ) # rds_data_file()[1] ) 
+            if ( !is.null( rds_data_file() )){
+              updateSelectInput( session, 'dataset' ,
+                                      choices = rds_data_file() ,
+                                      selected = NULL ) # rds_data_file()[1] )
+            }
+            
           } )
             
 

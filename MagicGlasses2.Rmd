@@ -128,6 +128,8 @@ source( 'DToptions.R')
 source( 'model_ts2.r' )
 source( 'api_data.r' )
 source( 'dqa.r' )
+source('Cleaning.R')
+
 # source( 'API.r' )
 
 Month_Year = function( x ){ yearmonth( zoo::as.yearmon( x , "%Y%m") ) }
@@ -494,7 +496,7 @@ cleaning_widget_output =
 Reporting
 ========================
 
-```{r  }
+```{r , eval = FALSE }
 source( 'reporting_widget.r' )
 reporting_widget_ui( "reporting1" )
 

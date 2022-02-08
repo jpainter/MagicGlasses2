@@ -113,6 +113,8 @@ cleaning_widget_server <- function( id ,
     cat('\n* cleaning_widget  dataset():')
     
     file = paste0( data.folder() , dataset.file() )
+    cat('\n - ', file )
+    
     if ( file_test("-f",  file) ){
       d = readRDS( file )
       cat('\n - dataset has' , nrow(d),  'rows')
@@ -194,7 +196,7 @@ cleaning_widget_server <- function( id ,
   # Update hasIntegerValues
   observeEvent( updated() , {
     req( dataset() )
-    cat('\n* observe dataset and set hasIntegerValues')
+    cat('\n* observe dataset and set hasIntegerValues' )
     if ( !all( c('SUM', 'COUNT')  %in% names( dataset() ) ) ){
       message( '\n - missing SUM and COUNT fields')
     } else {
@@ -222,10 +224,10 @@ cleaning_widget_server <- function( id ,
   # Outliers tab  
   observeEvent( dataset()  , {
     
-    if( nrow( dataset() ) > 0 ){
+    if( nrow( dataset() ) > 0 && 'data' %in% names(dataset() ) ){
       cat('\n-update dataElement-')
       updateRadioButtons( session, 'dataElement' ,
-                       choices =  dataset()  %>% pull(data) %>% unique )
+                       choices =  dataset()  %>% pull( data ) %>% unique )
     }
     cat('-done\n')
   })
@@ -277,6 +279,8 @@ cleaning_widget_server <- function( id ,
   ## Visualize cleaning (Inspect )  ####
   errorFlag = reactive({
     req( dataset()) 
+    req( input$error )
+    req( input$dataElement )
     cat( '\n* errorFlag():')
     # print( head( data() ) )
     if ( input$error %in% names( dataset() ) ){
