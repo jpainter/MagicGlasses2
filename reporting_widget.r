@@ -50,7 +50,7 @@ tabsetPanel( type = "tabs",
  
      inputPanel(
        selectInput( ns("level") , label = "Organization Level:" ,
-                    choices = c( 'leaf' ) ,
+                    choices = c( 'leaf'  ) ,
                     selected = NULL ) ,
        
       checkboxInput( ns("exclude_recent_month") , label ='Exclude most recent month?',
@@ -192,7 +192,7 @@ reporting_widget_server <- function( id ,
       } 
             
       # Get dataSet for each dataElement (if available_) 
-      if ( 'dataElement.id' %in% names( dataset ) ){
+      if ( 'dataElement.id' %in% names( dataset ) && ! 'dataSet' %in% names( dataset ) ){
         
         dataset = dataset %>%
         as_tibble() %>%
@@ -434,9 +434,10 @@ reporting_widget_server <- function( id ,
       data = data %>% mutate( dataCol = original )
     }  
     
-    if ( input$source %in% 'Cleaned' & 'value' %in% names(data) ){
+    if ( input$source %in% 'Cleaned' & 'seasonal3' %in% names(data) ){
       cat( '\n-' , paste('cleaning removes', sum( data$value , na.rm = T ) - sum( data$seasonal3 , na.rm = T )  , 'data points' ) )
-      data = data %>% mutate( dataCol = ifelse( seasonal3, original, NA  ) )
+      data = data %>% 
+        mutate( dataCol = ifelse( seasonal3, original, NA  ) )
       
       # Modify variables used for cleaning data so that FALSE when NA -- meaning it failed prior cleaning step, and TRUE means data is ok
       if ('mad15' %in% names( data )) data = data %>% mutate( mad15 = ifelse( value & is.na( mad15)|!mad15, FALSE, TRUE ) )
@@ -455,6 +456,8 @@ reporting_widget_server <- function( id ,
     
     
     cat( '\n-' , 'end d()' )
+    # testing
+    saveRDS( data, 'd.rds')
     return( data )
 })
     
@@ -596,11 +599,17 @@ reporting_widget_server <- function( id ,
     })
   
   # Levels ####
-  observe({  updateSelectInput( session, 'agg_level' , 
+  observe({  
+    updateSelectInput( session, 'agg_level' , 
                               choices = levelNames() , 
-                              selected = levelNames()[1] ) # 12 months before latest date
+                              selected = levelNames()[1] ) 
+    
+    updateSelectInput( session, 'level' , 
+                              choices = c( 'leaf' , levelNames()  )
+                       ) 
   } )
 
+  # level 2
   observeEvent( dataset()  , {  
     if( nrow( dataset() ) > 0 ){
             cat( '\n* updating level2' )
@@ -614,7 +623,8 @@ reporting_widget_server <- function( id ,
     }
     } )
 
-  observeEvent( dataset()  , {  
+  # level 3
+  observe({ #Event( dataset()  , {  
     if( nrow( dataset() ) > 0 ){
               cat( '\n* updating level3' )
               updateSelectInput( session, 'level3' ,
@@ -629,7 +639,8 @@ reporting_widget_server <- function( id ,
     }
     } )
 
-  observeEvent( dataset() , {  
+  # level 4
+  observe({ #Event( dataset()  , {    
               
     if( nrow( dataset() ) > 0 ){
               cat( '\n* updating level4' )
@@ -998,7 +1009,7 @@ reporting_widget_server <- function( id ,
    #print( 'plotData():')
    req( d() )
    req( input$data_categories )
-  cat("\n* plotData():")
+   cat("\n* plotData():")
   
     data = d() %>%
       mutate( Selected = 'All' )
@@ -1021,7 +1032,7 @@ reporting_widget_server <- function( id ,
     
     cat( '\n- end  plotData()')  ; # #print( names( data )) 
     # TESTING
-    # saveRDS( data , "plotData.rds" )
+    saveRDS( data , "plotData.rds" )
   return( data )
 })
 
@@ -1181,7 +1192,7 @@ reporting_widget_server <- function( id ,
     
     # # Cross by split
     if ( !input$split %in% 'None' ) hts =
-      paste( input$split , '*' ,  hts )
+      paste( backtick( input$split ) , '*' ,  hts )
     
     cat('\n - done:' , hts )
     return( hts )

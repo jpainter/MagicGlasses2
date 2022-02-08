@@ -113,7 +113,7 @@ df_ts = function( df.pre.ts , period = "Month" ,
    # .period = rlang::enquo( period )
   
   ts = df.pre.ts %>%  
-    as_tsibble( key = c(orgUnit, data.id, data ) , index = !! period ) 
+    as_tsibble( key = c(orgUnit, data.id ) , index = !! period ) 
 
     # set NA to missing 
     if ( fill.gaps ) ts = ts %>% fill_gaps( value = missing.value , .full = TRUE )

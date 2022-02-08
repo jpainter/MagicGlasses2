@@ -40,7 +40,7 @@ library( progressr )
 # library(mapview)
 library(RColorBrewer)
 library(plotly)
-library( summarytools )
+# library( summarytools ) # invokes Xquartz on mac.  
 # library( describer )
 
 # library( tidyfast )
@@ -76,11 +76,14 @@ library(furrr)
 library( purrr )
 library(promises)
 
+library( data.tree )
+library( igraph )
+
 # library( knitrProgressBar)
 # library( progressr )
 library( progress )
 library(sf)
-library(mapview)
+# library(mapview)
 library( leaflet )
 # library(rmapshaper)
 
@@ -104,7 +107,7 @@ conflict_prefer("year", "lubridate")
 conflict_prefer("month", "lubridate")
 conflict_prefer("week", "lubridate")
 conflict_prefer("runExample", "shiny")
-
+conflict_prefer(":=", "rlang")
 
 home = getActiveProject()
 cat('\n ## getActiveProject():' , getActiveProject() )

@@ -109,7 +109,7 @@ cleaning_widget_server <- function( id ,
   updated = reactiveVal( 0 )
  
   dataset = reactive({ 
-    req( dataset.file() )
+    req( dataset.file() ) # file name from data_widget (on Dictionary tab)
     cat('\n* cleaning_widget  dataset():')
     
     file = paste0( data.folder() , dataset.file() )

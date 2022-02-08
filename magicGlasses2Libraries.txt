@@ -52,6 +52,9 @@ furrr
  purrr 
 promises
 
+data.tree
+igraph
+
 # knitrProgressBar
 #  progressr 
 progress
