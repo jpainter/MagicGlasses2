@@ -618,7 +618,7 @@ reporting_widget_server <- function( id ,
 
   # level 2
   observeEvent( dataset()  , {  
-    if( nrow( dataset() ) > 0 ){
+    if( nrow( dataset() ) > 0 && 'level' %in% names( dataset() )){
             cat( '\n* updating level2' )
             updateSelectInput( session, 'level2' ,
                                 choices =
@@ -632,7 +632,7 @@ reporting_widget_server <- function( id ,
 
   # level 3
   observe({ #Event( dataset()  , {  
-    if( nrow( dataset() ) > 0 ){
+    if( nrow( dataset() ) > 0 && 'level' %in% names( dataset() )){
               cat( '\n* updating level3' )
               updateSelectInput( session, 'level3' ,
                                 choices =
@@ -649,7 +649,7 @@ reporting_widget_server <- function( id ,
   # level 4
   observe({ #Event( dataset()  , {    
               
-    if( nrow( dataset() ) > 0 ){
+    if( nrow( dataset() ) > 0 && 'level' %in% names( dataset() ) ){
               cat( '\n* updating level4' )
               updateSelectInput( session, 'level4' ,
                                 choices =
@@ -681,12 +681,16 @@ reporting_widget_server <- function( id ,
           unique %>% str_sort()  
   })
   
-  observe({  updateSelectInput( session, 'level5' ,
+  observe({  
+    
+    if (  nrow( dataset() ) > 0 && 'level' %in% names( dataset() ) ){
+      updateSelectInput( session, 'level5' ,
                                 choices = level5(),
             selected = NULL 
   )
                                     
-    } )
+    } 
+  })
   
   levelNames = reactive({ 
     req( orgUnits() )

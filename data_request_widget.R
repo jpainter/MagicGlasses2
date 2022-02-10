@@ -51,6 +51,7 @@ data_request_widget_server <- function( id ,
       indicator = reactive({ data_widget_output$indicator() })
       formulas = reactive({ data_widget_output$formulas() })
       formula_elements = reactive({ data_widget_output$formula_elements() })
+      dataset.file = reactive({ data_widget_output$dataset.file() })
       dataset = reactive({ data_widget_output$dataset() })
       orgUnitLevels = reactive({ metadata_widget_output$orgUnitLevels() })
       orgUnits = reactive({ metadata_widget_output$orgUnits() })
@@ -68,7 +69,7 @@ data_request_widget_server <- function( id ,
 
       # Update level names
       observe({
-            cat( '\nupdating levels' )
+            cat( '\n* updating levels' )
             if ( !is.null(orgUnitLevels() )){
               oulvls = orgUnitLevels() %>% pull( levelName )
               oulvls = c( 'All-levels' , oulvls )
@@ -169,16 +170,25 @@ data_request_widget_server <- function( id ,
             pull( id )
           .level1.id = orgUnits() %>% filter( level == 1 ) %>% pull( id )
             
-          cat( '\n formula.request elements:' , length( .elements ) , ':\n' ,
+          cat( '\n - formula.request elements:' , length( .elements ) , ':\n' ,
                .elements )
           
           # Previous dataset file: 
-          .previous_dataset_file =  paste0( data.folder() , dataset() )
-          cat( '\n - previous_dataset_file:' , .previous_dataset_file )
-          cat( '\n - previous file exists:' , file_test("-f", .previous_dataset_file ) )
+          cat( '\n - dataset():' , dataset.file() )
+          file =  paste0( data.folder() , dataset.file() )
+          
+          if ( file_test("-f", file )  ){
+            .previous_dataset_file = file 
+            .update = TRUE 
+            cat( '\n - previous file exists:' ,  file  ) 
+          } else {
+            cat( '\n - no previous dataset file:'  )
+            .update = FALSE 
+            .previous_dataset_file = ''
+          }
           
           x  = api_data( 
-                         update = TRUE , 
+                         update = .update , 
                          baseurl = .baseurl , 
                          username = .username , 
                          password = .password ,
@@ -187,7 +197,9 @@ data_request_widget_server <- function( id ,
                          periods = .periods , 
                          formula = .formula.name ,
                          previous_dataset_file = .previous_dataset_file ,
+                         prev.data =  dataset() ,
                          level1.id = .level1.id ,
+                         dir =  data.folder() ,
                          shinyApp = TRUE,
                          parallel = FALSE )
           

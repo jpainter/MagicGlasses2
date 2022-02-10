@@ -5,6 +5,12 @@ data_widget_ui = function ( id )
         
 tagList( 
 
+      shinybusy::add_busy_spinner(
+            spin = "fading-circle" , # "self-building-square",
+            position = 'bottom-left'
+            # , margins = c(70, 1200)
+          ) ,
+  
         h5('The files here are in the directory specified in the setup section') ,
         
         textOutput( ns("directory"), 
@@ -216,7 +222,12 @@ data_widget_server <- function( id ,
             cat( '\n* updating indicator list' )
             updateSelectInput( session, 'indicator' , 
                                       choices =  formula.names() ,
-                                      selected = 1 ) } )
+                                      selected = 1 )  
+            
+            updateSelectInput( session, 'dataset' ,
+                                      choices = NULL ,
+                                      selected = NULL ) # rds_data_file()[1] )
+})
 
         # Update list of data files
         observe({  
@@ -227,10 +238,10 @@ data_widget_server <- function( id ,
                                       selected = NULL ) # rds_data_file()[1] )
             }
             
-          } )
+          })
         
       dataset = reactive({ 
-          req( input$dataset ) # file name from data_widget (on Dictionary tab)
+          # req( input$dataset ) # file name from data_widget (on Dictionary tab)
           cat('\n* cleaning_widget  dataset():')
           
           file = paste0( data.folder() , input$dataset  )
@@ -242,7 +253,7 @@ data_widget_server <- function( id ,
             # updated( updated() + 1 )
             return( d )
           } else {
-            cat('\n - dataset.file() not found')
+            cat('\n - dataset.file() not selected or not found')
           }
       })
             

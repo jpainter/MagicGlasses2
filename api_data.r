@@ -507,6 +507,7 @@ api_data = function(      periods = "LAST_YEAR" ,
                           update = FALSE ,
                           check_previous_years = 2 , 
                           previous_dataset_file = '' ,
+                          prev.data =  NA ,
                           level1.id = NA , #when comparing current data with previous
                           dir = country.dir ,
                           shinyApp = FALSE ,
@@ -529,11 +530,12 @@ api_data = function(      periods = "LAST_YEAR" ,
   period_vectors = strsplit( periods , ";" , fixed = TRUE )[[1]]
 
   if ( update & !file.exists( previous_dataset_file ) ){
-        cat('\nprevious data file missing') 
+        cat('\n - previous data file missing') 
   } 
   
   ## UPDATE data options ####
-  if ( update & file_test("-f", previous_dataset_file ) ){
+  cat('\n - testing for previous dataset if update is TRUE:', update )
+  if ( update &&  ( file_test("-f", previous_dataset_file ) | !is_empty( prev.data ) ) ){
       
       cat('\n - retrieving details of previous dataset ')
       
@@ -550,7 +552,9 @@ api_data = function(      periods = "LAST_YEAR" ,
       #                          sheet = 'formulaData') %>%
       #           filter( !is.na( dataElement  ) )
       
-      prev.data = readRDS( previous_dataset_file ) # %>% select( - starts_with('aggr'))
+      if ( is_empty( prev.data ) ){
+        prev.data = readRDS( previous_dataset_file ) # %>% select( - starts_with('aggr'))
+      } 
       
       if ( nrow( prev.data ) == 0 ){
          cat('\n - previous data file empty'); next()
@@ -579,12 +583,14 @@ api_data = function(      periods = "LAST_YEAR" ,
       prev.elements = paste( des$dataElement , des$categoryOptionCombo , sep = ".") %>%
         paste( collapse = ";") 
       
-      # limit to those in the request (elements)
+      # limit to those in this request (new.elements)
       elements.vector = str_split( elements, ";") %>% unlist 
       prev.elements.vector = str_split( prev.elements, ";") %>% unlist 
-      prev.elements = prev.elements.vector[ prev.elements.vector %in% elements.vector ] %>%
+      prev.elements = prev.elements.vector[ prev.elements.vector %in% elements ] %>%
         paste0( ., collapse = ';')
       
+      new.elements = paste( elements , collapse = ';') 
+
       # Lookup national counts for last month, then get current counts ####
      
       ## for excel
@@ -602,13 +608,13 @@ api_data = function(      periods = "LAST_YEAR" ,
       prev.periods = prev %>% pull( period ) %>% unique %>%  paste(. , collapse = ';')
       
       ## FETCH CURRENT VALUES of previous data 
-      cat( 'checking previous counts\n' )
-      current.count = fetch(  baseurl , elements , prev.periods , orgUnits. = "LEVEL-1" , "COUNT" )  %>%
+      cat( '\n - checking previous counts\n', new.elements, '\n' , prev.periods , '\n'  ) 
+      current.count = fetch(  baseurl , new.elements , prev.periods , orgUnits. = "LEVEL-1" , "COUNT" )  %>%
         mutate(current.count = as.integer( value ) ) %>%
         select( - value )
       
-      cat( 'checking previous values\n' )
-      current.value = fetch(  baseurl , elements , prev.periods , orgUnits. = "LEVEL-1" , "SUM" )  %>%
+      cat( '\n - checking previous values\n', new.elements, '\n' , prev.periods , '\n'  )
+      current.value = fetch(  baseurl , new.elements , prev.periods , orgUnits. = "LEVEL-1" , "SUM" )  %>%
         mutate(current.value = as.numeric( value ) ) %>%
         select( - value )
       
