@@ -228,15 +228,32 @@ data_widget_server <- function( id ,
             }
             
           } )
+        
+      dataset = reactive({ 
+          req( input$dataset ) # file name from data_widget (on Dictionary tab)
+          cat('\n* cleaning_widget  dataset():')
+          
+          file = paste0( data.folder() , input$dataset  )
+          cat('\n - ', file )
+          
+          if ( file_test("-f",  file) ){
+            d = readRDS( file )
+            cat('\n - dataset has' , nrow(d),  'rows')
+            # updated( updated() + 1 )
+            return( d )
+          } else {
+            cat('\n - dataset.file() not found')
+          }
+      })
             
 
         return( list( 
-          dataset = reactive({ input$dataset }) ,
           indicator = reactive({ input$indicator }) ,
           formulas = formulas ,
           formulaName =  reactive({ input$indicator }) ,
           formula_elements = formula_elements ,
-          dataset = reactive({ input$dataset })
+          dataset.file = reactive({ input$dataset }) ,
+          dataset =  dataset 
             )
             )
         })

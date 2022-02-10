@@ -82,14 +82,14 @@ cleaning_widget_server <- function( id ,
     data.folder = reactive({ directory_widget_output$directory() })
     indicator = reactive({ data_widget_output$indicator() })
     formulas = reactive({ data_widget_output$formulas() })
-    dataset.file = reactive({ data_widget_output$dataset() })
+    dataset.file = reactive({ data_widget_output$dataset.file() })
+    dataset = reactive({ data_widget_output$dataset() })
     formula_elements = reactive({ data_widget_output$formula_elements() })
     dataElements = reactive({ metadata_widget_output$dataElements() })  
     categories = reactive({ metadata_widget_output$categories() })  
     orgUnits = reactive({ metadata_widget_output$orgUnits() })  
     orgUnitLevels = reactive({ metadata_widget_output$orgUnitLevels() })
     dates = reactive({ reporting_widget_output$dates() })
-    dataset = reactive({ reporting_widget_output$dataset() })
     data.hts = reactive({ reporting_widget_output$data.hts() })
     levelNames = reactive({ reporting_widget_output$levelNames() })
     period = reactive({ reporting_widget_output$period() })
@@ -108,22 +108,22 @@ cleaning_widget_server <- function( id ,
     
   updated = reactiveVal( 0 )
  
-  dataset = reactive({ 
-    req( dataset.file() ) # file name from data_widget (on Dictionary tab)
-    cat('\n* cleaning_widget  dataset():')
-    
-    file = paste0( data.folder() , dataset.file() )
-    cat('\n - ', file )
-    
-    if ( file_test("-f",  file) ){
-      d = readRDS( file )
-      cat('\n - dataset has' , nrow(d),  'rows')
-      # updated( updated() + 1 )
-      return( d )
-    } else {
-      cat('\n - dataset.file() not found')
-    }
-    })
+  # dataset = reactive({ 
+  #   req( dataset.file() ) # file name from data_widget (on Dictionary tab)
+  #   cat('\n* cleaning_widget  dataset():')
+  #   
+  #   file = paste0( data.folder() , dataset.file() )
+  #   cat('\n - ', file )
+  #   
+  #   if ( file_test("-f",  file) ){
+  #     d = readRDS( file )
+  #     cat('\n - dataset has' , nrow(d),  'rows')
+  #     # updated( updated() + 1 )
+  #     return( d )
+  #   } else {
+  #     cat('\n - dataset.file() not found')
+  #   }
+  #   })
     
   # Update dataset
   observeEvent( input$updateDataset ,{
@@ -256,7 +256,7 @@ cleaning_widget_server <- function( id ,
       
       cat('\n - summary' )
       os = dataset() %>% as_tibble() %>% 
-        filter( data %in% input$dataElement ) %>%
+        filter( data %in% input$dataElement , !is.na( mad15 ) ) %>%
         group_by( data , mad15, mad10, mad5, seasonal5 , seasonal3 ) %>%
         summarise( n = sum( !is.na( original )) , 
                    total = sum( original , na.rm = T ) ,
@@ -268,7 +268,7 @@ cleaning_widget_server <- function( id ,
                    `%Total` = percent( total / Total )
                    )   %>%
         ungroup %>%
-        select( mad15, mad10, mad5, seasonal5 , seasonal3, n , max , `%N` ,`%Total`  )
+        select( mad15, mad10, mad5, seasonal5 , seasonal3, n , max , `%N` ,`%Total`  ) 
       
       cat('\n - summary has' , nrow(os) , 'rows')
       return( os )

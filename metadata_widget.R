@@ -1024,6 +1024,8 @@ metadata_widget_server <- function( id ,
     # test
     print( 'converting geojson to sf...')
 
+    if ( jsonlite::validate( geo )[[1]] == FALSE ) return()
+    
     geojsonsf = geojsonsf::geojson_sf( geo )
     geojsonsf$id = fromJSON( geo )$features$id
 
@@ -1305,7 +1307,7 @@ metadata_widget_server <- function( id ,
       writeDataTable( wb, sheet4, orgUnits() , rowNames = FALSE )
       writeDataTable( wb, sheet5, dataElementDictionary() , rowNames = FALSE )
       writeDataTable( wb, sheet6, indicatorDictionary() , rowNames = FALSE )
-      writeDataTable( wb, sheet7, dataSets() %>% select( - dataSetElements ) , rowNames = FALSE )
+      writeDataTable( wb, sheet7, dataSets()  , rowNames = FALSE ) # %>% select( - dataSetElements )
       writeDataTable( wb, sheet8, categories() , rowNames = FALSE )
       writeDataTable( wb, sheet9, dataElementGroups() , rowNames = FALSE )
 
@@ -1323,9 +1325,9 @@ metadata_widget_server <- function( id ,
     
     tibble(
 
-    # 'Organizational units' = nrow( org_Units$orgUnits() ) %>% scales::comma() ,
+    'Organizational units' = nrow( org_Units$orgUnits() ) %>% scales::comma() ,
     # 
-    # 'Data sets' = nrow( data_elements$dataSets() ) %>% scales::comma() ,
+    'Data sets' = nrow( data_elements$dataSets() ) %>% scales::comma() ,
     # 
     'Data elements' = nrow( dataElementDictionary() ) %>% scales::comma() ,
 

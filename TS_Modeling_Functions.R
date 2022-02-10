@@ -58,7 +58,7 @@ df_pre_ts = function( df , period = "Month" , missing.value = NA  ){
    if (  period %in% 'Month' & !weekly ){
      df = df %>% mutate( Month =  Month_Year( period ) )
      df_pre_ts = df %>%
-       mutate( COUNT = as.numeric( COUNT ) ,
+       mutate( COUNT = as.integer( COUNT ) ,
             SUM = as.numeric( SUM ) ,
             Categories = ifelse( is.na( Categories ), "", Categories )
             ) %>%

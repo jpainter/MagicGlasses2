@@ -609,7 +609,7 @@ api_data = function(      periods = "LAST_YEAR" ,
       
       cat( 'checking previous values\n' )
       current.value = fetch(  baseurl , elements , prev.periods , orgUnits. = "LEVEL-1" , "SUM" )  %>%
-        mutate(current.value = as.integer( value ) ) %>%
+        mutate(current.value = as.numeric( value ) ) %>%
         select( - value )
       
       update_compare = inner_join( current.count, current.value , 
@@ -617,7 +617,7 @@ api_data = function(      periods = "LAST_YEAR" ,
                                    ) %>%
         left_join( prev %>% 
                       mutate( prev.count = as.integer( COUNT ) ,
-                              prev.value = as.integer( SUM ) ) %>%
+                              prev.value = as.numeric( SUM ) ) %>%
                      select( - COUNT, -SUM ), 
                   # Excel version  
                   # by = c( 'dataElement' = 'dataElement.id' , 

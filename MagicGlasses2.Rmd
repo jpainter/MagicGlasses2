@@ -37,7 +37,7 @@ library( shinyFiles )
 library( rstudioapi )
 library(leaflet)
 library( progressr )
-# library(mapview)
+library( mapview )
 library(RColorBrewer)
 library(plotly)
 # library( summarytools ) # invokes Xquartz on mac.  
@@ -108,6 +108,7 @@ conflict_prefer("month", "lubridate")
 conflict_prefer("week", "lubridate")
 conflict_prefer("runExample", "shiny")
 conflict_prefer(":=", "rlang")
+conflict_prefer("validate", "jsonlite")
 
 home = getActiveProject()
 cat('\n ## getActiveProject():' , getActiveProject() )
@@ -496,7 +497,7 @@ cleaning_widget_output =
 Reporting
 ========================
 
-```{r , eval = FALSE }
+```{r  }
 source( 'reporting_widget.r' )
 reporting_widget_ui( "reporting1" )
 

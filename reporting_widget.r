@@ -154,7 +154,8 @@ reporting_widget_server <- function( id ,
     data.folder = reactive({ dataDirectory$directory() })
     indicator = reactive({ data_widget_output$indicator() })
     formulas = reactive({ data_widget_output$formulas() })
-    dataset.file = reactive({ data_widget_output$dataset() })
+    dataset.file = reactive({ data_widget_output$dataset.file() })
+    dataset = reactive({ data_widget_output$dataset() })
     formula_elements = reactive({ data_widget_output$formula_elements() })
     orgUnits = reactive({ metadata_widget_output$orgUnits() })  
     orgUnitLevels = reactive({ metadata_widget_output$orgUnitLevels() })
@@ -170,41 +171,41 @@ reporting_widget_server <- function( id ,
           }
 
   # dataset/data  ####
-    dataset = reactive({
-      req( dataset.file() )
-      req( data.folder() )
-      req( formula_elements() )
-      cat('\n* Reading dataset file')
-      
-      file = paste0( data.folder() , dataset.file() )
-      if ( !file.exists( file ) ) return()
-      
-      cat('\n - ' , file )
-      
-      
-      dataset = readRDS( file ) 
-      cat( '\n - dataset read:' , dataset.file() , 'has' , nrow(dataset) , 'rows' )
-      
-      # Stop if not prepared as tibble time dataset
-      if ( !any( "tbl_ts"  %in%  class( dataset ) ) ){
-        cat('\n - dataset is not a tbl_ts ')
-        return( tibble() )
-      } 
-            
-      # Get dataSet for each dataElement (if available_) 
-      if ( 'dataElement.id' %in% names( dataset ) && ! 'dataSet' %in% names( dataset ) ){
-        
-        dataset = dataset %>%
-        as_tibble() %>%
-        left_join( formula_elements() %>% 
-                     select( dataElement.id  , dataSet ) %>%
-                     distinct ,  
-                   by = 'dataElement.id' )
-      }
-
-      cat( '\n - dataset has' , nrow(dataset) , 'rows' )
-      return( dataset )
-    })
+    # dataset = reactive({
+    #   req( dataset.file() )
+    #   req( data.folder() )
+    #   req( formula_elements() )
+    #   cat('\n* Reading dataset file')
+    #   
+    #   file = paste0( data.folder() , dataset.file() )
+    #   if ( !file.exists( file ) ) return()
+    #   
+    #   cat('\n - ' , file )
+    #   
+    #   
+    #   dataset = readRDS( file ) 
+    #   cat( '\n - dataset read:' , dataset.file() , 'has' , nrow(dataset) , 'rows' )
+    #   
+    #   # Stop if not prepared as tibble time dataset
+    #   if ( !any( "tbl_ts"  %in%  class( dataset ) ) ){
+    #     cat('\n - dataset is not a tbl_ts ')
+    #     return( tibble() )
+    #   } 
+    #         
+    #   # Get dataSet for each dataElement (if available_) 
+    #   if ( 'dataElement.id' %in% names( dataset ) && ! 'dataSet' %in% names( dataset ) ){
+    #     
+    #     dataset = dataset %>%
+    #     as_tibble() %>%
+    #     left_join( formula_elements() %>% 
+    #                  select( dataElement.id  , dataSet ) %>%
+    #                  distinct ,  
+    #                by = 'dataElement.id' )
+    #   }
+    # 
+    #   cat( '\n - dataset has' , nrow(dataset) , 'rows' )
+    #   return( dataset )
+    # })
 
     dates = reactive({
         req( dataset() )
@@ -373,12 +374,16 @@ reporting_widget_server <- function( id ,
       req( period() )
       cat( '\n* d:')
     
+      # Testing 
+      saveRDS( dataset() , 'dataset.rds' )
+      
       if ( nrow( dataset() ) == 0 ){
         cat('\n - dataset() has zero rows')
         return()
       } 
   
       .period = period()
+      cat('\n - period is', .period )
       
       data = dataset()  %>% mutate( period = !!rlang::sym( .period ))
       
@@ -419,7 +424,7 @@ reporting_widget_server <- function( id ,
         }
     
       cat( '\n-nrow( d ):' , nrow( data ))
-      
+    
       if ( input$level %in% 'leaf'){  
         data = data %>% filter( effectiveLeaf == TRUE )
       } else {
@@ -450,12 +455,13 @@ reporting_widget_server <- function( id ,
     }  
     
     # #print( 'd: max period ' ); #print( max( d$period ))
+    
     cat( '\n-' , 'd: max period ' ); 
-    cat( '\n-' , max( data %>% pull( period  ) , na.rm = TRUE ))
+    cat( '\n-' , max( data %>% pull( period  ) , na.rm = TRUE ) )
     # #print( max( data$Month , na.rm = TRUE ))
     
     
-    cat( '\n-' , 'end d()' )
+    cat( '\n-' , 'end d():', nrow(data), 'rows' )
     # testing
     saveRDS( data, 'd.rds')
     return( data )
@@ -531,7 +537,7 @@ reporting_widget_server <- function( id ,
     
   orgunit.monthly.reports = reactive({ 
       req( input$data_categories )
-      #print( 'orgunit.monthly.reports():' )
+      cat( '\n* orgunit.monthly.reports():' )
       
       # mrp = most_recent_period()
       .period = period()
@@ -539,6 +545,7 @@ reporting_widget_server <- function( id ,
       year_var = 'calendar_year' # ifelse( input$calendar_year , 'calendar_year' , 'months12' )
       
       data = d()
+      cat( '\n - o.m.r data has' , nrow(data), 'rows' )
       
       if ( !input$count.any & !input$all_categories   ) data = data %>% filter( data %in% input$data_categories )
       
@@ -553,8 +560,8 @@ reporting_widget_server <- function( id ,
       # %>%
       # mutate( year = factor( year ) )
     
-      #print( 'end orgunit.monthly.reports()' )
-      # #print(head(o.m.r))
+      cat( '\n - end orgunit.monthly.reports():' , nrow( o.m.r ), 'rows')
+      # print(head(o.m.r))
       return(o.m.r)
     })
     
@@ -863,6 +870,7 @@ reporting_widget_server <- function( id ,
     
     cat('\n* plot2():')
     .period = period()
+    cat('\n - period():', .period )
     
     # save data for testing ggplot options
     cat('\n- saving plot2_data.rds')
