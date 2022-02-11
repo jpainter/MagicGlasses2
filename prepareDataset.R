@@ -69,7 +69,7 @@ ous_tree = function( ous , ouLevels ){
     
     cols = ouLevels$levelName
     keep.col.numbers = c( 1:eval( length( cols ) + 1) , 10 ) 
-    dft = dft %>% select(  keep.col.numbers ) %>%
+    dft = dft %>% select(  all_of( keep.col.numbers ) ) %>%
       setnames( c( 'orgUnit', cols , 'level' ) )
     # glimpse(dft)
     

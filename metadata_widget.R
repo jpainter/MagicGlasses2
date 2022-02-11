@@ -169,6 +169,7 @@ metadata_widget_server <- function( id ,
         loginFetch( TRUE )
         o = orgUnitLevels()
         p = orgUnits()
+        q = ousTree()
         w = geoFeatures()
         x = dataElementDictionary()
         y = indicatorDictionary()
@@ -627,10 +628,21 @@ metadata_widget_server <- function( id ,
     options = DToptions_no_buttons()
   ))
   
+  # DataSets: remove dataSetElements...if it has it!
+  dataSets. = reactive({
+          if ( 'dataSetElements.id' %in% names( dataSets() ) ){
+          dataSets() %>% select( - dataSetElements.id )
+      }  else {
+          dataSets()  
+      }
+  })
+  
   output$dataSets = 
     DT::renderDT(DT::datatable(
 
-    if ( !is.null( dataSets() ) ) dataSets()  ,
+    if ( !is.null( dataSets.() ) ){ 
+      dataSets.()
+      },
 
     rownames = FALSE,
     filter = 'top' ,
@@ -1068,6 +1080,9 @@ metadata_widget_server <- function( id ,
     }
     
      cat( '\n - finished metadata_widget ous.tree \n')
+     
+     # testing
+     # saveRDS( ous.tree , 'ous.tree.rds' )
      return( ous.tree )
   
       
@@ -1398,7 +1413,7 @@ metadata_widget_server <- function( id ,
       writeDataTable( wb, sheet4, orgUnits() , rowNames = FALSE )
       writeDataTable( wb, sheet5, dataElementDictionary() , rowNames = FALSE )
       writeDataTable( wb, sheet6, indicatorDictionary() , rowNames = FALSE )
-      writeDataTable( wb, sheet7, dataSets()  , rowNames = FALSE ) # %>% select( - dataSetElements )
+      writeDataTable( wb, sheet7, dataSets.()  , rowNames = FALSE ) # %>% select( - dataSetElements )
       writeDataTable( wb, sheet8, categories() , rowNames = FALSE )
       writeDataTable( wb, sheet9, dataElementGroups() , rowNames = FALSE )
       writeDataTable( wb, sheet10, ousTree() , rowNames = FALSE )
@@ -1472,6 +1487,7 @@ metadata_widget_server <- function( id ,
   
   uploaded_OrgUnitLevels = reactive({ read.xlsx( metadataFile() ,  "OrgUnitLevels" ) %>% as_tibble() })
   uploaded_OrgUnits = reactive({ read.xlsx( metadataFile() ,  "OrgUnits" )  %>% as_tibble() })
+  uploaded_orgUnitHierarchy = reactive({ read.xlsx( metadataFile() ,  "orgUnitHierarchy" )  %>% as_tibble() })
   
   uploaded_DataElements = reactive({ read.xlsx( metadataFile() ,  "DataElements" )  %>% as_tibble() })
 
