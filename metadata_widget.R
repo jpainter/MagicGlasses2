@@ -173,7 +173,7 @@ metadata_widget_server <- function( id ,
       } else {
  
        showModal(
-                  modalDialog( title = "Please loagin before requesting metadata", 
+                  modalDialog( title = "Please login before requesting metadata", 
                        easyClose = TRUE ,
                        size = 'm' ,
                        footer=NULL
@@ -1321,25 +1321,33 @@ metadata_widget_server <- function( id ,
   
  meta_variables = reactive({
     req( dataElementDictionary() )
-    req( indicators() )
+    # req( indicatorDictionary() )
+   
+    # if (  login() & loginFetch() ){ 
+      mv = tibble(
+  
+        'Organizational units' = nrow( orgUnits() ) %>% scales::comma() ,
+        # 
+        'Data sets' = nrow( dataSets() ) %>% scales::comma() ,
+        # 
+        'Data elements' = nrow( dataElementDictionary() ) %>% scales::comma() ,
     
-    tibble(
-
-    'Organizational units' = nrow( org_Units$orgUnits() ) %>% scales::comma() ,
-    # 
-    'Data sets' = nrow( data_elements$dataSets() ) %>% scales::comma() ,
-    # 
-    'Data elements' = nrow( dataElementDictionary() ) %>% scales::comma() ,
-
-    'Category combos' = nrow( categoryCombos() ) %>% scales::comma() ,
-
-    'Category option combos' = nrow( categoryOptionCombos() ) %>% scales::comma() ,
-
-    'Indicators' = nrow( indicators() ) %>% scales::comma()
-
-
-    )  %>% gather( 'Variable', 'Number' )
+        'Categories' = nrow( categories() ) %>% scales::comma() ,
     
+        # 'Category option combos' = nrow( categoryOptionCombos() ) %>% scales::comma() ,
+    
+        'Indicators' = nrow( indicatorDictionary() ) %>% scales::comma()
+    
+    
+        )  %>% gather( 'Attribute', 'Number' )
+      
+      
+      # } else {
+      #   mv = NULL
+      # }
+
+      return( mv )
+      
   })
   
   output$variables = renderTable(
