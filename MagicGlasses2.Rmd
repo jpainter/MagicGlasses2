@@ -130,6 +130,7 @@ source( 'model_ts2.r' )
 source( 'api_data.r' )
 source( 'dqa.r' )
 source('Cleaning.R')
+source( 'prepareDataset.R' )
 
 # source( 'API.r' )
 
@@ -408,7 +409,8 @@ data_widget_ui( "data1" )
 
 data1_Widget_output = 
   data_widget_server( "data1" , 
-                      dataDir = directory_widget_output )
+                      directory_widget_output = directory_widget_output ,
+                      metadata_widget_output = metadata_widget_output  )
 
 ```
 
@@ -448,7 +450,8 @@ data_widget_ui( "data2" )
 
 data2_Widget_output = 
   data_widget_server( "data2" , 
-                      dataDir = directory_widget_output 
+                      directory_widget_output = directory_widget_output ,
+                      metadata_widget_output = metadata_widget_output  
                       # , data_request_output = data_request_Output
                       )
 

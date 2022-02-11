@@ -77,6 +77,11 @@ metadata_widget_ui <- function( id ) {
 
                          DTOutput( ns( 'orgUnits' )  ) 
                          ) ,
+                
+                tabPanel("Organizational Unit Hierarchy",
+
+                         DTOutput( ns( 'orgUnitHierarchy' )  ) 
+                         ) ,
 
                 tabPanel("Duplicates",
 
@@ -297,7 +302,7 @@ metadata_widget_server <- function( id ,
           
           cat('\n- reading from'  )
           deg = read_excel( file , sheet = 'DataElementGroups' )
-          cat('\n- dataElements has' , nrow(deg) , "rows" ) 
+          cat('\n- dataElementGroups has' , nrow(deg) , "rows" ) 
         } else {
             return()
         }
@@ -350,7 +355,7 @@ metadata_widget_server <- function( id ,
           
           cat('\n- reading from'  )
           dataSets = read_excel( file , sheet = 'DataSets' )
-          cat('\n- dataElements has' , nrow(dataSets) , "rows" ) 
+          cat('\n- DataSets has' , nrow(dataSets) , "rows" ) 
         } else {
             return()
         }
@@ -477,7 +482,7 @@ metadata_widget_server <- function( id ,
           
           cat('\n- reading from'  )
           categories = read_excel( file , sheet = 'Categories' )
-          cat('\n- dataElements has' , nrow(categories) , "rows" ) 
+          cat('\n- Categories has' , nrow(categories) , "rows" ) 
         } else {
             return()
         }
@@ -652,7 +657,9 @@ metadata_widget_server <- function( id ,
       # if available, use resources method
       url<-paste0( baseurl() ,"api/indicators.json?fields=:all&paging=false")
       
-      cols = c( 'id', 'name', 'displayName', 'description' , 'numerator' , 'denominator' ,
+      cols = c( 'id', 'name', 'displayName', 
+                # 'description' , # col not available in Guinea Feb 2022
+                'numerator' , 'denominator' ,
                 'annualized'
       )
       
@@ -747,7 +754,9 @@ metadata_widget_server <- function( id ,
 
           ) %>%
 
-      select( name, description,  numerator, denominator, annualized,
+      select( name, 
+              # description,  # col not available in Guinea Fev 2022
+              numerator, denominator, annualized,
               id, displayName, numerator.ids , denominator.ids )
     
       removeModal()
@@ -760,7 +769,7 @@ metadata_widget_server <- function( id ,
           
           cat('\n- reading from'  )
           translated = read_excel( file , sheet = 'Indicators' )
-          cat('\n- dataElements has' , nrow(translated) , "rows" ) 
+          cat('\n- Indicators has' , nrow(translated) , "rows" ) 
         } else {
             return()
         }
@@ -990,6 +999,7 @@ metadata_widget_server <- function( id ,
     filter = 'top' ,
     options = DToptions_no_buttons()
     ))
+
   
   output$OrgUnit_duplicates = DT::renderDT(
 
@@ -1001,6 +1011,76 @@ metadata_widget_server <- function( id ,
       file_name = paste( 'OrgUnit_duplicates_' , Sys.Date() ) 
       )
     )
+  
+  
+## ousTree ####
+  ousTree = reactive({
+        req( orgUnitLevels() ) 
+        req( orgUnits() )
+        
+    if (  login()  & loginFetch() ){ 
+    cat( '\n *** creating ousTree after download \n' )
+
+    ous = orgUnits()
+    ouLevels = orgUnitLevels()
+    
+    showModal(
+        modalDialog( title = "Compiling org unit tree", 
+                     easyClose = TRUE ,
+                     size = 'm' ,
+                     footer=NULL
+                     )
+        )
+    
+    ous.tree = ous_tree( ous , ouLevels )
+    
+    removeModal()
+
+    } else {
+    
+        file = paste0( dir(), metadata.files()[1] )
+        cat('\n - looking for metadata file:' , file )
+      
+        if ( file.exists( file ) & !dir.exists( file )){
+          
+          cat('\n- reading from'  )
+          ous.tree = read_excel( file , sheet = 'orgUnitHierarchy' )
+          cat('\n- ous.tree has' , nrow(ous.tree) , "rows" ) 
+        
+          } else {
+          cat( '\n *** creating ousTree \n' )
+            
+          ous = orgUnits()
+          ouLevels = orgUnitLevels()
+
+          showModal(
+              modalDialog( title = "Compiling org unit tree",
+                           easyClose = TRUE ,
+                           size = 'm' ,
+                           footer=NULL
+                           )
+              )
+
+          ous.tree = ous_tree( ous , ouLevels )
+
+          removeModal()
+        }
+    }
+    
+     cat( '\n - finished metadata_widget ous.tree \n')
+     return( ous.tree )
+  
+      
+  })
+ 
+  output$orgUnitHierarchy = DT::renderDT(DT::datatable(
+  
+        ousTree() , 
+    
+    rownames = FALSE, 
+    filter = 'top' ,
+    options = DToptions_no_buttons()
+    ))
   
 ## geoFeatures ####
   ## for description of properties, see table 1.59, 
@@ -1310,6 +1390,7 @@ metadata_widget_server <- function( id ,
       sheet7  <- addWorksheet( wb, sheetName = "DataSets")
       sheet8  <- addWorksheet( wb, sheetName = "Categories")
       sheet9  <- addWorksheet( wb, sheetName = "DataElementGroups")
+      sheet10 <- addWorksheet( wb, sheetName = "orgUnitHierarchy")
 
       writeDataTable( wb, sheet1, systemInfo() , rowNames = FALSE )
       writeDataTable( wb, sheet2, meta_variables() , rowNames = FALSE )
@@ -1320,6 +1401,7 @@ metadata_widget_server <- function( id ,
       writeDataTable( wb, sheet7, dataSets()  , rowNames = FALSE ) # %>% select( - dataSetElements )
       writeDataTable( wb, sheet8, categories() , rowNames = FALSE )
       writeDataTable( wb, sheet9, dataElementGroups() , rowNames = FALSE )
+      writeDataTable( wb, sheet10, ousTree() , rowNames = FALSE )
 
       openxlsx::saveWorkbook( wb , file , overwrite = TRUE )
      }
@@ -1463,6 +1545,7 @@ metadata_widget_server <- function( id ,
                 categories = categories , 
                 orgUnitLevels = orgUnitLevels ,
                 orgUnits = orgUnits ,
+                ousTree = ousTree ,
                 # uploaded_DataElements = uploaded_DataElements ,
                 # uploaded_DataElementGroups = uploaded_DataElementGroups ,
                 # uploaded_Categories = uploaded_Categories ,

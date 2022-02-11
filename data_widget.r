@@ -62,17 +62,17 @@ tagList(
         
 
 data_widget_server <- function( id ,
-                                dataDir = NULL
+                                directory_widget_output = NULL ,
+                                metadata_widget_output = NULL 
                                 # , data_request_output = 0 
                                 ) {
      moduleServer(
         id,
-        function(input, output, session ,
-                 dataDirectory = dataDir 
-                 # , data_request_update = data_request_output 
+        function( input, output, session 
                  ) {
 
-        data.folder = reactive({ dataDirectory$directory() })
+        data.folder = reactive({ directory_widget_output$directory() })
+        ousTree = reactive({ metadata_widget_output$ousTree() })
         # completedRequest = reactive({ data_request_output$completedRequest() })
         
         formula.files = reactive({ 
@@ -242,7 +242,7 @@ data_widget_server <- function( id ,
         
       dataset = reactive({ 
           # req( input$dataset ) # file name from data_widget (on Dictionary tab)
-          cat('\n* cleaning_widget  dataset():')
+          cat('\n* data_widget  dataset():')
           
           file = paste0( data.folder() , input$dataset  )
           cat('\n - ', file )
@@ -256,6 +256,23 @@ data_widget_server <- function( id ,
             cat('\n - dataset.file() not selected or not found')
           }
       })
+      
+      dataset.prepared = reactive({ 
+          req( dataset() ) 
+          req( formula_elements() )
+          req( ousTree() )
+          
+          cat('\n* data_widget  dataset.prepared():')
+          
+          if ( !'effectiveLeaf' %in% names( dataset() ) ){
+            data1 = data_1( dataset() , formula_elements() , ousTree()  )
+            return( data1 )
+          } else {
+            cat( '\n - effectiveLeaf not found in dataset()')
+            return( dataset()  )
+          }
+          
+      })
             
 
         return( list( 
@@ -264,7 +281,7 @@ data_widget_server <- function( id ,
           formulaName =  reactive({ input$indicator }) ,
           formula_elements = formula_elements ,
           dataset.file = reactive({ input$dataset }) ,
-          dataset =  dataset 
+          dataset =  dataset.prepared  
             )
             )
         })
