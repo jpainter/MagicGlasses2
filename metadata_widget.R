@@ -1023,10 +1023,20 @@ metadata_widget_server <- function( id ,
 
     # test
     print( 'converting geojson to sf...')
-
-    if ( jsonlite::validate( geo )[[1]] == FALSE ) return()
     
-    geojsonsf = geojsonsf::geojson_sf( geo )
+    if ( ! jsonlite::validate( geo )[[1]]  ){
+      cat('\n - geojson not formatted correctly')
+      print( jsonlite::validate( geo ) )
+      return( data.frame() )
+    } 
+    
+    geojsonsf = try( geojsonsf::geojson_sf( geo ) ) 
+    if ( "try-error" %in% class( geojsonsf ) ){
+      cat('\n - geojson not formatted correctly')
+      print(geojsonsf  )
+      return( data.frame() )
+    }
+    
     geojsonsf$id = fromJSON( geo )$features$id
 
     # geojsonsf = geojsonsf::geojson_sf( geo ) # returns group instead of id???
@@ -1085,7 +1095,7 @@ metadata_widget_server <- function( id ,
       saveRDS( geosf, 'pre_bind_geosf.rds')
       
       # before binding, find common col
-      geo_nonzero_rows = map_dbl( geosf, nrow ) > 0
+      geo_nonzero_rows = map_dbl( geosf, ~ifelse( !is_empty(.x) , nrow(.x), 0  )) > 0
       geo_names_in_common = map(  geosf[geo_nonzero_rows], names ) %>% Reduce(intersect, .)
       geosf. = lapply( geosf[geo_nonzero_rows] , "[", geo_names_in_common ) 
       
@@ -1159,7 +1169,7 @@ metadata_widget_server <- function( id ,
     gf = geoFeatures()
     ouLevels = orgUnitLevels() 
 
-    # Remove slaches from levelNAmes
+    # Remove slashes from levelNames
     gf$levelName = str_replace_all( gf$levelName , fixed("/") , ";")
 
     split_geofeatures = split( gf , gf$levelName )
