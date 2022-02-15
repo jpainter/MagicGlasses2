@@ -3,7 +3,9 @@ data_request_widget_ui = function ( id )
         ns <- NS(id)  
         fillCol( height = 600, flex = c(NA  ) , 
 
-        
+         add_busy_spinner(spin = "fading-circle", 
+                   position = "top-right") ,
+
          selectInput( ns("level") , label = "OrgUnit Levels:" , 
                       width = '50%',
                       choices = "Load metadata to get values" , 
@@ -64,9 +66,6 @@ data_request_widget_server <- function( id ,
           formulas()$formulaName 
           })
       
-      add_busy_spinner(spin = "fading-circle", 
-                   position = "top-right")
-
       # Update level names
       observe({
             cat( '\n* updating levels' )

@@ -801,7 +801,7 @@ api_data = function(      periods = "LAST_YEAR" ,
             
              incProgress( amount = 1 / nrow( pmap.df ) )
             
-              cat('\napi_data for:', baseurl, username )
+              cat('\n - api_data for:', baseurl, username )
               
               d.sum = fetch_get(  baseurl. = baseurl , username , password ,
                                   de. = pmap.df[i, 3] , 

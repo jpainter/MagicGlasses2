@@ -5,10 +5,19 @@ extremely_mad = function( x ,
                           key_entry_error = NA , 
                           maximum_allowed = NA , 
                           logical = FALSE ,
-                          .pb = NULL
+                          .pb = NULL ,
+                          .progress = FALSE ,
+                          total = NA
                            ){
   if (!is.null( .pb ) ){
       if ( 'progressor' %in% class(.pb) ){ .pb() } else { .pb$tick() }
+  } 
+  
+  if (.progress && !is.na( total )){
+      setProgress( 
+                detail = "Searching for extreme values with each orgUnit"  
+                )
+    incProgress( amount = 1 / total  ) 
   } 
   
   # Remove any value above maximum_allowed or key error

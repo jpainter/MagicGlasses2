@@ -62,24 +62,26 @@ tagList(
         
 
 data_widget_server <- function( id ,
-                                directory_widget_output = NULL ,
-                                metadata_widget_output = NULL 
+                                metadata_widget_output = NULL,
+                                directory_widget_output = NULL
                                 # , data_request_output = 0 
                                 ) {
      moduleServer(
         id,
-        function( input, output, session 
+        function(input, output, session 
                  ) {
-
-        data.folder = reactive({ directory_widget_output$directory() })
-        ousTree = reactive({ metadata_widget_output$ousTree() })
-        # completedRequest = reactive({ data_request_output$completedRequest() })
+          
+       # Reactive dependecies
+      data.folder = reactive({ directory_widget_output$directory() })
+      ousTree = reactive({ metadata_widget_output$ousTree() })
+      
+      # completedRequest = reactive({ data_request_output$completedRequest() })
         
         formula.files = reactive({ 
           req( data.folder() )
           cat( '\n* looking for formula files in' , data.folder() , '\n')
         
-          ff = files( search = 'Formula' , dir = data.folder() , type = 'xlsx|rds' )  
+          ff = files( search = 'Formulas_' , dir = data.folder() , type = 'xlsx|rds' )  
           if ( is_empty( ff ) ){
             cat( '\n - no forumula files in directory' )
             return( )
@@ -242,14 +244,16 @@ data_widget_server <- function( id ,
         
       dataset = reactive({ 
           # req( input$dataset ) # file name from data_widget (on Dictionary tab)
-          cat('\n* data_widget  dataset():')
+          cat('\n* cleaning_widget  dataset():')
           
           file = paste0( data.folder() , input$dataset  )
           cat('\n - ', file )
           
           if ( file_test("-f",  file) ){
-            d = readRDS( file )
+            d = readRDS( file ) 
             cat('\n - dataset has' , nrow(d),  'rows')
+            
+     
             # updated( updated() + 1 )
             return( d )
           } else {
@@ -257,21 +261,20 @@ data_widget_server <- function( id ,
           }
       })
       
-      dataset.prepared = reactive({ 
-          req( dataset() ) 
+      data1 = reactive({
+          req( dataset() )
           req( formula_elements() )
           req( ousTree() )
           
-          cat('\n* data_widget  dataset.prepared():')
-          
-          if ( !'effectiveLeaf' %in% names( dataset() ) ){
+            cat( '\n* preparing data1')
             data1 = data_1( dataset() , formula_elements() , ousTree()  )
+            cat( '\n - data1 names:', names( data1 ))
+            cat( '\n - data1 rows:', nrow( data1 ))
+       
+            # Testing 
+            saveRDS( data1 , 'data1.rds' )
+      
             return( data1 )
-          } else {
-            cat( '\n - effectiveLeaf not found in dataset()')
-            return( dataset()  )
-          }
-          
       })
             
 
@@ -281,7 +284,8 @@ data_widget_server <- function( id ,
           formulaName =  reactive({ input$indicator }) ,
           formula_elements = formula_elements ,
           dataset.file = reactive({ input$dataset }) ,
-          dataset =  dataset.prepared  
+          dataset =  dataset ,
+          data1 = data1
             )
             )
         })

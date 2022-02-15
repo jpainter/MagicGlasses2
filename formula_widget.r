@@ -189,7 +189,7 @@ formula_widget_server <- function( id ,
   output$saveFormula <- downloadHandler(
 
     filename = function() {
-      paste0( dir() , "Formula_", Sys.Date()  ,".xlsx"  )
+      paste0( dir() , "Formulas_", Sys.Date()  ,".xlsx"  )
     } ,
     
     content = function( file ) {

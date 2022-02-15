@@ -4,7 +4,7 @@ cleaning_widget_ui = function ( id ){
 tagList( 
           shinybusy::add_busy_spinner(
             spin = "fading-circle" , # "self-building-square",
-            position = 'bottom-right'
+            position = 'bottom-left'
             # , margins = c(70, 1200)
           ) ,
 
@@ -33,7 +33,12 @@ tagList(
         tabPanel( "Outliers",  
                      
                 sidebarLayout(
-                    sidebarPanel(
+                    sidebarPanel( 
+                      
+                      actionButton( ns("determineOutliers") , 
+                      "Search for Outliers" , style='margin-top:25px' 
+                      )   ,
+                      
                       radioButtons( ns("dataElement") , label = "DataElement_Category:" ,
                                      choices = c('') ,
                                      selected = NULL )
@@ -84,6 +89,7 @@ cleaning_widget_server <- function( id ,
     formulas = reactive({ data_widget_output$formulas() })
     dataset.file = reactive({ data_widget_output$dataset.file() })
     dataset = reactive({ data_widget_output$dataset() })
+    data1 = reactive({ data_widget_output$data1() })
     formula_elements = reactive({ data_widget_output$formula_elements() })
     dataElements = reactive({ metadata_widget_output$dataElements() })  
     categories = reactive({ metadata_widget_output$categories() })  
@@ -100,10 +106,127 @@ cleaning_widget_server <- function( id ,
     num_facilities = reactive({ reporting_widget_output$num_facilities() })
     plotData = reactive({ reporting_widget_output$plotData() })
     caption.text = reactive({ reporting_widget_output$caption.text() })
-    data = reactive({ reporting_widget_output$d() })
-    data.total = reactive({ reporting_widget_output$data.total() })
+    # data = reactive({ reporting_widget_output$d() })
+    # data.total = reactive({ reporting_widget_output$data.total() })
     
+ # scan for outliers and flag 
+    searchForExtremeValues = reactiveVal( FALSE )
+    
+    observeEvent( input$determineOutliers  , {
+      req( data1())
+      if ( 'mad15' %in% names( data1() ) ){
+         showModal(
+                    modalDialog( title = "Outlier flags already present in data", 
+                         easyClose = TRUE ,
+                         size = 'm' ,
+                         footer=NULL
+                         )
+         ) 
+      } else {
+        
+          searchForExtremeValues( TRUE )  
+          a = data1.mad()
+          cat('\n * determine outliers button:' , searchForExtremeValues() )
+      }
+ } )
+    
+  data1.mad = reactive({
+    req( data1() )
+    if ( searchForExtremeValues() ){
+      cat('\n* data1.mad')
+    
+      d = data1()
+      nrow1 = nrow( d )
+      if ( nrow1 == 0 ){
+        cat('\n - nrow1 = 0')
+        return()
+      } else { cat('\n - data1() has' , nrow1 , 'rows')}
+      
+      # remove duplicate rows because downloads may create duplicates
+      u = d %>% as.data.table() %>% unique 
+      nrow2 = nrow( u )
+      cat('\n - There were', nrow1-nrow2, 'duplicates' )
+    
+    # split into 1000 chunks and observe progress
+    cat('\n - making splits')
+    n_splits = 1000
+    split_cut_numbers = cut_number( 1:nrow( d ), n_splits )
+    # testing
+    saveRDS( split_cut_numbers , 'split_cut_numbers.rds' )
+    
+    row_splits = base::split( 1:nrow( d ), split_cut_numbers  )
   
+     cat( '\n - Scanning for repetive key entry errors')
+     key_entry_errors =
+       count( as_tibble( d %>% 
+                       filter( nchar(original)>3 , 
+                              effectiveLeaf ) ) , 
+             original ) %>% 
+       arrange(-n) 
+   
+    # Default: values where the number happens at least 3 > than 
+     # medianof the top 10 rows 
+     key_entry_errors = key_entry_errors %>% 
+       filter(  n > 3 * median( 
+         key_entry_errors %>% filter( row_number()<11 )  %>%
+           pull( n ) )
+         ) %>% pull( original )
+  
+     print( head( key_entry_errors ) )
+     if ( is_empty( key_entry_errors )  ) key_entry_errors = NA
+       
+     
+       cat( '\n - scanning for MAD outliers')
+      .total = length( key_size( d ) )
+  
+      .threshold = 50
+      # for stockout days: max = 31 
+  
+      # pb <- progress_bar$new( 
+      #   format = ":current :percent  [:bar] :elapsedfull :eta ",
+      #   total = .total, clear = FALSE, width= 50 )
+  
+      # setProgress( 
+      #           detail = "Searching for extreme values with each orgUnit"  
+      #           )
+    withProgress(     message = "Requesting data",
+                        detail = "starting ...",
+                        value = 0, {
+      
+      data1.mad = d %>%  
+        group_by( orgUnit, data.id ) %>%
+        mutate(
+          .max = ifelse( 
+            grepl("jour|day", data ) &
+            grepl("out|rupture", data )   &
+            effectiveLeaf
+            , 31, NA  )  
+          ) %>%
+        mutate( 
+            mad15 = extremely_mad( original , 
+                                   deviation = 15 , 
+                                   smallThreshold = .threshold ,
+                                   key_entry_error = key_entry_errors ,
+                                   maximum_allowed = .max , 
+                                   logical = TRUE, .pb = NULL , 
+                                   .progress = TRUE ,
+                                   total = .total ) 
+            , mad10 = extremely_mad( ifelse( mad15, original , NA ), 
+                                     deviation = 10 , 
+                                     smallThreshold = .threshold ,
+                                     maximum_allowed = .max , 
+                                     logical = TRUE ) 
+            , mad5 = extremely_mad( ifelse( mad10, original , NA ), 
+                                    deviation = 5 , 
+                                    smallThreshold = .threshold * 2 ,
+                                    maximum_allowed = .max , 
+                                    logical = TRUE ) 
+        )
+    })  
+    return( data1.mad )
+  }
+    })
+    
   # Summary ####
     
   updated = reactiveVal( 0 )
@@ -127,49 +250,14 @@ cleaning_widget_server <- function( id ,
     
   # Update dataset
   observeEvent( input$updateDataset ,{
-    req( dataset() )
+    req( data1() )
     cat('\n* updating dataset')
     initialUpdated = updated()
     cat('\n - initial updated =' , initialUpdated )
     
-    # Integer values
-    if ( !input$hasIntegerValues && all( c('SUM', 'COUNT')  %in% names( dataset() ) ) ){
-      cat('\n - converting SUM and COUNT to integers')
-      d = dataset() %>% 
-        mutate( SUM = as.integer( SUM ) ,
-                COUNT = as.integer( COUNT )
-      )
     updated( updated() + 1 )
-    }
+    })
     
-    # data column
-    if ( ! 'data'  %in% names( dataset() ) ){
-      cat('\n - creating data column')
-      d = dataset() %>% 
-        rename( dataElement.id = dataElement , categoryOptionCombo.ids = categoryOptionCombo ) %>%
-        left_join( formula_elements() %>% 
-                     select( dataSet, periodType, zeroIsSignificant, 
-                             dataElement.id, categoryOptionCombo.ids, dataElement, Categories ) , 
-                   by = c("dataElement.id", "categoryOptionCombo.ids")
-                   ) %>%
-        # left_join( dataElements() , by = c("dataElement.id") ) %>%
-        # left_join( categories() , by = c( "categoryOptionCombo.ids") ) %>%
-        unite( 'data' , c(dataElement , Categories ) , sep = "_")
-      
-      updated( updated() + 1 )
-    }
-    
-    cat('\n - final updated =' , updated() )
-    if ( updated() > initialUpdated ){
-          file = paste0( data.folder() , dataset.file() )
-          file = str_replace( file, fixed('.rds') , '.RDS'  )
-          cat('\n - saving dataset ')
-          saveRDS( d, file )
-    }
-
-  cat('\n - end updateDataset')
-  })
-  
   output$contents <- renderTable({
     req(dataset())
     head( dataset() , n = 100 )
@@ -194,59 +282,61 @@ cleaning_widget_server <- function( id ,
   })
   
   # Update hasIntegerValues
-  observeEvent( updated() , {
-    req( dataset() )
-    cat('\n* observe dataset and set hasIntegerValues' )
-    if ( !all( c('SUM', 'COUNT')  %in% names( dataset() ) ) ){
-      message( '\n - missing SUM and COUNT fields')
-    } else {
-      if ( all( 'integer' %in% c( class( dataset()$SUM ), class( dataset()$COUNT ) ) ) ){
-      cat('\n - all are integer')
-      updateCheckboxInput( session , 'hasIntegerValues', value = TRUE )
-    } 
-    }
-  })
+  # observeEvent( updated() , {
+  #   req( dataset() )
+  #   cat('\n* observe dataset and set hasIntegerValues' )
+  #   if ( !all( c('SUM', 'COUNT')  %in% names( dataset() ) ) ){
+  #     message( '\n - missing SUM and COUNT fields')
+  #   } else {
+  #     if ( all( 'integer' %in% c( class( dataset()$SUM ), class( dataset()$COUNT ) ) ) ){
+  #     cat('\n - all are integer')
+  #     updateCheckboxInput( session , 'hasIntegerValues', value = TRUE )
+  #   } 
+  #   }
+  # })
   
   # Update uniteDataElementCategoryCombo
-  observeEvent( updated() , {
-    req( dataset() )
-    cat('\n* observe dataset and set uniteDataElementCategoryCombo')
-    if ( ! 'data' %in% names( dataset() )  ){
-      message( '\n - no data column')
-    } else {
-      if ( 'data' %in% names( dataset() ) ){
-      cat('\n - has data column')
-      updateCheckboxInput( session , 'uniteDataElementCategoryCombo', value = TRUE )
-    } 
-    }
-  })
+  # observeEvent( updated() , {
+  #   req( dataset() )
+  #   cat('\n* observe dataset and set uniteDataElementCategoryCombo')
+  #   if ( ! 'data' %in% names( dataset() )  ){
+  #     message( '\n - no data column')
+  #   } else {
+  #     if ( 'data' %in% names( dataset() ) ){
+  #     cat('\n - has data column')
+  #     updateCheckboxInput( session , 'uniteDataElementCategoryCombo', value = TRUE )
+  #   } 
+  #   }
+  # })
   
   # Outliers tab  
-  observeEvent( dataset()  , {
-    
-    if( nrow( dataset() ) > 0 && 'data' %in% names(dataset() ) ){
+  observeEvent( data1()  , {
+    req( data1() )
+    if( nrow( data1() ) > 0 && 'data' %in% names( data1() ) ){
       cat('\n-update dataElement-')
       updateRadioButtons( session, 'dataElement' ,
-                       choices =  dataset()  %>% pull( data ) %>% unique )
+                       choices =  data1()  %>% pull( data ) %>% unique )
     }
     cat('-done\n')
   })
     
   outlier.summary = reactive({
-      req( dataset() )
+      req( data1.mad() )
       req( input$dataElement )
       
       cat('\n* outlier.summary' )
-      cat('\n - data has' , nrow( dataset() ) , 'rows' )
+      cat('\n - data has' , nrow( data1.mad() ) , 'rows' )
       
-      cols = c('data' , 'Month', 'mad15', 'mad10', 'mad5', 'seasonal5' , 'seasonal3')
-      if ( !all( cols %in% names( dataset()) ) ){
+      cols = c('data' , 'Month', 'mad15', 'mad10', 'mad5'
+               # 'seasonal5' , 'seasonal3'
+               )
+      if ( !all( cols %in% names( data1.mad()) ) ){
         message('missing outlier columns')
         return()
       } 
       
       cat('\n - totals' )
-      total = dataset() %>%  as_tibble() %>%
+      total = data1.mad() %>%  as_tibble() %>%
         filter( data %in% input$dataElement ) %>%
         group_by( data ) %>%
         summarise( Total = sum( original , na.rm = T ) ,
@@ -255,9 +345,11 @@ cleaning_widget_server <- function( id ,
 
       
       cat('\n - summary' )
-      os = dataset() %>% as_tibble() %>% 
+      os = data1.mad() %>% as_tibble() %>% 
         filter( data %in% input$dataElement , !is.na( mad15 ) ) %>%
-        group_by( data , mad15, mad10, mad5, seasonal5 , seasonal3 ) %>%
+        group_by( data , mad15, mad10, mad5
+                  # , seasonal5 , seasonal3 
+                  ) %>%
         summarise( n = sum( !is.na( original )) , 
                    total = sum( original , na.rm = T ) ,
                    max = max( total , na.rm = T ) %>% comma()
@@ -268,7 +360,9 @@ cleaning_widget_server <- function( id ,
                    `%Total` = percent( total / Total )
                    )   %>%
         ungroup %>%
-        select( mad15, mad10, mad5, seasonal5 , seasonal3, n , max , `%N` ,`%Total`  ) 
+        select( mad15, mad10, mad5, 
+                # seasonal5 , seasonal3, 
+                n , max , `%N` ,`%Total`  ) 
       
       cat('\n - summary has' , nrow(os) , 'rows')
       return( os )
@@ -278,13 +372,16 @@ cleaning_widget_server <- function( id ,
   
   ## Visualize cleaning (Inspect )  ####
   errorFlag = reactive({
-    req( dataset()) 
+    req( data1.mad()) 
     req( input$error )
     req( input$dataElement )
     cat( '\n* errorFlag():')
-    # print( head( data() ) )
-    if ( input$error %in% names( dataset() ) ){
-            flag = unique( as_tibble( dataset() ) %>% 
+    # print( head( data1() ) )
+     d = data1()
+    # testing
+    saveRDS( d , 'data1.mad.rds')
+    if ( input$error %in% names( d ) ){
+            flag = unique( as_tibble( d ) %>% 
                    filter( !! rlang::sym( input$error )  == FALSE ,
                            data %in% input$dataElement ) %>% 
                    distinct( orgUnit , orgUnitName )  
@@ -303,13 +400,13 @@ cleaning_widget_server <- function( id ,
   })
   
   plot.single.data.series = reactive({
-    req( dataset() )
+    req( data1.mad() )
 
     cat('\n* plot.single.data.series' )
     
     if ( length( errorFlag() ) == 0 ) return()
   
-    inspectOrgUnitData = dataset() %>% as_tibble() %>%
+    inspectOrgUnitData = data1.mad() %>% as_tibble() %>%
       filter( orgUnit %in% input$flaggedOrgUnit )
   
     g = inspectOrgUnitData %>%

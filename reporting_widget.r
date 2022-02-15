@@ -156,6 +156,7 @@ reporting_widget_server <- function( id ,
     formulas = reactive({ data_widget_output$formulas() })
     dataset.file = reactive({ data_widget_output$dataset.file() })
     dataset = reactive({ data_widget_output$dataset() })
+    data1 = reactive({ data_widget_output$data1() })
     formula_elements = reactive({ data_widget_output$formula_elements() })
     orgUnits = reactive({ metadata_widget_output$orgUnits() })  
     orgUnitLevels = reactive({ metadata_widget_output$orgUnitLevels() })
@@ -208,18 +209,18 @@ reporting_widget_server <- function( id ,
     # })
 
     dates = reactive({
-        req( dataset() )
+        req( data1() )
         req( period() )
         cat('\n* dates:') 
         
         .period = period()
         
-        if ( ! .period %in% names( dataset() ) ){
+        if ( ! .period %in% names( data1() ) ){
         cat('\n -- dataset does not contain column:' , .period )
-        cat( '\n - dataset columns are:' , names( dataset() ) )
+        cat( '\n - dataset columns are:' , names( data1() ) )
         return()
       }
-        dates = dataset() %>% pull( !! rlang::sym( .period )) %>%
+        dates = data1() %>% pull( !! rlang::sym( .period )) %>%
           unique
 
         cat('\n - done') 
@@ -281,44 +282,44 @@ reporting_widget_server <- function( id ,
 #   observEvent({
 #     cat( '\n- updating data_choices' )
 #     updateSelectInput( session, 'data_categories' ,
-#                        choices =   unique( dataset()$data ) ,
+#                        choices =   unique( data1()$data ) ,
 #                        selected = 1 )
 #     cat( '\n- done' )
 # } )
 
-  observeEvent( 'data' %in% names( dataset() ) , {
-    req( dataset()$data )
+  observeEvent( 'data' %in% names( data1() ) , {
+    req( data1()$data )
     cat( '\n* updating data_categories to all' )
     
     if( input$all_categories == TRUE ){
       updateSelectInput( session, 'data_categories' , 
-                         choices =   unique( dataset()$data ) ,
-                         selected = unique( dataset()$data ) ) 
+                         choices =   unique( data1()$data ) ,
+                         selected = unique( data1()$data ) ) 
     } else {
       updateSelectInput( session, 'data_categories' , 
-                         choices =   unique( dataset()$data ) ) 
+                         choices =   unique( data1()$data ) ) 
     }
     cat( '\n- done' )
   } )
   
   # update split
   observe({  updateSelectInput( session, 'split' , 
-                              choices =  c('None', names( dataset() )) ) } )
+                              choices =  c('None', names( data1() )) ) } )
   
   dataSets = reactive({
-    req( dataset() )
+    req( data1() )
     cat('\n* dataSets:')
-    if ( is_empty( dataset() ) ){
-      cat('\n - dataset() is empty')
+    if ( is_empty( data1() ) ){
+      cat('\n - data1() is empty')
       return()
     } 
-    if ( ! 'dataSet' %in% names( dataset() ) ){
+    if ( ! 'dataSet' %in% names( data1() ) ){
       message( 'dataSet not in names( dataset) ')
-      cat('\n names( dataset()) :' , names(dataset()) )
+      cat('\n names( data1()) :' , names(data1()) )
       return()
     }
     
-    x = dataset() %>% filter( !is.na( dataSet ) ) %>%
+    x = data1() %>% filter( !is.na( dataSet ) ) %>%
               pull( dataSet ) %>% unique
     
     cat('\n - there are' , length( x ) , 'dataSets')
@@ -327,10 +328,10 @@ reporting_widget_server <- function( id ,
 
   # Months and periods
   period = reactive({
-      req( dataset() )
+      req( data1() )
       cat('\n* period():')
       
-      weekly = any( map_lgl( dataset() ,
+      weekly = any( map_lgl( data1() ,
                              ~any(class(.x) %in% 'yearweek'  )) )
 
       period = ifelse( weekly, "Week", "Month" )
@@ -339,13 +340,13 @@ reporting_widget_server <- function( id ,
     })
   
   most_recent_period = reactive({
-      req( dataset() )
+      req( data1() )
       req( period() )
       cat( '\nLooking for most recent' , period() )
-      mrp = max( dataset() %>%
+      mrp = max( data1() %>%
                    pull( !! rlang::sym( period() ) ), na.rm = TRUE )
-      # mrp = max( dataset()[ , 'Month'] , na.rm = TRUE )
-      # mrp = max( dataset()$Month , na.rm = TRUE )
+      # mrp = max( data1()[ , 'Month'] , na.rm = TRUE )
+      # mrp = max( data1()$Month , na.rm = TRUE )
       cat( '\nmost recent ', period(),  'is', mrp )
 
       if ( input$exclude_recent_month ){
@@ -358,11 +359,11 @@ reporting_widget_server <- function( id ,
     })
 
   # datasetPrepared = reactive({
-  #   req( dataset() )
+  #   req( data1() )
   #   cat('\n* datasetPrepared:')
   #   
   #   x = FALSE
-  #   if ( any( "tbl_ts"  %in%  class( dataset() ) ) )  x = TRUE
+  #   if ( any( "tbl_ts"  %in%  class( data1() ) ) )  x = TRUE
   #   cat('\n -  ', x )
   #   return( x )
   #   
@@ -370,22 +371,22 @@ reporting_widget_server <- function( id ,
   
   d = reactive({
 
-      req( dataset() )
+      req( data1() )
       req( period() )
       cat( '\n* d:')
     
       # Testing 
-      saveRDS( dataset() , 'dataset.rds' )
+      saveRDS( data1() , 'dataset.rds' )
       
-      if ( nrow( dataset() ) == 0 ){
-        cat('\n - dataset() has zero rows')
+      if ( nrow( data1() ) == 0 ){
+        cat('\n - data1() has zero rows')
         return()
       } 
   
       .period = period()
       cat('\n - period is', .period )
       
-      data = dataset()  %>% mutate( period = !!rlang::sym( .period ))
+      data = data1()  %>% mutate( period = !!rlang::sym( .period ))
       
       if ( !is_empty( input$level2 ) ){
         cat(  '\n - filtering data by' , levelNames()[2] , "=" , input$level2 ) 
@@ -397,7 +398,7 @@ reporting_widget_server <- function( id ,
       }
   
       if ( !is_empty( input$level3 ) ){
-      #print( paste( 'filtering data by' , levelNames()[3] , "=" , input$level3 ) )
+      cat(  '\n - filtering data by' , levelNames()[3] , "=" , input$level2 ) 
       data = data %>% 
         filter( !! rlang::sym( levelNames()[3])  %in%   input$level3  )
       
@@ -406,7 +407,7 @@ reporting_widget_server <- function( id ,
       }
   
       if ( !is_empty( input$level4 ) ){
-          #print( paste( 'filtering data by' , levelNames()[4] , "=" , input$level4 ) )
+          cat(  '\n - filtering data by' , levelNames()[4] , "=" , input$level2 ) 
           data = data %>% 
             filter( !! rlang::sym( levelNames()[4])  %in%   input$level4  )
           
@@ -415,7 +416,7 @@ reporting_widget_server <- function( id ,
       }
         
       if ( !is_empty( input$level5 ) ){
-          #print( paste( 'filtering data by' , levelNames()[5] , "=" , input$level5 ) )
+          cat(  '\n - filtering data by' , levelNames()[5] , "=" , input$level2 ) 
           data = data %>% 
             filter( !! rlang::sym( levelNames()[5])  %in%   input$level5  )
           
@@ -617,12 +618,12 @@ reporting_widget_server <- function( id ,
   } )
 
   # level 2
-  observeEvent( dataset()  , {  
-    if( nrow( dataset() ) > 0 && 'level' %in% names( dataset() )){
+  observeEvent( data1()  , {  
+    if( nrow( data1() ) > 0 && 'level' %in% names( data1() )){
             cat( '\n* updating level2' )
             updateSelectInput( session, 'level2' ,
                                 choices =
-                                  dataset() %>%
+                                  data1() %>%
                                     pull( !! rlang::sym( levelNames()[2]  ) ) %>%
                                     unique %>% str_sort(),
                                 selected = NULL
@@ -631,12 +632,12 @@ reporting_widget_server <- function( id ,
     } )
 
   # level 3
-  observe({ #Event( dataset()  , {  
-    if( nrow( dataset() ) > 0 && 'level' %in% names( dataset() )){
+  observe({ #Event( data1()  , {  
+    if( nrow( data1() ) > 0 && 'level' %in% names( data1() )){
               cat( '\n* updating level3' )
               updateSelectInput( session, 'level3' ,
                                 choices =
-                                  dataset() %>%
+                                  data1() %>%
                                     filter(
                                     !! rlang::sym( levelNames()[2] ) %in% input$level2 ) %>%
                                     pull( !! rlang::sym( levelNames()[3]  ) ) %>%
@@ -647,13 +648,13 @@ reporting_widget_server <- function( id ,
     } )
 
   # level 4
-  observe({ #Event( dataset()  , {    
+  observe({ #Event( data1()  , {    
               
-    if( nrow( dataset() ) > 0 && 'level' %in% names( dataset() ) ){
+    if( nrow( data1() ) > 0 && 'level' %in% names( data1() ) ){
               cat( '\n* updating level4' )
               updateSelectInput( session, 'level4' ,
                                 choices =
-                                  dataset() %>%
+                                  data1() %>%
                                     filter(
                                     !! rlang::sym( levelNames()[3] ) %in% input$level3 ) %>%
                                     pull( !! rlang::sym( levelNames()[4]  ) ) %>%
@@ -667,13 +668,13 @@ reporting_widget_server <- function( id ,
   level5 = reactive({
       req( input$level4 )
       req( levelNames() )
-      req( dataset() )
+      req( data1() )
       cat('\n* level5:')
       
-      if( is_empty( dataset() ) ) return( NA )
+      if( is_empty( data1() ) ) return( NA )
       if( is.na( levelNames()[5] ) ) return( NA ) 
   
-      dataset() %>% 
+      data1() %>% 
           filter(
               !! rlang::sym( levelNames()[4] ) %in% 
                          input$level4 ) %>% 
@@ -683,7 +684,7 @@ reporting_widget_server <- function( id ,
   
   observe({  
     
-    if (  nrow( dataset() ) > 0 && 'level' %in% names( dataset() ) ){
+    if (  nrow( data1() ) > 0 && 'level' %in% names( data1() ) ){
       updateSelectInput( session, 'level5' ,
                                 choices = level5(),
             selected = NULL 
