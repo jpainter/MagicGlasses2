@@ -266,11 +266,23 @@ data_widget_server <- function( id ,
           req( formula_elements() )
           req( ousTree() )
           
+          showModal(
+              modalDialog( title = "Preparing raw data for analysis.  This may take a few minutes...Thanks", 
+                           easyClose = TRUE ,
+                           size = 's' ,
+                           footer=NULL
+                           )
+              )
+          
+          if ( !'data' %in% names( dataset() ) ){
             cat( '\n* preparing data1')
             data1 = data_1( dataset() , formula_elements() , ousTree()  )
             cat( '\n - data1 names:', names( data1 ))
             cat( '\n - data1 rows:', nrow( data1 ))
        
+          } else {
+            data1 = dataset()
+          }
             # Testing 
             saveRDS( data1 , 'data1.rds' )
       

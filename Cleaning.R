@@ -15,7 +15,7 @@ extremely_mad = function( x ,
   
   if (.progress && !is.na( total )){
       setProgress( 
-                detail = "Searching for extreme values with each orgUnit"  
+                detail = "Searching for extreme values within each orgUnit"  
                 )
     incProgress( amount = 1 / total  ) 
   } 
@@ -57,9 +57,18 @@ unseasonal = function( x ,
                        logical = FALSE ,
                        interpolate = FALSE , # only useful when logical is FALSE
                        .lambda = 1 , 
-                       .pb = NULL ){
+                       .pb = NULL ,
+                       .progress = FALSE ,
+                        total = NA ){
   if (!is.null( .pb ) ){
       if ( 'progressor' %in% class(.pb) ){ .pb() } else { .pb$tick() }
+  } 
+  
+  if (.progress && !is.na( total )){
+      setProgress( 
+                detail = "Searching for seasonal adjusted outliers within each orgUnit"  
+                )
+    incProgress( amount = 1 / total  ) 
   } 
 
     value = ifelse( !is.na(x), TRUE , NA ) 

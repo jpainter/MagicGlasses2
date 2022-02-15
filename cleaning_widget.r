@@ -10,34 +10,26 @@ tagList(
 
 
     tabsetPanel( type = "tabs", 
-        tabPanel( "Prep" , 
-            fluidRow(      
-              column( 12 ,
-              checkboxInput( ns('hasIntegerValues'), "SUM and COUNT converted from Character to Integer")  ,
-              checkboxInput( ns('uniteDataElementCategoryCombo'), "Combine dataElement and categoryOptionCombo")  ,
-              actionButton( ns("updateDataset") , label = "Update dataset") 
-              ) ) ,
-            
-            tabsetPanel( type = "tabs",   
-              
-              tabPanel( "Table", tableOutput( ns("contents") ) ),
-              tabPanel( "Summary",
+          tabPanel( "Dataset snapshot", tableOutput( ns("contents") ) ),
+          
+          tabPanel( "Summary (under construction",
                         html("<div style='display:flex;'>") ,
                           htmlOutput( ns("profileSummary") ) ,
                         html("<div>") ,
 
-              )
-            )
-                  
-        ) ,
-        tabPanel( "Outliers",  
+              ) ,
+         tabPanel( "Outliers",  
                      
+                    actionButton( ns("determineExtremeValues") , 
+                      "Search for Extreme Values" , style='margin-top:25px' 
+                      )   ,
+                      
+                      actionButton( ns("determineSeasonalOutliers") , 
+                      "Search for Seasonal Outliers" , style='margin-top:25px' 
+                      )  ,
+                   
                 sidebarLayout(
                     sidebarPanel( 
-                      
-                      actionButton( ns("determineOutliers") , 
-                      "Search for Outliers" , style='margin-top:25px' 
-                      )   ,
                       
                       radioButtons( ns("dataElement") , label = "DataElement_Category:" ,
                                      choices = c('') ,
@@ -109,10 +101,10 @@ cleaning_widget_server <- function( id ,
     # data = reactive({ reporting_widget_output$d() })
     # data.total = reactive({ reporting_widget_output$data.total() })
     
- # scan for outliers and flag 
+ # scan for outliers and flag ####
     searchForExtremeValues = reactiveVal( FALSE )
     
-    observeEvent( input$determineOutliers  , {
+    observeEvent( input$determineExtremeValues  , {
       req( data1())
       if ( 'mad15' %in% names( data1() ) ){
          showModal(
@@ -125,12 +117,12 @@ cleaning_widget_server <- function( id ,
       } else {
         
           searchForExtremeValues( TRUE )  
+          cat('\n * determine extreme values button:' , searchForExtremeValues() )
           a = data1.mad()
-          cat('\n * determine outliers button:' , searchForExtremeValues() )
-      }
+            }
  } )
     
-  data1.mad = reactive({
+    data1.mad = reactive({
     req( data1() )
     if ( searchForExtremeValues() ){
       cat('\n* data1.mad')
@@ -147,15 +139,6 @@ cleaning_widget_server <- function( id ,
       nrow2 = nrow( u )
       cat('\n - There were', nrow1-nrow2, 'duplicates' )
     
-    # split into 1000 chunks and observe progress
-    cat('\n - making splits')
-    n_splits = 1000
-    split_cut_numbers = cut_number( 1:nrow( d ), n_splits )
-    # testing
-    saveRDS( split_cut_numbers , 'split_cut_numbers.rds' )
-    
-    row_splits = base::split( 1:nrow( d ), split_cut_numbers  )
-  
      cat( '\n - Scanning for repetive key entry errors')
      key_entry_errors =
        count( as_tibble( d %>% 
@@ -179,17 +162,9 @@ cleaning_widget_server <- function( id ,
        cat( '\n - scanning for MAD outliers')
       .total = length( key_size( d ) )
   
-      .threshold = 50
-      # for stockout days: max = 31 
-  
-      # pb <- progress_bar$new( 
-      #   format = ":current :percent  [:bar] :elapsedfull :eta ",
-      #   total = .total, clear = FALSE, width= 50 )
-  
-      # setProgress( 
-      #           detail = "Searching for extreme values with each orgUnit"  
-      #           )
-    withProgress(     message = "Requesting data",
+    .threshold = 50
+
+    withProgress(     message = "Searchng",
                         detail = "starting ...",
                         value = 0, {
       
@@ -222,54 +197,98 @@ cleaning_widget_server <- function( id ,
                                     maximum_allowed = .max , 
                                     logical = TRUE ) 
         )
-    })  
+    })
+    
+    showModal(
+          modalDialog( title = "Finished scanning for extreme values", 
+                       easyClose = TRUE ,
+                       size = 'm' ,
+                       footer=NULL
+                       )
+          )  
+    
+    # SAVE
+    saveRDS( data1.mad , paste0( data.folder(), dataset.file() ) )
+    
     return( data1.mad )
   }
     })
-    
-  # Summary ####
-    
-  updated = reactiveVal( 0 )
  
-  # dataset = reactive({ 
-  #   req( dataset.file() ) # file name from data_widget (on Dictionary tab)
-  #   cat('\n* cleaning_widget  dataset():')
-  #   
-  #   file = paste0( data.folder() , dataset.file() )
-  #   cat('\n - ', file )
-  #   
-  #   if ( file_test("-f",  file) ){
-  #     d = readRDS( file )
-  #     cat('\n - dataset has' , nrow(d),  'rows')
-  #     # updated( updated() + 1 )
-  #     return( d )
-  #   } else {
-  #     cat('\n - dataset.file() not found')
-  #   }
-  #   })
+    searchForSeasonalOutliers = reactiveVal( FALSE )   
+   
+    observeEvent( input$determineSeasonalOutliers  , {
+      req( data1())
+      if ( 'seasonal5' %in% names( data1() ) ){
+         showModal(
+                    modalDialog( title = "Outlier flags already present in data", 
+                         easyClose = TRUE ,
+                         size = 'm' ,
+                         footer=NULL
+                         )
+         ) 
+      } else {
+        
+          searchForSeasonalOutliers( TRUE )  
+          cat('\n * determine seasonal outliers button:' , searchForSeasonalOutliers() )
+          b = data1.seasonal()
+          
+      }
+ } )
     
-  # Update dataset
-  observeEvent( input$updateDataset ,{
-    req( data1() )
-    cat('\n* updating dataset')
-    initialUpdated = updated()
-    cat('\n - initial updated =' , initialUpdated )
+    data1.seasonal = reactive({
+   
+      if ( searchForSeasonalOutliers() ){
+      cat('\n* data1.seasonal')
     
-    updated( updated() + 1 )
+       d = isolate( outlier.summary.data() )
+ 
+       cat( '\n - scanning for Seasonal outliers')
+      .total = length( key_size( d ) )
+  
+      .threshold = 50
+
+     withProgress(  message = "Seasonal Outliers",
+                        detail = "starting ...",
+                        value = 0, {
+      
+      data1.seasonal = d %>%  
+        group_by( orgUnit, data.id ) %>%
+        mutate(
+          
+          seasonal5 = unseasonal(  ifelse( mad10, original , NA) , 
+                                  smallThreshold = .threshold * 2  , 
+                                  deviation = 5 ,
+                                  logical = TRUE , 
+                                  .pb = NULL ,
+                                  total = .total ) ,
+          seasonal3 = unseasonal(  ifelse( seasonal5, original , NA) , 
+                                  smallThreshold = .threshold * 2 , 
+                                  deviation = 3 ,
+                                  logical = TRUE )
+      )
+        })  
+        
+        showModal(
+              modalDialog( title = "Finished scanning for seasonal values", 
+                           easyClose = TRUE ,
+                           size = 'm' ,
+                           footer=NULL
+                           )
+              )
+        
+    # SAVE
+    saveRDS( data1.seasonal , paste0( data.folder(), dataset.file() ) )
+    return( data1.seasonal )
+  }
     })
+   
+  # Summary ####
     
   output$contents <- renderTable({
     req(dataset())
     head( dataset() , n = 100 )
   })
-  
-  describeData = reactive({
-    req( dataset() )
-    dat_descr <- describe_data( dataset() )
-    describer( dat_descr )
-    
-  })
-  
+
   output$profileSummary <- renderUI({ #describeData()
     
     out <- print( dfSummary( dataset() ,
@@ -281,33 +300,6 @@ cleaning_widget_server <- function( id ,
     out
   })
   
-  # Update hasIntegerValues
-  # observeEvent( updated() , {
-  #   req( dataset() )
-  #   cat('\n* observe dataset and set hasIntegerValues' )
-  #   if ( !all( c('SUM', 'COUNT')  %in% names( dataset() ) ) ){
-  #     message( '\n - missing SUM and COUNT fields')
-  #   } else {
-  #     if ( all( 'integer' %in% c( class( dataset()$SUM ), class( dataset()$COUNT ) ) ) ){
-  #     cat('\n - all are integer')
-  #     updateCheckboxInput( session , 'hasIntegerValues', value = TRUE )
-  #   } 
-  #   }
-  # })
-  
-  # Update uniteDataElementCategoryCombo
-  # observeEvent( updated() , {
-  #   req( dataset() )
-  #   cat('\n* observe dataset and set uniteDataElementCategoryCombo')
-  #   if ( ! 'data' %in% names( dataset() )  ){
-  #     message( '\n - no data column')
-  #   } else {
-  #     if ( 'data' %in% names( dataset() ) ){
-  #     cat('\n - has data column')
-  #     updateCheckboxInput( session , 'uniteDataElementCategoryCombo', value = TRUE )
-  #   } 
-  #   }
-  # })
   
   # Outliers tab  
   observeEvent( data1()  , {
@@ -320,23 +312,54 @@ cleaning_widget_server <- function( id ,
     cat('-done\n')
   })
     
+  outlier.summary.data = reactive({
+    cat( '\n* outlier.summary.data')
+    
+      if (!is_empty( isolate( data1.seasonal() ) )){
+        cat('\n - data.seasonal' )
+        d = data1.seasonal() 
+      } else if(!is_empty( data1.mad() )) {
+        cat('\n - data.mad' )
+        d = data1.mad()
+      } else{ 
+        cat('\n - dataset' )
+        d = dataset() 
+      }
+    
+    return( d )
+    })
+
+  
+  outlier.summary.cols = reactive({
+    req( outlier.summary.data() )
+    cat('\n* outlier.summary.cols():')
+    
+    d = outlier.summary.data()
+    
+    if ( 'seasonal3' %in% names( d )){
+      cols = c('mad15', 'mad10', 'mad5','seasonal5' , 'seasonal3')
+    } else if( 'mad5' %in% names( d ) ){
+      cols = c('mad15', 'mad10', 'mad5' )
+    } else { 
+      cat('\n - no outlier cols found')
+      return() }
+    
+    cat('\n - ', cols )
+    return( cols)
+    
+  })
+  
   outlier.summary = reactive({
-      req( data1.mad() )
+      req( outlier.summary.data() )
+      req( outlier.summary.cols() )
       req( input$dataElement )
       
       cat('\n* outlier.summary' )
-      cat('\n - data has' , nrow( data1.mad() ) , 'rows' )
-      
-      cols = c('data' , 'Month', 'mad15', 'mad10', 'mad5'
-               # 'seasonal5' , 'seasonal3'
-               )
-      if ( !all( cols %in% names( data1.mad()) ) ){
-        message('missing outlier columns')
-        return()
-      } 
-      
+      d = outlier.summary.data()
+      cols = c( 'data' , outlier.summary.cols() )
+
       cat('\n - totals' )
-      total = data1.mad() %>%  as_tibble() %>%
+      total = d %>%  as_tibble() %>%
         filter( data %in% input$dataElement ) %>%
         group_by( data ) %>%
         summarise( Total = sum( original , na.rm = T ) ,
@@ -345,11 +368,9 @@ cleaning_widget_server <- function( id ,
 
       
       cat('\n - summary' )
-      os = data1.mad() %>% as_tibble() %>% 
+      os = d %>% as_tibble() %>% 
         filter( data %in% input$dataElement , !is.na( mad15 ) ) %>%
-        group_by( data , mad15, mad10, mad5
-                  # , seasonal5 , seasonal3 
-                  ) %>%
+        group_by_at( cols   ) %>%
         summarise( n = sum( !is.na( original )) , 
                    total = sum( original , na.rm = T ) ,
                    max = max( total , na.rm = T ) %>% comma()
@@ -360,9 +381,7 @@ cleaning_widget_server <- function( id ,
                    `%Total` = percent( total / Total )
                    )   %>%
         ungroup %>%
-        select( mad15, mad10, mad5, 
-                # seasonal5 , seasonal3, 
-                n , max , `%N` ,`%Total`  ) 
+        select( !! cols  , n , max , `%N` ,`%Total`  ) 
       
       cat('\n - summary has' , nrow(os) , 'rows')
       return( os )
