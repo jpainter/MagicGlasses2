@@ -173,6 +173,8 @@ data_request_widget_server <- function( id ,
                .elements )
           
           # Previous dataset file: 
+          .dataset = dataset() 
+          # TESTING
           cat( '\n - dataset():' , dataset.file() )
           file =  paste0( data.folder() , dataset.file() )
           
@@ -196,7 +198,7 @@ data_request_widget_server <- function( id ,
                          periods = .periods , 
                          formula = .formula.name ,
                          previous_dataset_file = .previous_dataset_file ,
-                         prev.data =  dataset() ,
+                         prev.data =  .dataset ,
                          level1.id = .level1.id ,
                          dir =  data.folder() ,
                          shinyApp = TRUE,
@@ -204,10 +206,21 @@ data_request_widget_server <- function( id ,
           
           saveAs = paste0( .dir, .formula.name , "_" , 
                            .level ,"_", .periods ,"_", Sys.Date() , ".rds")
-          cat( '\nsaving formula.request as', saveAs )    
+          cat( '\nsaving formula.request as', saveAs )  
+          
+        showModal(
+          modalDialog( title = "Finished downloading.  Now saving the file", 
+                       easyClose = TRUE ,
+                       size = 's' ,
+                       footer=NULL
+                       )
+          )  
+                    
           saveRDS( x , saveAs )
           cat( '\n* finished downloading' , .formula.name , '\n') 
           completedRequest( completedRequest() + 1 )
+          removeModal()
+          
       }
           
         })

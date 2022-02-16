@@ -285,8 +285,8 @@ cleaning_widget_server <- function( id ,
   # Summary ####
     
   output$contents <- renderTable({
-    req(dataset())
-    head( dataset() , n = 100 )
+    req( outlier.summary.data() )
+    head( outlier.summary.data() , n = 100 )
   })
 
   output$profileSummary <- renderUI({ #describeData()
@@ -323,7 +323,7 @@ cleaning_widget_server <- function( id ,
         d = data1.mad()
       } else{ 
         cat('\n - dataset' )
-        d = dataset() 
+        d = data1() 
       }
     
     return( d )

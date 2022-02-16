@@ -267,7 +267,7 @@ data_widget_server <- function( id ,
           req( ousTree() )
           
           showModal(
-              modalDialog( title = "Preparing raw data for analysis.  This may take a few minutes...Thanks", 
+              modalDialog( title = "Preparing raw data for analysis.  Just a moment...", 
                            easyClose = TRUE ,
                            size = 's' ,
                            footer=NULL
@@ -285,7 +285,7 @@ data_widget_server <- function( id ,
           }
             # Testing 
             saveRDS( data1 , 'data1.rds' )
-      
+            removeModal()
             return( data1 )
       })
             

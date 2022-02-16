@@ -552,7 +552,8 @@ api_data = function(      periods = "LAST_YEAR" ,
       #                          sheet = 'formulaData') %>%
       #           filter( !is.na( dataElement  ) )
       
-      if ( is_empty( prev.data ) ){
+      if ( is_empty( prev.data ) && file_test("-f", previous_dataset_file ) ){
+        cat('\n - reading previous dataset')
         prev.data = readRDS( previous_dataset_file ) # %>% select( - starts_with('aggr'))
       } 
       
@@ -560,7 +561,7 @@ api_data = function(      periods = "LAST_YEAR" ,
          cat('\n - previous data file empty'); next()
       }  
       
-      first.month = min(prev.data$period  )
+      first.month = min( prev.data$period  )
       last.month =  max( prev.data$period )
       
       # excel version
