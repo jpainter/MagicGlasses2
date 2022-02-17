@@ -21,7 +21,7 @@ tagList(
                      ) ,
         
         selectInput( ns("formula.file") , 
-                     label = "List of files with names like *Formula*.xls* ):" , 
+                     label = "Formula Files:" ,
                       width = '95%',
                       choices = NULL , 
                       selected = FALSE,
@@ -31,7 +31,7 @@ tagList(
                      ) ,
           
          selectizeInput( ns("indicator") , 
-                      label = "Indicator:" , 
+                      label = "Select Formula:" , 
                       width = '95%',
                       choices = "" ,
                       options = list(create = TRUE) , 
@@ -41,10 +41,10 @@ tagList(
                       size = 4  ##needed for `selected = FALSE` to work ) 
                      ) ,
         
-        textInput( ns("file.keywords"), "key words for searching data files" ,
-                   # value = '_formulaData|Seasonal|dts|rds' 
-                   value = 'Seasonal|dts|rds' ) ,
-          
+        # textInput( ns("file.keywords"), "key words for searching data files" ,
+        #            # value = '_formulaData|Seasonal|dts|rds' 
+        #            value = 'Seasonal|dts|rds' ) ,
+        #   
         selectInput( ns("dataset") , 
                      label = "Data previously downloaded from DHIS2:" , 
               width = '95%',
@@ -63,8 +63,8 @@ tagList(
 
 data_widget_server <- function( id ,
                                 metadata_widget_output = NULL,
-                                directory_widget_output = NULL
-                                # , data_request_output = 0 
+                                directory_widget_output = NULL ,
+                                data_request_output = NULL 
                                 ) {
      moduleServer(
         id,
@@ -74,11 +74,14 @@ data_widget_server <- function( id ,
        # Reactive dependecies
       data.folder = reactive({ directory_widget_output$directory() })
       ousTree = reactive({ metadata_widget_output$ousTree() })
+      completedRequest = reactive({ data_request_output$completedRequest() })
       
       # completedRequest = reactive({ data_request_output$completedRequest() })
         
         formula.files = reactive({ 
           req( data.folder() )
+          timeToUpdate = completedRequest() # trigger to refresh after completed download
+          
           cat( '\n* looking for formula files in' , data.folder() , '\n')
         
           ff = files( search = 'Formulas_' , dir = data.folder() , type = 'xlsx|rds' )  
@@ -146,7 +149,7 @@ data_widget_server <- function( id ,
           
           if ( grepl( fixed('.xlsx'), file ) ){
           cat( '\n - read xls file' )
-            formulas = read_excel( file , sheet = 'Formula Elements')  %>%
+            formulas = read_excel( file , sheet = 'Formula Elements' , guess_max = 1e6 )  %>%
             filter( Formula.Name %in% input$indicator ) 
           
             } else{
@@ -164,7 +167,7 @@ data_widget_server <- function( id ,
             # update = completedRequest() > 0  
             # cat( '\n data.dir_files completedRequest:' , completedRequest() )
             dir.files = list.files( data.folder()  )
-            cat( "\n number of dir.files :", length(dir.files) ) 
+            cat( "\n number of dir.files :", length( dir.files ) ) 
             return( dir.files )
         })
         
@@ -181,8 +184,9 @@ data_widget_server <- function( id ,
           file.type = 'rds' # input$file.type 
           # file.other = ifelse( input$cleaned %in% "Cleaned" , '_Seasonal' , "" )  # input$file.other
           
-          file.keywords = input$file.keywords # '_formulaData|Seasonal|dts|rds'
-          
+          # file.keywords = input$file.keywords # '_formulaData|Seasonal|dts|rds'
+          file.keywords = 'rds'
+            
           data.files = dir.files[ 
                   # grepl( 'All levels' , dir.files ) &
                   grepl( file.type , dir.files) &
@@ -244,17 +248,26 @@ data_widget_server <- function( id ,
         
       dataset = reactive({ 
           # req( input$dataset ) # file name from data_widget (on Dictionary tab)
-          cat('\n* cleaning_widget  dataset():')
+          cat('\n* data_widget  dataset():')
           
           file = paste0( data.folder() , input$dataset  )
           cat('\n - ', file )
           
+
           if ( file_test("-f",  file) ){
+            
+          showModal(
+              modalDialog( title = "Reading data", 
+                           easyClose = TRUE ,
+                           size = 's' ,
+                           footer=NULL
+                           )
+              )
+            
             d = readRDS( file ) 
+            removeModal()
             cat('\n - dataset has' , nrow(d),  'rows')
             
-     
-            # updated( updated() + 1 )
             return( d )
           } else {
             cat('\n - dataset.file() not selected or not found')
@@ -266,27 +279,32 @@ data_widget_server <- function( id ,
           req( formula_elements() )
           req( ousTree() )
           
-          showModal(
+          
+          if ( !'data' %in% names( dataset() ) ){
+            
+            showModal(
               modalDialog( title = "Preparing raw data for analysis.  Just a moment...", 
                            easyClose = TRUE ,
                            size = 's' ,
                            footer=NULL
                            )
               )
-          
-          if ( !'data' %in% names( dataset() ) ){
+            
             cat( '\n* preparing data1')
             data1 = data_1( dataset() , formula_elements() , ousTree()  )
             cat( '\n - data1 names:', names( data1 ))
             cat( '\n - data1 rows:', nrow( data1 ))
+            
+            # Testing 
+            # saveRDS( data1 , 'data1.rds' )
+            
        
           } else {
             data1 = dataset()
           }
-            # Testing 
-            saveRDS( data1 , 'data1.rds' )
-            removeModal()
-            return( data1 )
+          
+          removeModal()
+          return( data1 )
       })
             
 

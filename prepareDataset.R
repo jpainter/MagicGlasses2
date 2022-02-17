@@ -14,38 +14,114 @@ translate_dataset = function( data , formula_elements ){
   return( d.ts )
 }
 
+# ous_tree = function( ous , ouLevels ){
+#   
+#     cat('\n* ous_tree:')
+#   
+#     ous.id_parent = ous %>% arrange( level ) %>% select( id, parent ) 
+#     # Remove top value if it has missing parent.
+#     ous.id_parent = ous.id_parent %>% filter( !is.na( parent ) )
+#     # glimpse( ous.id_parent )
+#     
+#     # TESTING
+#     # saveRDS( ous , 'ous_tree.ous.rds' )
+#     
+#     # parent is a df column
+#     if ( !'data.frame' %in% class( ous$parent ) ){
+#       cat('\n - ous$parent is not a data.frame')
+#       
+#       ous.id_parent = ous %>% 
+#       filter( !is.na( parent ) ) %>%
+#       mutate( parent = parent.id ) %>%
+#       select( id, parent )
+#       
+#     } else {
+#       
+#       cat('\n - ous$parent IS a data.frame')
+#       p = ous$parent %>% pull(id) 
+#       ous.id_parent = ous %>% 
+#       mutate( parent = p ) %>% 
+#       filter( !is.na( parent ) ) %>%
+#       select( id, parent )
+#     }
+#     
+#     ous.tree = FromDataFrameNetwork( ous.id_parent )
+#     
+#     dti = data.tree::as.igraph.Node( ous.tree )
+#     nodes = V(dti)
+#     node.attributes = nodes %>% attributes()
+#     ids = node.attributes$names
+#     
+#     # FAST, but needs proper level names...
+#     
+#     dft = ToDataFrameTree( ous.tree , 
+#                     orgUnit = ids ,
+#                     lvl1 = function(x) x$path[1],
+#                     lvl2 = function(x) x$path[2],
+#                     lvl3 = function(x) x$path[3],
+#                     lvl4 = function(x) x$path[4],
+#                     lvl5 = function(x) x$path[5],
+#                     lvl6 = function(x) x$path[6],
+#                     lvl7 = function(x) x$path[7],
+#                     lvl8 = function(x) x$path[8],
+#                     level = function(x) as.integer( x$level) )[,-1] %>%
+#       as_tibble()
+#     
+#     cols = ouLevels$levelName
+#     keep.col.numbers = c( 1:eval( length( cols ) + 1) , 10 ) 
+#     dft = dft %>% select(  all_of( keep.col.numbers ) ) %>%
+#       setnames( c( 'orgUnit', cols , 'level' ) )
+#     # glimpse(dft)
+#     
+#     cat('\n - preparing dft.translated ')
+#     dft.translated = dft %>%
+#       pivot_longer( cols = c(-orgUnit,-level) , names_to = 'Level') %>%
+#       left_join( ous %>% dplyr::select( id, name ) , by = c( 'value' = 'id') ) %>%
+#       pivot_wider( -value , names_from = Level, values_from = name ) %>%
+#       left_join( ous %>% dplyr::select( id, name ) , by = c( 'orgUnit' = 'id') ) %>%
+#       rename( orgUnitName = name ) %>%
+#       select( orgUnit, orgUnitName ,  everything() )
+#       
+#     return( dft.translated )
+# }
 ous_tree = function( ous , ouLevels ){
   
     cat('\n* ous_tree:')
   
-    ous.id_parent = ous %>% arrange( level ) %>% select( id, parent ) 
-    # Remove top value if it has missing parent.
-    ous.id_parent = ous.id_parent %>% filter( !is.na( parent ) )
-    # glimpse( ous.id_parent )
+    # Special screening for benin!
+    ous2.bad = ous %>% filter( parent %in% 'UO_supprimé') %>% pull( id ) #; length( ous2.bad )
+    ous3.bad = ous %>% filter( parent.id %in% ous2.bad ) %>% pull( id ) #; length( ous3.bad )
+    ous4.bad = ous %>% filter( parent.id %in% ous3.bad ) %>% pull( id ) #; length( ous4.bad )
+    ous5.bad = ous %>% filter( parent.id %in% ous4.bad ) %>% pull( id ) #; length( ous5.bad )
     
-    # TESTING
-    # saveRDS( ous , 'ous_tree.ous.rds' )
-    
-    # parent is a df column
-    if ( !'data.frame' %in% class( ous$parent ) ){
-      cat('\n - ous$parent is not a data.frame')
-      
+    if ( length( ous2.bad ) > 0 ){
+      cat('\n - removing ous.bad ')
+      ous = ous %>% filter( ! id %in% c( ous2.bad , ous3.bad , ous4.bad , ous5.bad))
+    }
+  
+    if ( 'data.frame' %in% class( ous$parent ) ){ # parent is a df column
+      cat('\n - ous$parent is a data.frame that needs to be processed')
+      p = ous$parent %>% pull(id) 
       ous.id_parent = ous %>% 
-      filter( !is.na( parent ) ) %>%
-      mutate( parent = parent.id ) %>%
-      select( id, parent )
+        mutate( parent = p ) %>% 
+        filter( !is.na( parent ) ) %>%
+        select( id, parent )
       
     } else {
       
-      cat('\n - ous$parent IS a data.frame')
-      p = ous$parent %>% pull(id) 
+      # ous$parent.id[is.na(ous$parent.id)] <- "tree_root"
+      
       ous.id_parent = ous %>% 
-      mutate( parent = p ) %>% 
-      filter( !is.na( parent ) ) %>%
-      select( id, parent )
+        filter( !is.na( parent ) , # Removes top level (no parent)
+              ) %>% 
+        arrange( level ) %>% 
+        mutate( parent = parent.id ) %>%
+        select( id, parent  ) 
     }
+  
+    # glimpse( ous.id_parent )
     
-    ous.tree = FromDataFrameNetwork( ous.id_parent )
+    ous.tree = FromDataFrameNetwork( ous.id_parent  )
     
     dti = data.tree::as.igraph.Node( ous.tree )
     nodes = V(dti)
@@ -69,7 +145,7 @@ ous_tree = function( ous , ouLevels ){
     
     cols = ouLevels$levelName
     keep.col.numbers = c( 1:eval( length( cols ) + 1) , 10 ) 
-    dft = dft %>% select(  all_of( keep.col.numbers ) ) %>%
+    dft = dft %>% select( all_of( keep.col.numbers ) ) %>%
       setnames( c( 'orgUnit', cols , 'level' ) )
     # glimpse(dft)
     
@@ -80,8 +156,10 @@ ous_tree = function( ous , ouLevels ){
       pivot_wider( -value , names_from = Level, values_from = name ) %>%
       left_join( ous %>% dplyr::select( id, name ) , by = c( 'orgUnit' = 'id') ) %>%
       rename( orgUnitName = name ) %>%
+      arrange( level ) %>%
       select( orgUnit, orgUnitName ,  everything() )
       
+    cat('\n - done')
     return( dft.translated )
 }
 

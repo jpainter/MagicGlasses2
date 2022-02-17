@@ -15,17 +15,19 @@ formula_widget_ui <- function( id ) {
 
 
                 tabPanel("Formula Elements", 
+                         
+                      fluidRow(
+                        column( 5 , 
                          actionButton( ns("removeSelected") , 
                                                      "Remove Selected Elements" , style='margin-top:25px' 
-                                                 ) ,
-                        downloadButton( ns( 'saveFormula' ), 'Save Formula') ,
+                                                 ) 
+                         ) ,
+                        column( 5 , 
+                         downloadButton( ns( 'saveFormula' ), 'Save Formula') 
+                        )
+                        ) ,
  
-                         # wellPanel(
-                           
-                           # verbatimTextOutput( ns("formulaName") ),
-                           
                            DTOutput( ns('forumlaDictionaryTable') ) 
-                         # )
                          ) ,
                 
                 tabPanel("All Elements", 
@@ -65,6 +67,7 @@ formula_widget_server <- function( id ,
   # reactives to toggle login status
   dataElementDictionary = reactive({ metadata_widget_output$dataElements() })
   categories = reactive({ metadata_widget_output$categories() })
+  formulas = reactive({ data_Widget_output$formulas() })
   formula_elements = reactive({ data_Widget_output$formula_elements() })
   formulaName = reactive({ data_Widget_output$formulaName() })
   dir = reactive({ directory_widget_output$directory() })
@@ -132,8 +135,24 @@ formula_widget_server <- function( id ,
   
 ## Formula data Elements ####
   hasFormula = reactiveValues( formulas = FALSE )
+  
   observeEvent( formula_elements() , { hasFormula$formulas <- TRUE })
   
+  originalFormula = reactive({  # the formula as read from disc
+    cat( '\n* originalFormula:',   )
+    
+    fe =  if( is_empty( formulas() )  ){
+      
+        dataElementDictionary()[0, ] 
+
+    } else {
+      formulas()
+    }
+    
+    cat( '\n - ' , unique( fe ) , 'elements')
+    return( fe )
+    })
+    
   updated_formula_elements = reactive({
     # req( formula_elements )
     cat( '\n* updated_formula_elements starting with formula:',  hasFormula$formulas )
@@ -207,6 +226,7 @@ formula_widget_server <- function( id ,
       openxlsx::saveWorkbook( wb , file , overwrite = TRUE )
      }
   )
+  
 # Return ####
   return( list( 
     updated_formula_elements = updated_formula_elements

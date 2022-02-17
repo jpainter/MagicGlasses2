@@ -312,7 +312,8 @@ reporting_widget_server <- function( id ,
     if ( is_empty( data1() ) ){
       cat('\n - data1() is empty')
       return()
-    } 
+    }
+    
     if ( ! 'dataSet' %in% names( data1() ) ){
       message( 'dataSet not in names( dataset) ')
       cat('\n names( data1()) :' , names(data1()) )
@@ -376,7 +377,7 @@ reporting_widget_server <- function( id ,
       cat( '\n* d:')
     
       # Testing 
-      saveRDS( data1() , 'dataset.rds' )
+      # saveRDS( data1() , 'dataset.rds' )
       
       if ( nrow( data1() ) == 0 ){
         cat('\n - data1() has zero rows')
@@ -464,7 +465,8 @@ reporting_widget_server <- function( id ,
     
     cat( '\n-' , 'end d():', nrow(data), 'rows' )
     # testing
-    saveRDS( data, 'd.rds')
+    # saveRDS( data, 'd.rds')
+    
     return( data )
 })
     
@@ -483,14 +485,18 @@ reporting_widget_server <- function( id ,
       
       cat('\n-orgunit.reports--data')
       data = d()
-      saveRDS( data, 'orgunits.reports.data.rds')
+      
+      #Testing
+      # saveRDS( data, 'orgunits.reports.data.rds')
       
       if ( !input$count.any & !input$all_categories )  data = 
         data %>% filter( data %in% input$data_categories )
        
       cat('\n-orgunit.reports--period') 
       .period = period()
-      saveRDS( .period, '.period.rds')
+      
+      #Testing
+      # saveRDS( .period, '.period.rds')
     
       cat('\n-orgunit.reports--o.r.')
       o.r. = 
@@ -633,6 +639,7 @@ reporting_widget_server <- function( id ,
 
   # level 3
   observe({ #Event( data1()  , {  
+    req( input$level2 )
     if( nrow( data1() ) > 0 && 'level' %in% names( data1() )){
               cat( '\n* updating level3' )
               updateSelectInput( session, 'level3' ,
@@ -649,7 +656,7 @@ reporting_widget_server <- function( id ,
 
   # level 4
   observe({ #Event( data1()  , {    
-              
+    req( input$level3 )          
     if( nrow( data1() ) > 0 && 'level' %in% names( data1() ) ){
               cat( '\n* updating level4' )
               updateSelectInput( session, 'level4' ,
@@ -821,7 +828,10 @@ reporting_widget_server <- function( id ,
       }
   
         cat( "\n***end selectedOUs:", length(s), 'orgUnits' ); toc()  # #print( selectedOUs )
-        saveRDS( s, 'selectedOUs.rds')
+        
+        # Testing
+        # saveRDS( s, 'selectedOUs.rds')
+        
         return( s )
       })
     
@@ -878,8 +888,8 @@ reporting_widget_server <- function( id ,
     cat('\n - period():', .period )
     
     # save data for testing ggplot options
-    cat('\n- saving plot2_data.rds')
-    saveRDS( monthly.reports(), 'plot2_data.rds' )
+    # cat('\n- saving plot2_data.rds')
+    # saveRDS( monthly.reports(), 'plot2_data.rds' )
     
     if ( length( monthly.reports()$year) > 0  ) {
     
@@ -983,7 +993,7 @@ reporting_widget_server <- function( id ,
   .period = period()
   
   # save data for testing ggplot options
-  saveRDS( annual.reports() , 'plot1_data.rds' )
+  # saveRDS( annual.reports() , 'plot1_data.rds' )
   
   
   if ( length( annual.reports()$year) > 0  ) {
@@ -1045,7 +1055,7 @@ reporting_widget_server <- function( id ,
     
     cat( '\n- end  plotData()')  ; # #print( names( data )) 
     # TESTING
-    saveRDS( data , "plotData.rds" )
+    # saveRDS( data , "plotData.rds" )
   return( data )
 })
 

@@ -7,17 +7,9 @@ tagList(
             position = 'bottom-left'
             # , margins = c(70, 1200)
           ) ,
-
-
-    tabsetPanel( type = "tabs", 
-          tabPanel( "Dataset snapshot", tableOutput( ns("contents") ) ),
           
-          tabPanel( "Summary (under construction",
-                        html("<div style='display:flex;'>") ,
-                          htmlOutput( ns("profileSummary") ) ,
-                        html("<div>") ,
-
-              ) ,
+        tabsetPanel( type = "tabs", 
+                     
          tabPanel( "Outliers",  
                      
                     actionButton( ns("determineExtremeValues") , 
@@ -33,16 +25,22 @@ tagList(
                       
                       radioButtons( ns("dataElement") , label = "DataElement_Category:" ,
                                      choices = c('') ,
-                                     selected = NULL )
+                                     selected = NULL ) ,
+                      
+                      selectInput( ns("selectOrgType") , label = "Filter results" ,
+                                   choices = c( 'Facilities only', 'Admin only' , 'All' ) ,
+                                   selected = 'Facilities only' )
                     ) ,
                     mainPanel( 
                       tabsetPanel( type = "tabs",
         
-                        tabPanel( "Summary",  tableOutput( ns("dqaTable") ) ) ,
+                        tabPanel( "Outlier Summary",  
+                                  textOutput( ns("outlierSummaryText")) ,
+                                  tableOutput( ns("dqaTable") ) ) ,
                        
-                        tabPanel( "Inspect",  style = "height:90vh;" ,
+                        tabPanel( "Inspect",  style = "height:70vh;" ,
                                 fluidPage( 
-                                  fluidRow( style = "height:30vh;",
+                                  fluidRow( style = "height:10vh;",
                                             
                                     selectInput( ns('error'), 'Select error type' ,
                                                  choices = c('mad15', 'mad10', 'mad5', 'seasonal5', 'seasonal3' ) ) ,
@@ -51,7 +49,7 @@ tagList(
                                                  choices = "" )
                                   ) ,
                                   
-                                  fluidRow( style = "height:55vh;",
+                                  fluidRow( style = "height:60vh;",
                                     plotOutput( ns("inspect") )
                                   ))
                               )
@@ -59,7 +57,16 @@ tagList(
                       )
             
              ) 
-        )
+        ) ,
+        
+        tabPanel( "Dataset snapshot", tableOutput( ns("contents") ) ),
+          
+        tabPanel( "Summary (under construction)",
+                        html("<div style='display:flex;'>") ,
+                          htmlOutput( ns("profileSummary") ) ,
+                        html("<div>") ,
+
+              ) ,
     )
 )
 } # ui
@@ -124,6 +131,7 @@ cleaning_widget_server <- function( id ,
     
     data1.mad = reactive({
     req( data1() )
+      
     if ( searchForExtremeValues() ){
       cat('\n* data1.mad')
     
@@ -197,7 +205,11 @@ cleaning_widget_server <- function( id ,
                                     maximum_allowed = .max , 
                                     logical = TRUE ) 
         )
+      
+      
     })
+    
+    searchForExtremeValues(FALSE)
     
     showModal(
           modalDialog( title = "Finished scanning for extreme values", 
@@ -207,8 +219,8 @@ cleaning_widget_server <- function( id ,
                        )
           )  
     
-    # SAVE
-    saveRDS( data1.mad , paste0( data.folder(), dataset.file() ) )
+    # Testing
+    # saveRDS( data1.mad , paste0( data.folder(), dataset.file() ) )
     
     return( data1.mad )
   }
@@ -276,8 +288,9 @@ cleaning_widget_server <- function( id ,
                            )
               )
         
-    # SAVE
-    saveRDS( data1.seasonal , paste0( data.folder(), dataset.file() ) )
+    # Testing
+    # saveRDS( data1.seasonal , paste0( data.folder(), dataset.file() ) )
+    
     return( data1.seasonal )
   }
     })
@@ -326,10 +339,16 @@ cleaning_widget_server <- function( id ,
         d = data1() 
       }
     
+    
+    if ( input$selectOrgType %in% 'Facilities only'){
+      d = d %>% filter( effectiveLeaf )
+    } else if ( input$selectOrgType %in% 'Admin only' ){
+      d = d %>% filter( !effectiveLeaf )
+    }
+    
     return( d )
     })
 
-  
   outlier.summary.cols = reactive({
     req( outlier.summary.data() )
     cat('\n* outlier.summary.cols():')
@@ -342,9 +361,12 @@ cleaning_widget_server <- function( id ,
       cols = c('mad15', 'mad10', 'mad5' )
     } else { 
       cat('\n - no outlier cols found')
+      output$outlierSummaryText = renderText({ 'No outlier flags found. Please run the outlier detection algorithms'})
       return() }
     
     cat('\n - ', cols )
+    output$outlierSummaryText = renderText({ ''})
+     
     return( cols)
     
   })
@@ -370,10 +392,10 @@ cleaning_widget_server <- function( id ,
       cat('\n - summary' )
       os = d %>% as_tibble() %>% 
         filter( data %in% input$dataElement , !is.na( mad15 ) ) %>%
-        group_by_at( cols   ) %>%
+        group_by_at( cols ) %>%
         summarise( n = sum( !is.na( original )) , 
                    total = sum( original , na.rm = T ) ,
-                   max = max( total , na.rm = T ) %>% comma()
+                   max = max( original , na.rm = T ) %>% comma()
                    ) %>%
         inner_join( total , by = c( "data" ) ) %>%
         mutate( 
@@ -381,7 +403,7 @@ cleaning_widget_server <- function( id ,
                    `%Total` = percent( total / Total )
                    )   %>%
         ungroup %>%
-        select( !! cols  , n , max , `%N` ,`%Total`  ) 
+        select( !! cols  , n ,  `%N` ,  max , `%Total` , -data ) 
       
       cat('\n - summary has' , nrow(os) , 'rows')
       return( os )
@@ -391,14 +413,19 @@ cleaning_widget_server <- function( id ,
   
   ## Visualize cleaning (Inspect )  ####
   errorFlag = reactive({
-    req( data1.mad()) 
+    req( data1()) 
     req( input$error )
     req( input$dataElement )
     cat( '\n* errorFlag():')
+    
     # print( head( data1() ) )
-     d = data1()
+    d = data1()
+     
     # testing
-    saveRDS( d , 'data1.mad.rds')
+    # saveRDS( d , 'data1.rds')
+    
+    
+    
     if ( input$error %in% names( d ) ){
             flag = unique( as_tibble( d ) %>% 
                    filter( !! rlang::sym( input$error )  == FALSE ,
@@ -419,18 +446,20 @@ cleaning_widget_server <- function( id ,
   })
   
   plot.single.data.series = reactive({
-    req( data1.mad() )
+    req( data1() )
 
     cat('\n* plot.single.data.series' )
     
     if ( length( errorFlag() ) == 0 ) return()
   
-    inspectOrgUnitData = data1.mad() %>% as_tibble() %>%
-      filter( orgUnit %in% input$flaggedOrgUnit )
+    inspectOrgUnitData = data1() %>% as_tibble() %>%
+      filter( orgUnit %in% input$flaggedOrgUnit ,
+              data %in% input$dataElement
+              )
   
     g = inspectOrgUnitData %>%
         ggplot( aes( x = Month, y = original,  group = data ) ) +
-        geom_line( alpha = .25 , aes( linetype = data ) ) +
+        geom_line( alpha = .25 ) +
         geom_point( aes( color = !! rlang::sym( input$error ) 
                          # , shape = seasonal3 
                          )) +

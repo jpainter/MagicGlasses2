@@ -394,13 +394,13 @@ metadata_widget_output =
 ```
 
 
-Dictionary
+Data
 ========================
 
 Column {data-width=400}
 -----------------------------------
 
-### Dataset dictionaries (formulas)
+### Data (Dictionary/Formulas) {data-height='80%'}
 
 ```{r, echo = FALSE  }
 source( 'data_widget.r' )
@@ -409,14 +409,32 @@ data_widget_ui( "data1" )
 data1_Widget_output = 
   data_widget_server( "data1" , 
                       directory_widget_output = directory_widget_output ,
-                      metadata_widget_output = metadata_widget_output  )
+                      metadata_widget_output = metadata_widget_output  ,
+                      data_request_output = data_request_output
+                      )
 
 ```
+
+### Request {data-height='20%'}
+
+```{r , eval=TRUE}
+source( 'data_request_widget.r' )
+data_request_widget_ui( "data_request1" )
+
+data_request_output =
+  data_request_widget_server( "data_request1" ,
+            loginDetails  =  login_widget_output ,
+            dataDirectory = directory_widget_output ,
+            metadata_widget_output = metadata_widget_output , 
+            data_widget_output = data1_Widget_output
+            )
+```
+
 
 Column {data-width=600}
 -----------------------------------
 
-### Data Elements 
+### Data Elements
 
 ```{r, echo = FALSE }
 ### Data definitions (formulas)
@@ -434,48 +452,6 @@ formula1_Widget_output =
 ```
 
 
-
-Data
-========================
-
-Column
------------------------------------
-
-### Data definitions (formulas)
-
-```{r, echo = FALSE  }
-source( 'data_widget.r' )
-data_widget_ui( "data2" )
-
-data2_Widget_output = 
-  data_widget_server( "data2" , 
-                      directory_widget_output = directory_widget_output ,
-                      metadata_widget_output = metadata_widget_output  
-                      # , data_request_output = data_request_Output
-                      )
-
-```
-
-Column
------------------------------------
-
-### Request
-
-```{r , eval=TRUE}
-source( 'data_request_widget.r' )
-data_request_widget_ui( "data_request1" )
-
-data_request_Output =
-  data_request_widget_server( "data_request1" ,
-            loginDetails  =  login_widget_output ,
-            dataDirectory = directory_widget_output ,
-            metadata_widget_output = metadata_widget_output , 
-            data_widget_output = data2_Widget_output
-            )
-```
-
-
-
 Outliers and Errors
 ========================
 
@@ -489,7 +465,7 @@ cleaning_widget_output =
   cleaning_widget_server( "cleaning1" , 
                           directory_widget_output = directory_widget_output ,
                          metadata_widget_output = metadata_widget_output ,
-                         data_widget_output = data2_Widget_output ,
+                         data_widget_output = data1_Widget_output ,
                          reporting_widget_output = reporting_widget_output 
                          )
 ```
@@ -507,7 +483,7 @@ reporting_widget_output =
   reporting_widget_server( "reporting1" ,
                          dataDirectory = directory_widget_output ,
                          metadata_widget_output = metadata_widget_output ,
-                         data_widget_output = data2_Widget_output )
+                         data_widget_output = data1_Widget_output )
 ```
 
 
@@ -523,7 +499,7 @@ evaluation_widget_output =
   evaluation_widget_server( "evaluation1" ,
                          directory_widget_output = directory_widget_output ,
                          metadata_widget_output = metadata_widget_output ,
-                         data_widget_output = data2_Widget_output ,
+                         data_widget_output = data1_Widget_output ,
                          reporting_widget_output = reporting_widget_output )
 ```
 

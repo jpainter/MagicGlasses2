@@ -27,18 +27,11 @@ metadata_widget_ui <- function( id ) {
                            ) ,
                          
                            column( 6 ,
-                                   
-                                   # fileInput( ns('input_metadataFile'), 
-                                   #                h4( 'Or, upload previously defined metadata file(.xlsx)'  ), 
-                                   #                accept = c(".xlsx", "xls")  , width = "80%"
-                                   # )
+                                    downloadButton( ns( 'downloadInfo' ), 'Save metadata and system info') ,
+                         
                            ) )
                            , 
                           br() ,
-                          
-                         downloadButton( ns( 'downloadInfo' ), 'Save metadata and system info') ,
-                         
-                         br() ,
                          
                          fluidRow(
                            column( 6, DTOutput( ns('systemInfo') ) ) ,
@@ -175,6 +168,8 @@ metadata_widget_server <- function( id ,
         y = indicatorDictionary()
         z = systemInfo()
         zz = resources() 
+        
+        removeModal()
 
       } else {
  
@@ -1044,6 +1039,9 @@ metadata_widget_server <- function( id ,
                      )
         )
     
+    #TESTING
+    saveRDS( ous , 'ous.rds');  saveRDS( ouLevels, 'ouLevels.rds')
+    
     ous.tree = ous_tree( ous , ouLevels )
     
     removeModal()
@@ -1216,6 +1214,9 @@ metadata_widget_server <- function( id ,
       # test
       saveRDS( geosf. , 'geosf.rds')
       
+      filename = paste0( dir() , "geoFeatures_", Sys.Date()  , ".rds"  )
+      saveRDS( geosf. , filename )
+      
       # TODO: impute location of missing facilities/admin areas 
       
       # glimpse( ous )
@@ -1261,7 +1262,7 @@ metadata_widget_server <- function( id ,
     # req( orgUnitLevels() )
     cat( '\ngf.map():')
     
-    gf = geoFeatures()
+    gf = geoFeatures() %>% semi_join( ousTree() , by = c('id' = 'orgUnit') )
     ouLevels = orgUnitLevels() 
 
     # Remove slashes from levelNames
@@ -1292,7 +1293,7 @@ metadata_widget_server <- function( id ,
     cat( paste('geoFeatures split into' , n_levels , 'levels' ,
                  paste( names( split_geofeatures ), collapse = ',' ), sep = " " ) , '\n')
 
-    colors = RColorBrewer::brewer.pal(n_levels, 'Pastel1')
+    colors = RColorBrewer::brewer.pal(n_levels, 'Set2')
     names( colors ) = levels[ not_all_empty_geo ]
 
     # Set option to display points (https://stackoverflow.com/questions/65485747/mapview-points-not-showing-in-r)
@@ -1309,7 +1310,7 @@ metadata_widget_server <- function( id ,
     
     cat('\n**geoFeatures Map prepared for output-\n')
     #test
-    saveRDS( gf.map , 'gf.map.rds')
+    # saveRDS( gf.map , 'gf.map.rds')
     return( gf.map@map )  # return leaflet slot of mapview object https://github.com/r-spatial/mapview/issues/58
     
     # mapview not working, try tmap
@@ -1487,7 +1488,7 @@ metadata_widget_server <- function( id ,
   
   uploaded_OrgUnitLevels = reactive({ read.xlsx( metadataFile() ,  "OrgUnitLevels" ) %>% as_tibble() })
   uploaded_OrgUnits = reactive({ read.xlsx( metadataFile() ,  "OrgUnits" )  %>% as_tibble() })
-  uploaded_orgUnitHierarchy = reactive({ read.xlsx( metadataFile() ,  "orgUnitHierarchy" )  %>% as_tibble() })
+  uploaded_orgUnitHierarchy = reactive({ read.xlsx( metadataFile() ,  "orgUnitHierarchy" , guess_max = 1e6 )  %>% as_tibble() })
   
   uploaded_DataElements = reactive({ read.xlsx( metadataFile() ,  "DataElements" )  %>% as_tibble() })
 

@@ -1,34 +1,37 @@
 data_request_widget_ui = function ( id ) 
 {
-        ns <- NS(id)  
-        fillCol( height = 600, flex = c(NA  ) , 
-
-         add_busy_spinner(spin = "fading-circle", 
-                   position = "top-right") ,
-
+    ns <- NS(id)  
+  
+    add_busy_spinner(spin = "fading-circle", 
+                   position = "top-right") 
+  
+    fluidRow(
+       column( 5, 
          selectInput( ns("level") , label = "OrgUnit Levels:" , 
-                      width = '50%',
+                      width = '90%',
                       choices = "Load metadata to get values" , 
                       selected = 1,
                       multiple = FALSE ,
                       selectize = FALSE, 
                       size = 4  ##needed for `selected = FALSE` to work ) 
-                     ) ,   
-         
-         selectInput( ns("period") , label = "Period:" , 
-                      width = '50%',
-                      choices = c('months_last_year','months_last_2_years','months_last_3_years','months_last_4_years','months_last_5_years') , 
-                      selected = 1 ,
-                      multiple = FALSE ,
-                      selectize = FALSE, 
-                      size = 4  ##needed for `selected = FALSE` to work ) 
-                     ) ,
-         
+                     )
+         ) ,
+       column( 5, 
+          selectInput( ns("period") , label = "Period:" , 
+                        width = '90%',
+                        choices = c('months_last_year','months_last_2_years','months_last_3_years','months_last_4_years','months_last_5_years') , 
+                        selected = 1 ,
+                        multiple = FALSE ,
+                        selectize = FALSE, 
+                        size = 4  ##needed for `selected = FALSE` to work ) 
+                       ) 
+        ) ,
+      column( 2,         
         actionButton( ns("requestDataButton") , 
                       "Request data" , style='margin-top:25px' 
-                      )         
-         
-        ) 
+                      )
+      )
+    )
         } 
         
 data_request_widget_server <- function( id , 
@@ -174,7 +177,7 @@ data_request_widget_server <- function( id ,
           
           # Previous dataset file: 
           .dataset = dataset() 
-          # TESTING
+
           cat( '\n - dataset():' , dataset.file() )
           file =  paste0( data.folder() , dataset.file() )
           
@@ -217,9 +220,10 @@ data_request_widget_server <- function( id ,
           )  
                     
           saveRDS( x , saveAs )
+          removeModal()
           cat( '\n* finished downloading' , .formula.name , '\n') 
           completedRequest( completedRequest() + 1 )
-          removeModal()
+          
           
       }
           
