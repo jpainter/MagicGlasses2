@@ -82,11 +82,14 @@ unseasonal = function( x ,
         
         x.forecast  = 
                 
-            forecast::tsclean( x.ts ,
-                               replace.missing = TRUE ,
+                tsclean( x.ts ,
+                               replace.missing = interpolate ,
                                lambda = .lambda ) %>%
                 as.integer()
-            
+        
+        if ( !logical ) return( x.forecast )
+        
+        # Test for deviation from forecast
         MAD = mad( x , na.rm = TRUE )
         # standard_dev = sd( x, na.rm = TRUE )
             

@@ -89,7 +89,7 @@ formula_widget_server <- function( id ,
   selected_elements = reactive({
     # req( input$dataElementDictionaryTable_rows_selected  )
     
-    # cat('\n* formula_widget selected_elements():')
+    cat('\n* formula_widget selected_elements():')
     row_selected = input$dataElementDictionaryTable_rows_selected 
     # cat('\n - row number selected is' ,  row_selected )
     
@@ -178,9 +178,18 @@ formula_widget_server <- function( id ,
       cat('\n - adding' , nrow( selected_categories ), 'selected elements' )
    
     
-      ufe = bind_rows( ufe , selected_categories ) %>%
+      if ( nrow( ufe ) == 0 ){
+        ufe = selected_categories  %>%
         arrange( dataElement ) %>%
         select( Formula.Name, everything() )
+                
+      } else {
+        
+        ufe = bind_rows( ufe , selected_categories ) %>%
+        arrange( dataElement ) %>%
+        select( Formula.Name, everything() )
+      }
+      
 
       # save changes
       saveRDS( ufe %>% fill( Formula.Name, .direction =  "downup" )  ,

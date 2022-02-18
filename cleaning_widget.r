@@ -41,9 +41,12 @@ tagList(
                         tabPanel( "Inspect",  style = "height:70vh;" ,
                                 fluidPage( 
                                   fluidRow( style = "height:10vh;",
-                                            
-                                    selectInput( ns('error'), 'Select error type' ,
+                                    h5( 'Select orgUnit having error')     ,   
+                                    selectInput( ns('madError'), 'Median Absolute Deviation' ,
                                                  choices = c('mad15', 'mad10', 'mad5', 'seasonal5', 'seasonal3' ) ) ,
+                                    
+                                    selectInput( ns('seasonalError'), 'Seasonally Adjusted error' ,
+                                                 choices = c( 'seasonal5', 'seasonal3' ) ) ,
                                     
                                     selectInput( ns( 'flaggedOrgUnit') , 'Select orgUnit having this error' ,
                                                  choices = "" )
@@ -267,16 +270,20 @@ cleaning_widget_server <- function( id ,
         group_by( orgUnit, data.id ) %>%
         mutate(
           
+          expected = unseasonal( original , 
+                                  smallThreshold = .threshold * 2  , 
+                                  logical = FALSE  # Returns forecasted value
+                                  ) ,
+          
           seasonal5 = unseasonal(  ifelse( mad10, original , NA) , 
                                   smallThreshold = .threshold * 2  , 
                                   deviation = 5 ,
-                                  logical = TRUE , 
-                                  .pb = NULL ,
-                                  total = .total ) ,
+                                  logical = TRUE ) ,
+          
           seasonal3 = unseasonal(  ifelse( seasonal5, original , NA) , 
                                   smallThreshold = .threshold * 2 , 
                                   deviation = 3 ,
-                                  logical = TRUE )
+                                  logical = .total )  
       )
         })  
         
@@ -288,6 +295,7 @@ cleaning_widget_server <- function( id ,
                            )
               )
         
+        
     # Testing
     # saveRDS( data1.seasonal , paste0( data.folder(), dataset.file() ) )
     
@@ -296,7 +304,20 @@ cleaning_widget_server <- function( id ,
     })
    
   # Summary ####
-    
+  data1.summary = reactive({
+    req( data1.seasonal() )
+    d = data1.seasonal()
+    if ('expected' %in% names( d ) ){
+      
+      d.mase =  d %>%  
+        group_by( orgUnit, data.id ) %>%
+        summarise( mase = Metrics::mase( value, predicted ) ,
+             M = 100 * mase ) 
+      
+      return( d.mase )
+    }
+  
+  })
   output$contents <- renderTable({
     req( outlier.summary.data() )
     head( outlier.summary.data() , n = 100 )
@@ -411,6 +432,8 @@ cleaning_widget_server <- function( id ,
   
   output$dqaTable = renderTable( outlier.summary() ) 
   
+  output$MASE = renderPlot( ggplot( s , aes(x=M) ) + geom_histogram() )
+  
   ## Visualize cleaning (Inspect )  ####
   errorFlag = reactive({
     req( data1()) 
@@ -419,16 +442,15 @@ cleaning_widget_server <- function( id ,
     cat( '\n* errorFlag():')
     
     # print( head( data1() ) )
-    d = data1()
+    d = data1() 
      
     # testing
     # saveRDS( d , 'data1.rds')
-    
-    
-    
-    if ( input$error %in% names( d ) ){
+    # MAD Error
+    if ( input$madError %in% names( d ) ){
             flag = unique( as_tibble( d ) %>% 
-                   filter( !! rlang::sym( input$error )  == FALSE ,
+                   filter( 
+                     ( !! rlang::sym( input$madError )  == FALSE ),
                            data %in% input$dataElement ) %>% 
                    distinct( orgUnit , orgUnitName )  
                  )
@@ -441,7 +463,7 @@ cleaning_widget_server <- function( id ,
   
   observeEvent(  nrow( errorFlag() ) > 0 , {
     updateSelectInput( session, "flaggedOrgUnit" , 
-                       choices = paste0( errorFlag()$orgUnit )
+                       choices = paste0( errorFlag()$orgUnitName )
     )
   })
   
@@ -460,7 +482,7 @@ cleaning_widget_server <- function( id ,
     g = inspectOrgUnitData %>%
         ggplot( aes( x = Month, y = original,  group = data ) ) +
         geom_line( alpha = .25 ) +
-        geom_point( aes( color = !! rlang::sym( input$error ) 
+        geom_point( aes( color = !! rlang::sym( input$madError ) 
                          # , shape = seasonal3 
                          )) +
         labs( title = paste( unique( inspectOrgUnitData$orgUnitName ), collapse = ",") )

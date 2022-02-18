@@ -91,6 +91,8 @@ library( fable )
 library( fabletools )
 library( feasts )
 library( fable.prophet )
+library( Metrics )
+library( forecast )
 # library( fable.bsts )
 
 # busy spinner
