@@ -36,7 +36,15 @@ tagList(
         
                         tabPanel( "Outlier Summary",  
                                   textOutput( ns("outlierSummaryText")) ,
-                                  tableOutput( ns("dqaTable") ) ) ,
+                                  tableOutput( ns("dqaTable") )  
+                        ) ,
+                        
+                         tabPanel( "Mean Absolute Scaled Error",  
+                                    fluidRow( style = "height:60vh;",
+                                    plotOutput( ns("mase.summary") )
+                                  )
+                                  
+                        ) ,
                        
                         tabPanel( "Inspect",  style = "height:70vh;" ,
                                 fluidPage( 
@@ -52,7 +60,7 @@ tagList(
                                                  choices = "" )
                                   ) ,
                                   
-                                  fluidRow( style = "height:60vh;",
+                                  fluidRow( style = "height:50vh;",
                                     plotOutput( ns("inspect") )
                                   ))
                               )
@@ -111,12 +119,23 @@ cleaning_widget_server <- function( id ,
     # data = reactive({ reporting_widget_output$d() })
     # data.total = reactive({ reporting_widget_output$data.total() })
     
- # scan for outliers and flag ####
+    outlierData <- reactiveValues( df_data = NULL ) 
+    
+  # get data names
+    observe({
+      req( data1() )
+      outlierData$df_data = data1()
+      updateRadioButtons( session , "dataElement" , 
+                       choices = outlierData$df_data$data %>% unique ) 
+     
+    })
+    
+  # scan for outliers and flag ####
     searchForExtremeValues = reactiveVal( FALSE )
     
     observeEvent( input$determineExtremeValues  , {
-      req( data1())
-      if ( 'mad15' %in% names( data1() ) ){
+      req( outlierData$df_data )
+      if ( 'mad15' %in% names( outlierData$df_data ) ){
          showModal(
                     modalDialog( title = "Outlier flags already present in data", 
                          easyClose = TRUE ,
@@ -128,15 +147,22 @@ cleaning_widget_server <- function( id ,
         
           searchForExtremeValues( TRUE )  
           cat('\n * determine extreme values button:' , searchForExtremeValues() )
-          a = data1.mad()
+          outlierData$df_data = data1.mad()
             }
  } )
     
     data1.mad = reactive({
     req( data1() )
-      
+    cat('\n* data1.mad' )
+    
+    # if data1 already has mad columns, return data1
+    if ( 'mad10' %in% names( data1() ) ){
+      cat('\n - mad cols already in data1' )
+      return( data1() )
+    } 
+ 
     if ( searchForExtremeValues() ){
-      cat('\n* data1.mad')
+      cat('\n* data1.mad search')
     
       d = data1()
       nrow1 = nrow( d )
@@ -166,7 +192,7 @@ cleaning_widget_server <- function( id ,
            pull( n ) )
          ) %>% pull( original )
   
-     print( head( key_entry_errors ) )
+     # print( head( key_entry_errors ) )
      if ( is_empty( key_entry_errors )  ) key_entry_errors = NA
        
      
@@ -179,7 +205,7 @@ cleaning_widget_server <- function( id ,
                         detail = "starting ...",
                         value = 0, {
       
-      data1.mad = d %>%  
+    data1.mad = d %>%  
         group_by( orgUnit, data.id ) %>%
         mutate(
           .max = ifelse( 
@@ -218,51 +244,94 @@ cleaning_widget_server <- function( id ,
           modalDialog( title = "Finished scanning for extreme values", 
                        easyClose = TRUE ,
                        size = 'm' ,
-                       footer=NULL
+                       footer = "(click anywhere to close dialog box)"
                        )
           )  
     
-    # Testing
-    # saveRDS( data1.mad , paste0( data.folder(), dataset.file() ) )
+    # Save data for next time...
+    cat('\n - saving data1.mad to replace dataset')
+    saveRDS( data1.mad , paste0( data.folder(), dataset.file() ) )
+    removeModal()
+    
+    } else( data1.mad = data1() ) 
     
     return( data1.mad )
-  }
     })
  
-    searchForSeasonalOutliers = reactiveVal( FALSE )   
+    searchForSeasonalOutliers = reactiveVal( FALSE ) 
+    rerunSeasonalOutliers = reactiveVal( FALSE ) 
    
     observeEvent( input$determineSeasonalOutliers  , {
-      req( data1())
-      if ( 'seasonal5' %in% names( data1() ) ){
-         showModal(
-                    modalDialog( title = "Outlier flags already present in data", 
-                         easyClose = TRUE ,
-                         size = 'm' ,
-                         footer=NULL
-                         )
-         ) 
+      req( outlierData$df_data )
+      if ( 'seasonal5' %in% names( outlierData$df_data ) ){
+         showModal( rerunModal() ) 
+        outlierData$df_data = data1.seasonal()
+        
       } else {
         
           searchForSeasonalOutliers( TRUE )  
           cat('\n * determine seasonal outliers button:' , searchForSeasonalOutliers() )
-          b = data1.seasonal()
+          outlierData$df_data = data1.seasonal()
           
       }
  } )
+
+# Option to rerun seasonal outliers
+    rerunModal <- function() {
+       ns <- NS(id) 
+       modalDialog( title = "Seasonal outlier flags already present in data", 
+                         easyClose = TRUE ,
+                         size = 'm' ,
+                         footer = tagList( modalButton( "Cancel" ),
+                                           actionButton( ns("rerunSeasonal"), "Re-Run Seasonal Outliers")
+        )
+                         )
+   }
+   
+    observeEvent( input$rerunSeasonal , {
+         req( data1() )
+         
+         searchForSeasonalOutliers( TRUE ) 
+         rerunSeasonalOutliers( TRUE )
+         cat('\n * rerun seasonal outliers button:' , searchForSeasonalOutliers() )
+         outlierData$df_data = data1.seasonal()
+})
     
     data1.seasonal = reactive({
-   
-      if ( searchForSeasonalOutliers() ){
+      req( outlierData$df_data )
       cat('\n* data1.seasonal')
+      
+      # if data1 already has seasonal columns, return data1
+      if ( !rerunSeasonalOutliers() & 'seasonal3' %in% names( outlierData$df_data ) ){
+        cat('\n - seasonal cols already in data1' )
+        return( outlierData$df_data )
+      } 
+      
+      if ( searchForSeasonalOutliers()  ){
+      cat('\n* data1.seasonal search')
+        
+      # Stop if mad10 not in dataset
+      if ( !'mad10' %in% names( data1() ) ){
+            showModal(
+              modalDialog( title = "Please search for extreme values first", 
+                           easyClose = TRUE ,
+                           size = 'm' ,
+                           footer = "(click anywhere to close dialog box)"
+                           )
+              )
+        searchForSeasonalOutliers( FALSE )
+        return( outlierData$df_data )
+      }
     
-       d = isolate( outlier.summary.data() )
+       d = outlierData$df_data
  
        cat( '\n - scanning for Seasonal outliers')
       .total = length( key_size( d ) )
+       cat( '\n - .total' , .total )
   
       .threshold = 50
 
-     withProgress(  message = "Seasonal Outliers",
+      withProgress(  message = "Seasonal Outliers",
                         detail = "starting ...",
                         value = 0, {
       
@@ -270,7 +339,7 @@ cleaning_widget_server <- function( id ,
         group_by( orgUnit, data.id ) %>%
         mutate(
           
-          expected = unseasonal( original , 
+          expected = unseasonal(  original , 
                                   smallThreshold = .threshold * 2  , 
                                   logical = FALSE  # Returns forecasted value
                                   ) ,
@@ -291,158 +360,181 @@ cleaning_widget_server <- function( id ,
               modalDialog( title = "Finished scanning for seasonal values", 
                            easyClose = TRUE ,
                            size = 'm' ,
-                           footer=NULL
+                           footer = "(click anywhere to close dialog box)"
                            )
               )
         
-        
+    cat('\n - saving data1.seasonal to replace dataset')
+    cat('\n - names(data1.seasonal):', names(data1.seasonal) )
+    
+    saveRDS( data1.seasonal , paste0( data.folder(), dataset.file() ) )
+    removeModal()
+    
     # Testing
     # saveRDS( data1.seasonal , paste0( data.folder(), dataset.file() ) )
+    searchForSeasonalOutliers( FALSE )
+    rerunSeasonalOutliers( FALSE )
     
     return( data1.seasonal )
   }
     })
    
   # Summary ####
-  data1.summary = reactive({
-    req( data1.seasonal() )
-    d = data1.seasonal()
-    if ('expected' %in% names( d ) ){
-      
-      d.mase =  d %>%  
-        group_by( orgUnit, data.id ) %>%
-        summarise( mase = Metrics::mase( value, predicted ) ,
-             M = 100 * mase ) 
-      
-      return( d.mase )
-    }
-  
-  })
-  output$contents <- renderTable({
-    req( outlier.summary.data() )
-    head( outlier.summary.data() , n = 100 )
-  })
+    data1.summary = reactive({
+        req( outlierData$df_data )
+        cat( '\n* data1.summary')
+        
+        d = outlierData$df_data
+        if (! 'expected' %in% names( d ) ){
+          cat( '\n - "expected" column not found')
+          return()
+          }
+          
+        d.mase =  d %>%  as_tibble() %>%
+            group_by( orgUnit, data.id ) %>%
+            summarise( 
+              mase = mase( actual = original, predicted = expected  ) ,
+              MASE = 100 * mase  ,
+              n = sum( !is.na( original )) 
+            )
+          
+        return( d.mase )
 
-  output$profileSummary <- renderUI({ #describeData()
-    
-    out <- print( dfSummary( dataset() ,
-                       graph.magnif = 0.75),
-             style = "grid" ,
-             method = 'render',
-             omit.headings = TRUE,
-             bootstrap.css = FALSE)
-    out
-  })
-  
-  
-  # Outliers tab  
-  observeEvent( data1()  , {
-    req( data1() )
-    if( nrow( data1() ) > 0 && 'data' %in% names( data1() ) ){
-      cat('\n-update dataElement-')
-      updateRadioButtons( session, 'dataElement' ,
-                       choices =  data1()  %>% pull( data ) %>% unique )
-    }
-    cat('-done\n')
   })
     
-  outlier.summary.data = reactive({
-    cat( '\n* outlier.summary.data')
-    
-      if (!is_empty( isolate( data1.seasonal() ) )){
-        cat('\n - data.seasonal' )
-        d = data1.seasonal() 
-      } else if(!is_empty( data1.mad() )) {
-        cat('\n - data.mad' )
-        d = data1.mad()
-      } else{ 
-        cat('\n - dataset' )
-        d = data1() 
+    output$mase.summary <- renderPlot({
+      req( data1.summary() )
+      cat( '\n* output$mase.summary')
+      
+      if ('MASE' %in% names( data1.summary() )){
+        
+        ggplot( data1.summary() , aes( x = MASE ) ) + 
+        geom_histogram( binwidth = 1 )
       }
-    
-    
-    if ( input$selectOrgType %in% 'Facilities only'){
-      d = d %>% filter( effectiveLeaf )
-    } else if ( input$selectOrgType %in% 'Admin only' ){
-      d = d %>% filter( !effectiveLeaf )
-    }
-    
-    return( d )
+      
     })
 
-  outlier.summary.cols = reactive({
-    req( outlier.summary.data() )
-    cat('\n* outlier.summary.cols():')
+    output$contents <- renderTable({
+      cat('\n* contents')
+      req( outlier.dataset() )
+      head( outlier.dataset() , n = 100 )
+    })
     
-    d = outlier.summary.data()
-    
-    if ( 'seasonal3' %in% names( d )){
-      cols = c('mad15', 'mad10', 'mad5','seasonal5' , 'seasonal3')
-    } else if( 'mad5' %in% names( d ) ){
-      cols = c('mad15', 'mad10', 'mad5' )
-    } else { 
-      cat('\n - no outlier cols found')
-      output$outlierSummaryText = renderText({ 'No outlier flags found. Please run the outlier detection algorithms'})
-      return() }
-    
-    cat('\n - ', cols )
-    output$outlierSummaryText = renderText({ ''})
-     
-    return( cols)
-    
-  })
+    output$profileSummary <- renderUI({ #describeData()
+      cat('\n* profileSummary')
+      out <- print( dfSummary( data1() ,
+                         graph.magnif = 0.75),
+               style = "grid" ,
+               method = 'render',
+               omit.headings = TRUE,
+               bootstrap.css = FALSE)
+      out
+    })
   
-  outlier.summary = reactive({
-      req( outlier.summary.data() )
-      req( outlier.summary.cols() )
-      req( input$dataElement )
+# Outliers #####
+    outlier.dataset = reactive({
+      cat( '\n* outlier.dataset')
+      req( outlierData$df_data )
       
-      cat('\n* outlier.summary' )
-      d = outlier.summary.data()
-      cols = c( 'data' , outlier.summary.cols() )
+      d = outlierData$df_data
+        # if (!is_empty( data1.seasonal()  )){
+        #   cat('\n - data1.seasonal' )
+        #   d = data1.seasonal() 
+        # } else {
+        #   d = data1.mad()
+        # }
+        # } else if( !is_empty( data1.mad() )) {
+        #   cat('\n - data1.mad' )
+        #   d = data1.mad()
+        # } else{ 
+        #   cat('\n - data1' )
+        #   d = data1() 
+        # }
+      if ( 'mad10' %in% names(d) ) cat('\n - data has mad10' )
+      if ( 'seasonal3' %in% names(d) ) cat('\n - data has seasonal3' )
+      
+      if ( 'effectiveLeaf' %in% names( d ) && input$selectOrgType %in% 'Facilities only'){
+        cat('\n - data has effectiveLeaf' )
+        d = d %>% filter( effectiveLeaf )
+      } else if ( input$selectOrgType %in% 'Admin only' ){
+        d = d %>% filter( !effectiveLeaf )
+      }
+      
+      cat( '\n - done')
+      return( d )
+      })
 
-      cat('\n - totals' )
-      total = d %>%  as_tibble() %>%
-        filter( data %in% input$dataElement ) %>%
-        group_by( data ) %>%
-        summarise( Total = sum( original , na.rm = T ) ,
-                   # monthlyN = n() ,
-                   N = sum( !is.na( original )))
-
+    outlier.summary.cols = reactive({
+      req( outlierData$df_data )
+      cat('\n* outlier.summary.cols():')
       
-      cat('\n - summary' )
-      os = d %>% as_tibble() %>% 
-        filter( data %in% input$dataElement , !is.na( mad15 ) ) %>%
-        group_by_at( cols ) %>%
-        summarise( n = sum( !is.na( original )) , 
-                   total = sum( original , na.rm = T ) ,
-                   max = max( original , na.rm = T ) %>% comma()
-                   ) %>%
-        inner_join( total , by = c( "data" ) ) %>%
-        mutate( 
-                   `%N` = percent( n / N ) ,
-                   `%Total` = percent( total / Total )
-                   )   %>%
-        ungroup %>%
-        select( !! cols  , n ,  `%N` ,  max , `%Total` , -data ) 
+      d = outlierData$df_data
       
-      cat('\n - summary has' , nrow(os) , 'rows')
-      return( os )
-  })
+      if ( 'seasonal3' %in% names( d )){
+        cols = c('mad15', 'mad10', 'mad5','seasonal5' , 'seasonal3')
+      } else if( 'mad5' %in% names( d ) ){
+        cols = c('mad15', 'mad10', 'mad5' )
+      } else { 
+        cat('\n - no outlier cols found')
+        output$outlierSummaryText = renderText({ 'No outlier flags found. Please run the outlier detection algorithms'})
+        return() }
+      
+      cat('\n - ', cols )
+      output$outlierSummaryText = renderText({ ''})
+       
+      return( cols)
+      
+    })
+    
+    outlier.summary = reactive({
+        req( outlier.dataset() )
+        req( outlier.summary.cols() )
+        req( input$dataElement )
+        
+        cat('\n* outlier.summary' )
+        d = outlier.dataset()
+        cols = c( 'data' , outlier.summary.cols() )
   
-  output$dqaTable = renderTable( outlier.summary() ) 
+        cat('\n - totals' )
+        total = d %>%  as_tibble() %>%
+          filter( data %in% input$dataElement ) %>%
+          group_by( data ) %>%
+          summarise( Total = sum( original , na.rm = T ) ,
+                     # monthlyN = n() ,
+                     N = sum( !is.na( original )))
   
-  output$MASE = renderPlot( ggplot( s , aes(x=M) ) + geom_histogram() )
-  
+        
+        cat('\n - summary' )
+        os = d %>% as_tibble() %>% 
+          filter( data %in% input$dataElement , !is.na( mad15 ) ) %>%
+          group_by_at( cols ) %>%
+          summarise( n = sum( !is.na( original )) , 
+                     total = sum( original , na.rm = T ) ,
+                     max = max( original , na.rm = T ) %>% comma()
+                     ) %>%
+          inner_join( total , by = c( "data" ) ) %>%
+          mutate( 
+                     `%N` = percent( n / N ) ,
+                     `%Total` = percent( total / Total )
+                     )   %>%
+          ungroup %>%
+          select( !! cols  , n ,  `%N` ,  max , `%Total` , -data ) 
+        
+        cat('\n - summary has' , nrow(os) , 'rows')
+        return( os )
+    })
+    
+    output$dqaTable = renderTable( outlier.summary() ) 
+    
   ## Visualize cleaning (Inspect )  ####
   errorFlag = reactive({
-    req( data1()) 
-    req( input$error )
+    req( outlier.dataset()) 
+    req( input$madError )
     req( input$dataElement )
     cat( '\n* errorFlag():')
     
     # print( head( data1() ) )
-    d = data1() 
+    d = outlier.dataset() 
      
     # testing
     # saveRDS( d , 'data1.rds')
@@ -468,17 +560,18 @@ cleaning_widget_server <- function( id ,
   })
   
   plot.single.data.series = reactive({
-    req( data1() )
+    req( outlier.dataset() )
 
     cat('\n* plot.single.data.series' )
     
-    if ( length( errorFlag() ) == 0 ) return()
+    if ( nrow( errorFlag() ) == 0 ) return()
   
-    inspectOrgUnitData = data1() %>% as_tibble() %>%
+    inspectOrgUnitData = outlier.dataset() %>% as_tibble() %>%
       filter( orgUnit %in% input$flaggedOrgUnit ,
               data %in% input$dataElement
               )
-  
+    cat('\n* inspectOrgUnitData points:' , nrow(inspectOrgUnitData) )
+    
     g = inspectOrgUnitData %>%
         ggplot( aes( x = Month, y = original,  group = data ) ) +
         geom_line( alpha = .25 ) +
@@ -495,7 +588,9 @@ cleaning_widget_server <- function( id ,
   
  
   # Return ####
-  return()
+  return( list(
+    data2 = reactive({ outlierData$df_data })
+  ))
   
 })
 }  

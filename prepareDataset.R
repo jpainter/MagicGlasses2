@@ -2,7 +2,10 @@
 translate_dataset = function( data , formula_elements ){
   cat('\n* prepare dataset:')
   dd = data %>% 
-        rename( dataElement.id = dataElement , categoryOptionCombo.ids = categoryOptionCombo ) %>%
+        rename( 
+          dataElement.id = dataElement , 
+          categoryOptionCombo.ids = categoryOptionCombo 
+          ) %>%
         left_join( formula_elements %>% 
                      select( dataSet, periodType, zeroIsSignificant, 
                              dataElement.id, categoryOptionCombo.ids, dataElement, Categories ) , 
@@ -168,8 +171,11 @@ data_leaves = function( d ){
   data.leaves = d  %>%
     as_tibble() %>%
     group_by( orgUnit ) %>%
-    summarise( n = max( COUNT , na.rm = TRUE ) ) %>%
-    mutate( effectiveLeaf = ifelse( n == 1, TRUE, FALSE ) ) %>%
+    summarise( 
+      n = ifelse( !all(is.na( COUNT ) ) , max( COUNT , na.rm = TRUE ) , 0 )
+         ) %>%
+    mutate( 
+      effectiveLeaf = ifelse( n == 1, TRUE, FALSE ) ) %>%
     select( orgUnit , effectiveLeaf ) 
   
   return( data.leaves )
@@ -181,9 +187,9 @@ data_1 = function( data , formula_elements , ousTree   ){
   cat('\n* preparing data_1:')
   
   # TESTING
-  saveRDS( data , 'data.rds' )
-  saveRDS( formula_elements , 'formula_elements.rds' )
-  saveRDS( ousTree , 'ousTree.rds' )
+  # saveRDS( data , 'data.rds' )
+  # saveRDS( formula_elements , 'formula_elements.rds' )
+  # saveRDS( ousTree , 'ousTree.rds' )
   
   cat('\n - translate_dataset:')
   dd = translate_dataset( data , formula_elements )
@@ -201,7 +207,7 @@ data_1 = function( data , formula_elements , ousTree   ){
   d. = d.ts %>% 
   left_join( data.leaves , by = 'orgUnit') %>%
   left_join( ousTree , by = 'orgUnit')  %>%
-  mutate( original = SUM )
+  mutate( original = SUM , value = !is.na( SUM ))
   # left_join( ouLevels %>% select( level, levelName) , by = 'level' )
 # glimpse( d. )
   return( d. )

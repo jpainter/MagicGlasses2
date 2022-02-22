@@ -91,7 +91,7 @@ library( fable )
 library( fabletools )
 library( feasts )
 library( fable.prophet )
-library( Metrics )
+# library( Metrics )
 library( forecast )
 # library( fable.bsts )
 
@@ -144,6 +144,11 @@ useShinyjs()   # Set up shinyjs
 ```
 
 ```{css my-css , include = FALSE, eval = TRUE }
+
+# DT table elements on same line 
+form{
+   display:inline;
+}
 
 # Scroll within tabs
 # https://stackoverflow.com/questions/64777606/scrollable-tab-in-flexdashboard
@@ -371,7 +376,6 @@ directory_widget_output = directory_widget_server( "directory1" )
 Column
 -----------------------------------
 
-### Login
 
 ```{r, echo = FALSE  }
 source( 'login_widget.r' )
@@ -458,14 +462,14 @@ Outliers and Errors
 ========================
 
 
-```{r }
+```{r  }
 source( 'cleaning_widget.r' )
 
 cleaning_widget_ui( "cleaning1" )
 
 cleaning_widget_output = 
   cleaning_widget_server( "cleaning1" , 
-                          directory_widget_output = directory_widget_output ,
+                         directory_widget_output = directory_widget_output ,
                          metadata_widget_output = metadata_widget_output ,
                          data_widget_output = data1_Widget_output ,
                          reporting_widget_output = reporting_widget_output 
@@ -485,7 +489,8 @@ reporting_widget_output =
   reporting_widget_server( "reporting1" ,
                          dataDirectory = directory_widget_output ,
                          metadata_widget_output = metadata_widget_output ,
-                         data_widget_output = data1_Widget_output )
+                         data_widget_output = data1_Widget_output ,
+                         cleaning_widget_output = cleaning_widget_output )
 ```
 
 

@@ -171,7 +171,9 @@ data_request_widget_server <- function( id ,
             unite( id , dataElement.id, categoryOptionCombo.ids , sep="." ) %>%
             pull( id )
           .level1.id = orgUnits() %>% filter( level == 1 ) %>% pull( id )
-            
+          
+          cat( '\n - .level1.id:' , .level1.id )  
+          
           cat( '\n - formula.request elements:' , length( .elements ) , ':\n' ,
                .elements )
           
@@ -209,6 +211,7 @@ data_request_widget_server <- function( id ,
           
           saveAs = paste0( .dir, .formula.name , "_" , 
                            .level ,"_", .periods ,"_", Sys.Date() , ".rds")
+          
           cat( '\nsaving formula.request as', saveAs )  
           
         showModal(

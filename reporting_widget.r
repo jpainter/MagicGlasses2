@@ -136,7 +136,8 @@ tabsetPanel( type = "tabs",
 reporting_widget_server <- function( id , 
                                      dataDirectory = NULL ,
                                      metadata_widget_output = NULL,
-                                     data_widget_output = NULL ){
+                                     data_widget_output = NULL ,
+                                     cleaning_widget_output = NULL ){
   moduleServer(
     id ,
     function( input, output, session 
@@ -160,6 +161,7 @@ reporting_widget_server <- function( id ,
     formula_elements = reactive({ data_widget_output$formula_elements() })
     orgUnits = reactive({ metadata_widget_output$orgUnits() })  
     orgUnitLevels = reactive({ metadata_widget_output$orgUnitLevels() })
+    data2 = reactive({ cleaning_widget_output$data })
     
     # see https://stackoverflow.com/questions/54438495/shift-legend-into-empty-facets-of-a-faceted-plot-in-ggplot2
     shift_legend3 <- function(p) {

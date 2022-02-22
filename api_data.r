@@ -513,7 +513,7 @@ api_data = function(      periods = "LAST_YEAR" ,
                           shinyApp = FALSE ,
                           ...
 ){
-  cat('\n**api_data function...')
+  cat('\n** api_data function...')
   # tic()
   ##### cycle through each period, each data element...
 
@@ -571,11 +571,40 @@ api_data = function(      periods = "LAST_YEAR" ,
       
       cat('\n - date range:' , first.month , last.month )
       
-      des = prev.data %>% 
-        filter( !is.na( COUNT ) ) %>%
-        select( dataElement,  categoryOptionCombo ) %>%
-        unique 
+      #NB: use *.id if downloaded data was prepared and saved 
+      cat('\n - extracting previously downloaded elements'  )
+      if ( 'dataElement.id' %in% names( prev.data ) ){
+                prev.data = prev.data %>% as_tibble %>% 
+                  ungroup() %>%
+                  select(  orgUnit, period , 
+                           dataElement.id,  categoryOptionCombo.ids ,
+                           COUNT, SUM ) %>%
+                  rename( dataElement = dataElement.id ,
+                          categoryOptionCombo = categoryOptionCombo.ids ) %>%
+                  filter( !is.na( COUNT ) || COUNT == 0 ) %>%
+                  distinct 
+        } else {
+                prev.data = prev.data %>% as_tibble %>%
+                  ungroup() %>%
+                  select( orgUnit, period , 
+                          dataElement,  categoryOptionCombo ,
+                          COUNT, SUM  ) %>%
+                  filter( !is.na( COUNT )  ) %>%
+                  distinct 
+        }
       
+      # Confirm there is previous data
+      prev = prev.data %>%
+        filter( orgUnit == level1.id  
+                # , period %in% period_vectors 
+                ) 
+      cat( '\n - previous data has:' ,  nrow( prev ), 'rows' )
+      if ( nrow( prev ) == 0 ) return()
+      
+      des = prev.data %>% 
+                  select(  dataElement,   categoryOptionCombo ) %>%
+                  distinct 
+        
       # excel version
       # elements = paste( des$dataElement.id , des$categoryOptionCombo.ids , sep = ".") %>%
       #   paste( collapse = ";")
@@ -583,45 +612,64 @@ api_data = function(      periods = "LAST_YEAR" ,
       # rds version 
       prev.elements = paste( des$dataElement , des$categoryOptionCombo , sep = ".") %>%
         paste( collapse = ";") 
+      cat('\n - prev.elements:' , prev.elements )
       
       # limit to those in this request (new.elements)
-      elements.vector = str_split( elements, ";") %>% unlist 
-      prev.elements.vector = str_split( prev.elements, ";") %>% unlist 
-      prev.elements = prev.elements.vector[ prev.elements.vector %in% elements ] %>%
-        paste0( ., collapse = ';')
+      # elements.vector = str_split( elements, ";") %>% unlist 
+      # prev.elements.vector = str_split( prev.elements, ";") %>% unlist 
+      # prev.elements = prev.elements.vector[ prev.elements.vector %in% elements ] %>%
+      #   paste0( ., collapse = ';')
       
-      new.elements = paste( elements , collapse = ';') 
+      new.elements = paste( elements , collapse = ';' ) 
+      cat( '\n - new.elements:' ,  new.elements )
 
       # Lookup national counts for last month, then get current counts ####
      
+      prev.periods = prev.data %>% pull( period ) %>% unique %>%  paste(. , collapse = ';')
+      cat( '\n - previous periods:' ,  prev.periods )
+ 
+      ## FETCH CURRENT VALUES of previous data 
+      cat( '\n - checking previous counts\n' ) 
+      # current.count = fetch(  baseurl , new.elements , prev.periods , orgUnits. = "LEVEL-1" , "COUNT" )  %>%
+      #   mutate(current.count = as.integer( value ) ) %>%
+      #   select( - value )
+      
+      current.counts = fetch_get(  baseurl. = baseurl , username , password ,
+                                  de. = new.elements , 
+                                  periods. = prev.periods, 
+                                  orgUnits. = "LEVEL-1" , 
+                                  aggregationType. = "COUNT" ,
+                                  get.print = print ) %>%
+        mutate( current.count = as.integer( value )  )
+      
+      cat( '\n - checking previous values\n' )
+      current.values = fetch_get(  baseurl. = baseurl , username , password ,
+                                  de. = new.elements , 
+                                  periods. = prev.periods, 
+                                  orgUnits. = "LEVEL-1" , 
+                                  aggregationType. = "SUM" ,
+                                  get.print = print ) %>%
+        mutate( current.value = as.integer( value )  )
+        
+      
+      #TESTING
+      saveRDS( current.counts, 'current.counts.rds')
+      saveRDS( current.values, 'current.values.rds')
+      # Compare with previous data just for level-1
       ## for excel
       # prev = prev.data %>% filter( level == 1 , period %in% period_vectors ) 
       
       ## for rds, need orgunit for level 1 
-      # prev = prev.data %>% filter( orgUnit == 'LEVEL-1' , period %in% period_vectors )
       if ( is_empty( level1.id ) ){
         message('\n api_data function: need level1.id')
         return()
       }
       
-      prev = prev.data %>% filter( orgUnit == level1.id  , period %in% period_vectors ) 
       
-      prev.periods = prev %>% pull( period ) %>% unique %>%  paste(. , collapse = ';')
-      
-      ## FETCH CURRENT VALUES of previous data 
-      cat( '\n - checking previous counts\n', new.elements, '\n' , prev.periods , '\n'  ) 
-      current.count = fetch(  baseurl , new.elements , prev.periods , orgUnits. = "LEVEL-1" , "COUNT" )  %>%
-        mutate(current.count = as.integer( value ) ) %>%
-        select( - value )
-      
-      cat( '\n - checking previous values\n', new.elements, '\n' , prev.periods , '\n'  )
-      current.value = fetch(  baseurl , new.elements , prev.periods , orgUnits. = "LEVEL-1" , "SUM" )  %>%
-        mutate(current.value = as.numeric( value ) ) %>%
-        select( - value )
-      
-      update_compare = inner_join( current.count, current.value , 
+      update_compare = inner_join( current.counts, current.values , 
                                    by = c("dataElement", "period", "orgUnit", "categoryOptionCombo")
                                    ) %>%
+
         left_join( prev %>% 
                       mutate( prev.count = as.integer( COUNT ) ,
                               prev.value = as.numeric( SUM ) ) %>%
@@ -638,8 +686,8 @@ api_data = function(      periods = "LAST_YEAR" ,
                           'orgUnit' )
                   
                   ) %>%
-        mutate( same = ( current.count %in% prev.count ) & 
-                  ( current.value %in% prev.value ) 
+        mutate( same = ( current.count == prev.count ) & 
+                  ( current.value == prev.value ) 
         )
       
         
@@ -725,7 +773,7 @@ api_data = function(      periods = "LAST_YEAR" ,
                                   periods. = Var1, 
                                   orgUnits. = Var2 , 
                                   aggregationType. = "SUM" ,
-                                  get.print = print)  
+                                  get.print = print )  
              
               # progress$set( value = i , detail = paste( "COUNT" , i ) )
               d.count = fetch_get(  baseurl. = baseurl , username , password ,
@@ -936,7 +984,7 @@ api_data = function(      periods = "LAST_YEAR" ,
        good.prev.data = prev.data %>% filter( !period %in% unique( d$period ))
        
        updated.data  = bind_rows( good.prev.data , d ) %>% 
-         filter( !is.na( COUNT ) ) %>%
+         filter( !is.na( COUNT ) || COUNT == 0 ) %>%
          arrange( period , orgUnit, dataElement , categoryOptionCombo  ) 
 
        return( updated.data )

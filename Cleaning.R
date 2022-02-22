@@ -1,5 +1,5 @@
 # Cleaning.R
-extremely_mad = function( x , 
+extremely_mad = function( x , # A vector of numeric values
                           deviation = 15, 
                           smallThreshold = 50 , 
                           key_entry_error = NA , 
@@ -21,21 +21,22 @@ extremely_mad = function( x ,
   } 
   
   # Remove any value above maximum_allowed or key error
-  if ( !is.na( maximum_allowed ) ){
-    over_max = x > maximum_allowed 
+  if ( all( !is.na( maximum_allowed ) ) ){
+    over_max = x > maximum_allowed
   } else { over_max = !x>=0 }
-  
-  # Remove key entry errors
+
+  # # Remove key entry errors
   if ( !all(is.na( key_entry_error )) ) {
-    key_error =  x>=0 & x %in% key_entry_error$original 
+    key_error =  x>=0 & x %in% key_entry_error$original
   } else { key_error = !x>=0 }
   
+  
   y = x
-  y[ over_max | key_error ] = NA 
-   
-  if ( (all( y <= smallThreshold | is.na( y ) ) ) ) {
+  y[ over_max | key_error ] = NA
+  
+  if ( all( y <= smallThreshold | is.na( y ) )  ) {
       if ( logical ) return( ! ( over_max | key_error ) )
-      return( y )    
+      return( y )
   }
   
       # pre clean extreme values
@@ -103,3 +104,21 @@ unseasonal = function( x ,
 }
 
 
+# MASE function borrowed from Metrics package, modified with sum na.rm = TRUE
+ae = function (actual, predicted){
+  return(abs(actual - predicted))
+  
+}
+
+mase = function (actual, predicted, step_size = 1 ){
+    naive_start <- step_size + 1
+    n <- as.numeric(length(actual))
+    naive_end <- n - step_size
+    sum_errors <- sum( ae(actual, predicted), na.rm = TRUE )
+    naive_errors <- sum(ae(actual[naive_start:n], actual[1:naive_end]), na.rm = TRUE)
+    
+    # if ( (n * naive_errors/naive_end) > 0 |(n * naive_errors/naive_end) < 0 ){
+      mase = sum_errors/(n * naive_errors/naive_end) 
+    # } else { mase = NA }
+    return( mase )
+}

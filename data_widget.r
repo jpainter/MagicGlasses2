@@ -11,14 +11,9 @@ tagList(
             # , margins = c(70, 1200)
           ) ,
   
-        h5('The files here are in the directory specified in the setup section') ,
+        # h5('The files here are in the directory specified in the setup section') ,
         
-        textOutput( ns("directory"), 
-                    # label = "",
-                    #  value = NULL ,
-                    #  width = '95%'
-                     # , style = "font-size: 50%;"
-                     ) ,
+        textOutput( ns("directory") ) ,
         
         selectInput( ns("formula.file") , 
                      label = "Formula Files:" ,
@@ -80,8 +75,6 @@ data_widget_server <- function( id ,
         
         formula.files = reactive({ 
           req( data.folder() )
-          timeToUpdate = completedRequest() # trigger to refresh after completed download
-          
           cat( '\n* looking for formula files in' , data.folder() , '\n')
         
           ff = files( search = 'Formulas_' , dir = data.folder() , type = 'xlsx|rds' )  
@@ -99,6 +92,12 @@ data_widget_server <- function( id ,
           
           return( ff )
           })
+        
+        # trigger refresh after completed download
+        observeEvent( completedRequest() , { 
+          cat('\n- data_widget completedRequest():', completedRequest() )
+          a = formula.files()
+        })
         
         observe({
           cat('\n* updating directory \n')
@@ -123,12 +122,12 @@ data_widget_server <- function( id ,
           if ( !any(file.exists( file ) )) return( NULL )
           
           if ( grepl( fixed('.xlsx'), file )  ){
-            cat( '\n - read xls file')
+            cat( '\n - read xls file', file )
             formulas = read_excel( file , sheet = 'Formula') %>% 
               filter( !is.na(Formula.Name)) %>%
               arrange( desc( Formula.Name ) ) 
           } else {
-            cat( '\n - read rds file')
+            cat( '\n - read rds file', file )
             formulas = readRDS( file )
           }
           
@@ -148,12 +147,12 @@ data_widget_server <- function( id ,
           cat( '\n - formula file' , input$formula.file )
           
           if ( grepl( fixed('.xlsx'), file ) ){
-          cat( '\n - read xls file' )
+          cat( '\n - read xls file' , file )
             formulas = read_excel( file , sheet = 'Formula Elements' , guess_max = 1e6 )  %>%
             filter( Formula.Name %in% input$indicator ) 
           
             } else{
-            cat( '\n - read rds file')
+            cat( '\n - read rds file', file )
             formulas = readRDS( file ) %>% filter( Formula.Name %in% input$indicator )
           }
         
@@ -264,9 +263,12 @@ data_widget_server <- function( id ,
                            )
               )
             
-            d = readRDS( file ) 
-            removeModal()
-            cat('\n - dataset has' , nrow(d),  'rows')
+          
+          d = readRDS( file ) 
+          
+          removeModal()
+            
+          cat('\n - dataset has' , nrow(d),  'rows')
             
             return( d )
           } else {
@@ -278,15 +280,20 @@ data_widget_server <- function( id ,
           req( dataset() )
           req( formula_elements() )
           req( ousTree() )
+          cat( '\n* data_widget data1')
           
-          
-          if ( !'data' %in% names( dataset() ) ){
+          # Testing 
+            # saveRDS( dataset() , 'dataset.rds' )
+            # saveRDS( formula_elements() , 'formula_elements.rds' )
+            # saveRDS( ousTree() , 'ousTree.rds' )
+            
+          if ( !'effectiveLeaf' %in% names( dataset() ) ){
             
             showModal(
               modalDialog( title = "Preparing raw data for analysis.  Just a moment...", 
                            easyClose = TRUE ,
                            size = 's' ,
-                           footer=NULL
+                           footer= '(click anywhere to continue)'
                            )
               )
             
@@ -294,13 +301,18 @@ data_widget_server <- function( id ,
             data1 = data_1( dataset() , formula_elements() , ousTree()  )
             cat( '\n - data1 names:', names( data1 ))
             cat( '\n - data1 rows:', nrow( data1 ))
-            
-            # Testing 
-            # saveRDS( data1 , 'data1.rds' )
-            
-       
+          
           } else {
+            cat( '\n* data1 already prepared') 
             data1 = dataset()
+          }
+          
+        # Testing
+          # saveRDS( data1 , 'data1.rds' )
+          
+          # Add value column if missing (now added in data_1 function)
+          if ( ! 'value' %in% names( data1 ) ){
+            data1 = data1 %>% mutate( value = !is.na( SUM ) )
           }
           
           removeModal()
@@ -308,6 +320,7 @@ data_widget_server <- function( id ,
       })
             
 
+# Return ####
         return( list( 
           indicator = reactive({ input$indicator }) ,
           formulas = formulas ,

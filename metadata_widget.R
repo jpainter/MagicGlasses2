@@ -1054,7 +1054,7 @@ metadata_widget_server <- function( id ,
         if ( file.exists( file ) & !dir.exists( file )){
           
           cat('\n- reading from'  )
-          ous.tree = read_excel( file , sheet = 'orgUnitHierarchy' )
+          ous.tree = read_excel( file , sheet = 'orgUnitHierarchy', guess_max = 1e6 )
           cat('\n- ous.tree has' , nrow(ous.tree) , "rows" ) 
         
           } else {
