@@ -214,6 +214,7 @@ cleaning_widget_server <- function( id ,
             effectiveLeaf
             , 31, NA  )  
           ) %>%
+      rowwise() %>%
         mutate( 
             mad15 = extremely_mad( original , 
                                    deviation = 15 , 
@@ -380,6 +381,7 @@ cleaning_widget_server <- function( id ,
     })
    
   # Summary ####
+    # d.mase
     data1.summary = reactive({
         req( outlierData$df_data )
         cat( '\n* data1.summary')

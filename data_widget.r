@@ -223,7 +223,7 @@ data_widget_server <- function( id ,
 
 
         # update indicators 
-        observe({  
+        observeEvent(  input$formula.file , {  
             cat( '\n* updating indicator list' )
             updateSelectInput( session, 'indicator' , 
                                       choices =  formula.names() ,

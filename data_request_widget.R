@@ -169,13 +169,14 @@ data_request_widget_server <- function( id ,
           .formula.name = indicator()
           .elements = formula_elements() %>% 
             unite( id , dataElement.id, categoryOptionCombo.ids , sep="." ) %>%
-            pull( id )
+            unite( name , dataElement, Categories , sep="." ) %>%
+            select( id , name )
           .level1.id = orgUnits() %>% filter( level == 1 ) %>% pull( id )
           
           cat( '\n - .level1.id:' , .level1.id )  
           
-          cat( '\n - formula.request elements:' , length( .elements ) , ':\n' ,
-               .elements )
+          cat( '\n - data_request elements:' , length( .elements ) , ':\n' ,
+               .elements$name )
           
           # Previous dataset file: 
           .dataset = dataset() 
@@ -224,17 +225,24 @@ data_request_widget_server <- function( id ,
                     
           saveRDS( x , saveAs )
           removeModal()
+          
+          showModal(
+            modalDialog( title = "Finished downloading.  Now saving the file", 
+                         easyClose = TRUE ,
+                         size = 's' ,
+                         footer= '(click anywhere to close this dialog)'
+                         )
+          )  
           cat( '\n* finished downloading' , .formula.name , '\n') 
           completedRequest( completedRequest() + 1 )
-          
-          
+
       }
           
         })
     
      
      return( list( 
-          completedRequest = completedRequest
+          completedRequest = reactive({ completedRequest })
             )
             )
     

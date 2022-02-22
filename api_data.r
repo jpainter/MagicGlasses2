@@ -539,13 +539,10 @@ api_data = function(      periods = "LAST_YEAR" ,
       
       cat('\n - retrieving details of previous dataset ')
       
-      # check for last x years only 
-      if ( periodType == 'Monthly') periods = date_code( YrsPrevious = check_previous_years ) # 'months_last_5_years' # 
-      if ( periodType == 'Weekly') periods = date_code_weekly( YrsPrevious = check_previous_years )
-
-      cat('\n - periodType is' ,  periodType)
-      
-      period_vectors = strsplit( periods , ";" , fixed = TRUE )[[1]]
+      # # check for last x years only 
+      # if ( periodType == 'Monthly') periods = date_code( YrsPrevious = check_previous_years ) # 'months_last_5_years' # 
+      # if ( periodType == 'Weekly') periods = date_code_weekly( YrsPrevious = check_previous_years )
+      # cat('\n - periodType is' ,  periodType)
       
       # excel version
       # prev.data = read_excel(previous_dataset_file , 
@@ -620,7 +617,7 @@ api_data = function(      periods = "LAST_YEAR" ,
       # prev.elements = prev.elements.vector[ prev.elements.vector %in% elements ] %>%
       #   paste0( ., collapse = ';')
       
-      new.elements = paste( elements , collapse = ';' ) 
+      new.elements = paste( elements$id , collapse = ';' ) 
       cat( '\n - new.elements:' ,  new.elements )
 
       # Lookup national counts for last month, then get current counts ####
@@ -634,6 +631,15 @@ api_data = function(      periods = "LAST_YEAR" ,
       #   mutate(current.count = as.integer( value ) ) %>%
       #   select( - value )
       
+     showModal(
+       modalDialog( title = "Checking for updated data dounts", 
+                    easyClose = TRUE , size = 'm' , 
+                    footer = 
+                    "Looking to see if national monthly COUNTs are the same as when last downloaded"
+       )
+     )
+       
+                    
       current.counts = fetch_get(  baseurl. = baseurl , username , password ,
                                   de. = new.elements , 
                                   periods. = prev.periods, 
@@ -642,6 +648,15 @@ api_data = function(      periods = "LAST_YEAR" ,
                                   get.print = print ) %>%
         mutate( current.count = as.integer( value )  )
       
+      removeModal()
+     showModal(
+       modalDialog( title = "Checking for updated data values", 
+                    easyClose = TRUE , size = 'm' , 
+                    footer = 
+                    "Looking to see if national monthly SUMs are the same as when last downloaded"
+       )
+     )
+       
       cat( '\n - checking previous values\n' )
       current.values = fetch_get(  baseurl. = baseurl , username , password ,
                                   de. = new.elements , 
@@ -650,7 +665,8 @@ api_data = function(      periods = "LAST_YEAR" ,
                                   aggregationType. = "SUM" ,
                                   get.print = print ) %>%
         mutate( current.value = as.integer( value )  )
-        
+      
+      removeModal()  
       
       #TESTING
       saveRDS( current.counts, 'current.counts.rds')
@@ -707,19 +723,19 @@ api_data = function(      periods = "LAST_YEAR" ,
         period_vectors = update.periods
         
     } else {
-       if ( print ) cat( '\n Requesting data for periods:\n' ,
+       if ( print ) cat( '\n - Requesting data for periods:\n' ,
                          paste( period_vectors , collapse = ';') , "\n" )
     } 
 
  
-  if ( print ) cat( '\nRequesting data for orgUnits:\n' , 
+  if ( print ) cat( '\n - Requesting data for orgUnits:\n' , 
                     paste( orgUnits , collapse = ';') , "\n" 
   )
   
   # Elements
   # elements = strsplit( elements , ";" , fixed = TRUE )[[1]]
-  if ( print ) cat( 'Requesting data for elements:\n' ,
-                    paste( elements , collapse = ';') , "\n"
+  if ( print ) cat( ' - Requesting data for elements:\n' ,
+                    paste( elements$name , collapse = ';') , "\n"
   )
   
   ## Fetch requests ####
@@ -730,7 +746,7 @@ api_data = function(      periods = "LAST_YEAR" ,
 
     # v2 <- expand_grid( period_vectors , orgUnits )
     # df of imputs for parallel mapping (pmap)
-    pmap.df = expand.grid( period_vectors, orgUnits, elements ) 
+    pmap.df = expand.grid( period_vectors, orgUnits, elements$id ) 
     if ( print ){
       cat( '\nMaking' , 
                     nrow( pmap.df ), "data requests" , "\n" 
@@ -783,7 +799,7 @@ api_data = function(      periods = "LAST_YEAR" ,
                                     get.print = print) 
               
               #if elements have a period, then include categoryOptionCombo
-              if ( any(str_detect( elements  , fixed(".") )) ){
+              if ( any(str_detect( elements$id  , fixed(".") )) ){
                 .by = c("dataElement", "period", "orgUnit", "categoryOptionCombo")
               } else {
                 .by = c("dataElement", "period", "orgUnit")
@@ -843,8 +859,9 @@ api_data = function(      periods = "LAST_YEAR" ,
           for ( i in 1:nrow( pmap.df )){
               setProgress( 
                 # value = 1 / nrow( pmap.df ) ,
-                detail = sprintf("requesting SUM and COUNT for %s (%d of %d requests)", 
+                detail = sprintf("requesting SUM and COUNT for %s in %s (%d of %d requests)", 
                                  # length(pmap.df[i, 3]) , 
+                                 elements[ which(elements$id == pmap.df[i, 3] ), 'name' ]  , # element name 
                                  pmap.df[i, 1] , i , nrow( pmap.df )   ) 
                 )
             
@@ -878,7 +895,7 @@ api_data = function(      periods = "LAST_YEAR" ,
               #   detail = sprintf("Combining SUM and COUNT for %d of %d", i , nrow( pmap.df ) ) 
               #   )
               #if elements have a period, then include categoryOptionCombo
-              if ( any(str_detect( elements  , fixed(".") )) ){
+              if ( any(str_detect( elements$id  , fixed(".") )) ){
                 .by = c("dataElement", "period", "orgUnit", "categoryOptionCombo")
               } else {
                 .by = c("dataElement", "period", "orgUnit")
@@ -944,7 +961,7 @@ api_data = function(      periods = "LAST_YEAR" ,
                                   get.print = print) 
             
             #if elements have a period, then include categoryOptionCombo
-            if ( any(str_detect( elements  , fixed(".") )) ){
+            if ( any(str_detect( elements$id  , fixed(".") )) ){
               .by = c("dataElement", "period", "orgUnit", "categoryOptionCombo")
             } else {
               .by = c("dataElement", "period", "orgUnit")
