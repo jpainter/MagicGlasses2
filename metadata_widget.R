@@ -805,7 +805,7 @@ metadata_widget_server <- function( id ,
     cat('\n* metatdata_widget orgUnitLevels():')
     if (  login() & loginFetch() ){
       
-      cat( 'reactive orgUnitLevels_with_counts \n')
+      cat( '\n - reactive orgUnitLevels_with_counts')
       
       showModal(
         modalDialog( title = "Downloading list of orgUnit levels", 

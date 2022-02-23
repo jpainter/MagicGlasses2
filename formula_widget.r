@@ -35,12 +35,12 @@ formula_widget_ui <- function( id ) {
                          #                             "Add Selected Elements" , style='margin-top:25px' 
                          #                         ) ,
                          
-                         wellPanel(
-                           
+                         # wellPanel(
+                           h5("selected elements:") ,
                            verbatimTextOutput( ns("selected") ),
                            
                            DTOutput( ns('dataElementDictionaryTable') ) 
-                         )
+                         # )
                 ) 
 
 
@@ -82,14 +82,23 @@ formula_widget_server <- function( id ,
       selection = 'multiple' ,
       rownames = FALSE, 
       filter = 'top' ,
-      options = DToptions_no_buttons()
+      # options = DToptions_no_buttons()
+      options = list(
+        # bPaginate = FALSE, 
+        scrollY = "40vh"  ,
+        searching = TRUE, 
+        info = FALSE,
+        lengthMenu = list( c( -1, 1, 5, 10, 25, 100 ), 
+                           list( 'All' , '1', '5' , '10', '25', '100') ) ,
+        server = TRUE ),
+      fillContainer = FALSE
     )
     )
   
   selected_elements = reactive({
     # req( input$dataElementDictionaryTable_rows_selected  )
     
-    cat('\n* formula_widget selected_elements():')
+    # cat('\n* formula_widget selected_elements():')
     row_selected = input$dataElementDictionaryTable_rows_selected 
     # cat('\n - row number selected is' ,  row_selected )
     
@@ -128,7 +137,7 @@ formula_widget_server <- function( id ,
   
   output$selected = renderPrint({
       # req( selectedElementNames() )
-      cat('Selected elements:\n' , selectedElementNames() )
+      cat( selectedElementNames() )
   })
   
   
@@ -207,9 +216,17 @@ formula_widget_server <- function( id ,
       
       updated_formula_elements()   ,
       rownames = FALSE, 
-      filter = 'top' ,
-      options = DToptions_no_buttons()
-    ))
+      # filter = 'top' ,
+      options = list(
+        # bPaginate = FALSE, 
+        scrollY = "50vh"  ,
+        info = TRUE ,
+        lengthMenu = list( c( -1, 1, 5, 10, 25, 100 ), 
+                           list( 'All' , '1', '5' , '10', '25', '100') ) ,
+        server = TRUE ),
+      fillContainer = TRUE)
+      # options = DToptions_no_buttons()
+    )
   
   output$formulaName = renderPrint({ formulaName() })
 

@@ -95,8 +95,9 @@ data_widget_server <- function( id ,
         
         # trigger refresh after completed download
         observeEvent( completedRequest() , { 
-          cat('\n- data_widget completedRequest():', completedRequest() )
-          a = formula.files()
+            cat('\n- data_widget completedRequest():' )
+            a = formula.files()
+          
         })
         
         observe({
