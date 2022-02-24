@@ -23,7 +23,9 @@ tagList(
                                    choices = c( 'Facilities only', 'Admin only' , 'All' ) ,
                                    selected = 'Facilities only' )
                     ) ,
+                    
                     mainPanel( 
+                      h5( 'Use the buttons to search for extreme values using deviation from the median, median absolute deviation (MAD), and then seasonally adjusted outliers') ,
                       actionButton( ns("determineExtremeValues") , 
                                     "Search for Extreme Values" , style='margin-top:25px' 
                       )   ,
@@ -33,6 +35,8 @@ tagList(
                       )  ,
                       
                       tabsetPanel( type = "tabs",
+                                
+                             
         
                         tabPanel( "Outlier Summary",  
                                   textOutput( ns("outlierSummaryText")) ,
@@ -70,6 +74,26 @@ tagList(
              ) 
         ) ,
         
+        tabPanel( "Select Regions-Facilities" ,
+                  
+                  selectInput( ns("level2"), label = "OrgUnit Level2" , 
+                                          choices = NULL, 
+                                          selected = NULL ,
+                                          multiple = TRUE ) ,
+                  selectInput( ns("level3"), label = "OrgUnit Level3" ,
+                                                  choices = NULL,
+                                                  selected = NULL ,
+                                                  multiple = TRUE ) ,
+                  selectInput( ns("level4"), label = "OrgUnit Level4" ,
+                                                  choices = NULL,
+                                                  selected = NULL  ,
+                                                  multiple = TRUE  ) ,
+                  selectInput( ns("level5"), label = "OrgUnit Level5" ,
+                                                  choices = NULL,
+                                                  selected = NULL  ,
+                                                  multiple = TRUE  ) 
+
+                  ) , 
         tabPanel( "Dataset snapshot", tableOutput( ns("contents") ) ),
           
         tabPanel( "Summary (under construction)",
@@ -104,6 +128,7 @@ cleaning_widget_server <- function( id ,
     dataElements = reactive({ metadata_widget_output$dataElements() })  
     categories = reactive({ metadata_widget_output$categories() })  
     orgUnits = reactive({ metadata_widget_output$orgUnits() })  
+    ousTree = reactive({ metadata_widget_output$ousTree() })  
     orgUnitLevels = reactive({ metadata_widget_output$orgUnitLevels() })
     dates = reactive({ reporting_widget_output$dates() })
     data.hts = reactive({ reporting_widget_output$data.hts() })
@@ -119,9 +144,81 @@ cleaning_widget_server <- function( id ,
     # data = reactive({ reporting_widget_output$d() })
     # data.total = reactive({ reporting_widget_output$data.total() })
     
-    outlierData <- reactiveValues( df_data = NULL ) 
     
-  # get data names
+  # orgUnits ###
+    
+    # level 2
+    observeEvent( levelNames()  , {  
+        req( ousTree() )
+        l2 = ousTree() %>% 
+            pull( !! rlang::sym(levelNames()[2]) ) %>% 
+            unique 
+        
+        cat( '\n* updating outliers level2' )
+        updateSelectInput( session, 'level2' ,
+                             choices = l2[!is.na(l2)]
+                             , selected = NULL
+                                    )
+        } )
+
+    # level 3
+    observeEvent( input$level2 , {
+      req( input$level2 )
+
+      l3 = ousTree() %>%
+        filter(
+          !! rlang::sym( levelNames()[2] ) %in% input$level2
+          ) %>%
+        pull( !! rlang::sym( levelNames()[3]  )
+              ) %>%
+        unique %>% str_sort()
+
+      cat( '\n* updating level3' )
+      updateSelectInput( session, 'level3' ,
+                                choices = l3[!is.na(l3)]
+                                , selected = NULL
+                                )
+    } )
+
+    # level 4
+    observeEvent( input$level3 , {
+      req( input$level3 )
+
+      l4 = ousTree() %>%
+        filter(
+          !! rlang::sym( levelNames()[3] ) %in% input$level3
+          ) %>%
+        pull( !! rlang::sym( levelNames()[4]  )
+              ) %>%
+        unique %>% str_sort()
+
+      cat( '\n* updating level4' )
+      updateSelectInput( session, 'level4' ,
+                                choices = l4[!is.na(l4)]
+                                , selected = NULL
+                                )
+    } )
+    
+    # level 5
+    observeEvent( input$level4 , {
+      req( input$level4 )
+
+      l5 = ousTree() %>%
+        filter(
+          !! rlang::sym( levelNames()[4] ) %in% input$level4
+          ) %>%
+        pull( !! rlang::sym( levelNames()[5]  )
+              ) %>%
+        unique %>% str_sort()
+
+      cat( '\n* updating level5' )
+      updateSelectInput( session, 'level5' ,
+                                choices = l5[!is.na(l5)]
+                                , selected = NULL
+                                )
+    } )
+    
+  # data names  ####
     observe({
       req( data1() )
       outlierData$df_data = data1()
@@ -129,7 +226,11 @@ cleaning_widget_server <- function( id ,
                        choices = outlierData$df_data$data %>% unique ) 
      
     })
+  
+  # outlierData ####
     
+     outlierData <- reactiveValues( df_data = NULL ) 
+ 
   # scan for MAD outliers  ####
     scanForMAD = reactiveVal( FALSE )
     rerunMAD = reactiveVal( FALSE ) 
@@ -481,6 +582,35 @@ cleaning_widget_server <- function( id ,
         d = d %>% filter( effectiveLeaf )
       } else if ( input$selectOrgType %in% 'Admin only' ){
         d = d %>% filter( !effectiveLeaf )
+      } 
+      
+      # Filter by region/level
+      # level2
+      if ( !is_empty( input$level2 ) ){
+        cat(  '\n - filtering outlier data by' , levelNames()[2] , "=" , input$level2 ) 
+        d = d %>% 
+          filter( !! rlang::sym( levelNames()[2])  %in%   input$level2  )
+      }
+ 
+      # level3
+      if ( !is_empty( input$level3 ) ){
+        cat(  '\n - filtering outlier data by' , levelNames()[3] , "=" , input$level3 ) 
+        d = d %>% 
+          filter( !! rlang::sym( levelNames()[3])  %in%   input$level3  )
+      }
+ 
+      # level4
+      if ( !is_empty( input$level4 ) ){
+        cat(  '\n - filtering outlier data by' , levelNames()[4] , "=" , input$level4 ) 
+        d = d %>% 
+          filter( !! rlang::sym( levelNames()[4])  %in%   input$level4  )
+      }
+ 
+      # level5
+      if ( !is_empty( input$level5 ) ){
+        cat(  '\n - filtering outlier data by' , levelNames()[5] , "=" , input$level5 ) 
+        d = d %>% 
+          filter( !! rlang::sym( levelNames()[5])  %in%   input$level5  )
       }
       
       cat( '\n - done')
@@ -590,8 +720,8 @@ cleaning_widget_server <- function( id ,
     if ( nrow( errorFlag() ) == 0 ) return()
   
     inspectOrgUnitData = outlier.dataset() %>% as_tibble() %>%
-      filter( orgUnit %in% input$flaggedOrgUnit ,
-              data %in% input$dataElement
+      filter( orgUnitName %in% input$flaggedOrgUnit 
+             ,  data %in% input$dataElement
               )
     cat('\n* inspectOrgUnitData points:' , nrow(inspectOrgUnitData) )
     
