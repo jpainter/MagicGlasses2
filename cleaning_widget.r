@@ -11,14 +11,6 @@ tagList(
         tabsetPanel( type = "tabs", 
                      
          tabPanel( "Outliers",  
-                     
-                    actionButton( ns("determineExtremeValues") , 
-                      "Search for Extreme Values" , style='margin-top:25px' 
-                      )   ,
-                      
-                      actionButton( ns("determineSeasonalOutliers") , 
-                      "Search for Seasonal Outliers" , style='margin-top:25px' 
-                      )  ,
                    
                 sidebarLayout(
                     sidebarPanel( 
@@ -32,6 +24,14 @@ tagList(
                                    selected = 'Facilities only' )
                     ) ,
                     mainPanel( 
+                      actionButton( ns("determineExtremeValues") , 
+                                    "Search for Extreme Values" , style='margin-top:25px' 
+                      )   ,
+                      
+                      actionButton( ns("determineSeasonalOutliers") , 
+                                    "Search for Seasonal Outliers" , style='margin-top:25px' 
+                      )  ,
+                      
                       tabsetPanel( type = "tabs",
         
                         tabPanel( "Outlier Summary",  
@@ -130,38 +130,56 @@ cleaning_widget_server <- function( id ,
      
     })
     
-  # scan for outliers and flag ####
-    searchForExtremeValues = reactiveVal( FALSE )
+  # scan for MAD outliers  ####
+    scanForMAD = reactiveVal( FALSE )
+    rerunMAD = reactiveVal( FALSE ) 
     
+    # Option to rerun MAD
+    rerunMadModal <- function() {
+       ns <- NS(id) 
+       modalDialog( title = "Seasonal outlier flags already present in data", 
+                         easyClose = TRUE ,
+                         size = 'm' ,
+                         footer = tagList( modalButton( "Cancel" ),
+                                           actionButton( ns("rerunMAD"), "Re-Run scan for MAD Outliers")
+        )
+                         )
+   }
+   
     observeEvent( input$determineExtremeValues  , {
       req( outlierData$df_data )
       if ( 'mad15' %in% names( outlierData$df_data ) ){
-         showModal(
-                    modalDialog( title = "Outlier flags already present in data", 
-                         easyClose = TRUE ,
-                         size = 'm' ,
-                         footer=NULL
-                         )
-         ) 
+        showModal( rerunMadModal() ) 
+        outlierData$df_data = data1.mad()
+        
       } else {
         
-          searchForExtremeValues( TRUE )  
-          cat('\n * determine extreme values button:' , searchForExtremeValues() )
+          scanForMAD( TRUE )  
+          cat('\n * determine extreme values button:' , scanForMAD() )
           outlierData$df_data = data1.mad()
             }
  } )
     
+    observeEvent( input$rerunMAD , {
+         req( data1() )
+         
+         scanForMAD( TRUE ) 
+         rerunMAD( TRUE )
+         cat('\n * rerun MAD outliers button:' , rerunMAD() )
+         outlierData$df_data = data1.mad()
+})
+
     data1.mad = reactive({
-    req( data1() )
+    req( outlierData$df_data )
     cat('\n* data1.mad' )
     
     # if data1 already has mad columns, return data1
-    if ( 'mad10' %in% names( data1() ) ){
+    if ( !rerunMAD() & 'mad10' %in% names( outlierData$df_data ) ){
       cat('\n - mad cols already in data1' )
-      return( data1() )
+      return( outlierData$df_data )
     } 
  
-    if ( searchForExtremeValues() ){
+    if ( scanForMAD() ){
       cat('\n* data1.mad search')
     
       d = data1()
@@ -196,8 +214,8 @@ cleaning_widget_server <- function( id ,
      if ( is_empty( key_entry_errors )  ) key_entry_errors = NA
        
      
-       cat( '\n - scanning for MAD outliers')
-      .total = length( key_size( d ) )
+    cat( '\n - scanning for MAD outliers')
+    .total = length( key_size( d ) )
   
     .threshold = 50
 
@@ -214,7 +232,6 @@ cleaning_widget_server <- function( id ,
             effectiveLeaf
             , 31, NA  )  
           ) %>%
-      rowwise() %>%
         mutate( 
             mad15 = extremely_mad( original , 
                                    deviation = 15 , 
@@ -239,7 +256,8 @@ cleaning_widget_server <- function( id ,
       
     })
     
-    searchForExtremeValues(FALSE)
+    scanForMAD( FALSE )
+    rerunMAD( FALSE )
     
     showModal(
           modalDialog( title = "Finished scanning for extreme values", 
@@ -259,14 +277,27 @@ cleaning_widget_server <- function( id ,
     return( data1.mad )
     })
  
+  # scan for Seaonal outliers  ####
     searchForSeasonalOutliers = reactiveVal( FALSE ) 
     rerunSeasonalOutliers = reactiveVal( FALSE ) 
-   
+    
+    # Option to rerun seasonal outliers
+    rerunSeasonalModal <- function() {
+       ns <- NS(id) 
+       modalDialog( title = "Seasonal outlier flags already present in data", 
+                         easyClose = TRUE ,
+                         size = 'm' ,
+                         footer = tagList( modalButton( "Cancel" ),
+                                           actionButton( ns("rerunSeasonal"), "Re-Run Seasonal Outliers")
+        )
+                         )
+   }
+ 
     observeEvent( input$determineSeasonalOutliers  , {
       req( outlierData$df_data )
       if ( 'seasonal5' %in% names( outlierData$df_data ) ){
-         showModal( rerunModal() ) 
-        outlierData$df_data = data1.seasonal()
+         showModal( rerunSeasonalModal() ) 
+         # outlierData$df_data = data1.seasonal()
         
       } else {
         
@@ -277,18 +308,6 @@ cleaning_widget_server <- function( id ,
       }
  } )
 
-# Option to rerun seasonal outliers
-    rerunModal <- function() {
-       ns <- NS(id) 
-       modalDialog( title = "Seasonal outlier flags already present in data", 
-                         easyClose = TRUE ,
-                         size = 'm' ,
-                         footer = tagList( modalButton( "Cancel" ),
-                                           actionButton( ns("rerunSeasonal"), "Re-Run Seasonal Outliers")
-        )
-                         )
-   }
-   
     observeEvent( input$rerunSeasonal , {
          req( data1() )
          
@@ -342,7 +361,9 @@ cleaning_widget_server <- function( id ,
           
           expected = unseasonal(  original , 
                                   smallThreshold = .threshold * 2  , 
-                                  logical = FALSE  # Returns forecasted value
+                                  logical = FALSE , # Returns forecasted value
+                                  .progress = TRUE ,
+                                   total = .total 
                                   ) ,
           
           seasonal5 = unseasonal(  ifelse( mad10, original , NA) , 

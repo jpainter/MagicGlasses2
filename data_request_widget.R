@@ -175,7 +175,7 @@ data_request_widget_server <- function( id ,
           
           cat( '\n - .level1.id:' , .level1.id )  
           
-          cat( '\n - data_request elements:' , length( .elements ) , ':\n' ,
+          cat( '\n - data_request elements:' , length( .elements$name ) , ':\n' ,
                .elements$name )
           
           # Previous dataset file: 
@@ -219,7 +219,8 @@ data_request_widget_server <- function( id ,
           modalDialog( title = "Finished downloading.  Now saving the file", 
                        easyClose = TRUE ,
                        size = 's' ,
-                       footer=NULL
+                       footer=  cat( nrow(x), 'records downloaded.Of these, there was no value for' , sum( is.na(x$SUM) ), 'records' )
+ 
                        )
           )  
                     
@@ -227,10 +228,10 @@ data_request_widget_server <- function( id ,
           removeModal()
           
           showModal(
-            modalDialog( title = "Finished downloading.  Now saving the file", 
+            modalDialog( title = "New file is saved", 
                          easyClose = TRUE ,
                          size = 's' ,
-                         footer= '(click anywhere to close this dialog)'
+                         footer= '(To refresh data in the app: choose another formula, then switch back.  Still working on getting the app to refresh "automagically")'
                          )
           )  
           cat( '\n* finished downloading' , .formula.name , '\n') 

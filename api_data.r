@@ -590,13 +590,19 @@ api_data = function(      periods = "LAST_YEAR" ,
                   distinct 
         }
       
-      # Confirm there is previous data
+      # Confirm there is previous data for level1
       prev = prev.data %>%
         filter( orgUnit == level1.id  
                 # , period %in% period_vectors 
                 ) 
-      cat( '\n - previous data has:' ,  nrow( prev ), 'rows' )
-      if ( nrow( prev ) == 0 ) return()
+      
+      # Stop if no national data 
+      if ( nrow( prev ) == 0 ){
+        cat( '\n - previous data has is missing national data' ) 
+        return()
+      } else {
+        cat( '\n - previous data has:' ,  nrow( prev ), 'rows' ) 
+      }
       
       des = prev.data %>% 
                   select(  dataElement,   categoryOptionCombo ) %>%
@@ -632,7 +638,7 @@ api_data = function(      periods = "LAST_YEAR" ,
       #   select( - value )
       
      showModal(
-       modalDialog( title = "Checking for updated data dounts", 
+       modalDialog( title = "Checking for updated data counts", 
                     easyClose = TRUE , size = 'm' , 
                     footer = 
                     "Looking to see if national monthly COUNTs are the same as when last downloaded"
@@ -859,10 +865,11 @@ api_data = function(      periods = "LAST_YEAR" ,
           for ( i in 1:nrow( pmap.df )){
               setProgress( 
                 # value = 1 / nrow( pmap.df ) ,
-                detail = sprintf("requesting SUM and COUNT for %s in %s (%d of %d requests)", 
+                detail = sprintf("requesting SUM and COUNT for %s in %s in %s (%d of %d requests)", 
                                  # length(pmap.df[i, 3]) , 
                                  elements[ which(elements$id == pmap.df[i, 3] ), 'name' ]  , # element name 
-                                 pmap.df[i, 1] , i , nrow( pmap.df )   ) 
+                                 pmap.df[i, 2]  , # orgUnit 
+                                 pmap.df[i, 1] , i , nrow( pmap.df )   )  # period
                 )
             
              incProgress( amount = 1 / nrow( pmap.df ) )
@@ -996,7 +1003,7 @@ api_data = function(      periods = "LAST_YEAR" ,
      if ( print ) message( toc() )
      
      # update value in most_recent_data_file
-     if ( update & file.exists( previous_dataset_file ) ){
+     if ( update &  nrow( prev.data ) > 0 ){
 
        good.prev.data = prev.data %>% filter( !period %in% unique( d$period ))
        

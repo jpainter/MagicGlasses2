@@ -53,8 +53,8 @@ df_pre_ts = function( df , period = "Month" , missing.value = NA  ){
    weekly = any( grepl( "W", df$period[1:10]) )
    if (weekly ) period =  "Week" 
    
-   .period = rlang::enquo( period )
-  
+   .period = rlang::enquo( period ) 
+   
    if (  period %in% 'Month' & !weekly ){
      df = df %>% mutate( Month =  Month_Year( period ) )
      df_pre_ts = df %>%
@@ -111,6 +111,7 @@ df_ts = function( df.pre.ts , period = "Month" ,
    # if (weekly ) period =  "Week" 
    # 
    # .period = rlang::enquo( period )
+  
   
   ts = df.pre.ts %>%  
     as_tsibble( key = c(orgUnit, data.id ) , index = !! period ) 

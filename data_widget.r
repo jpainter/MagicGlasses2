@@ -287,6 +287,19 @@ data_widget_server <- function( id ,
             # saveRDS( dataset() , 'dataset.rds' )
             # saveRDS( formula_elements() , 'formula_elements.rds' )
             # saveRDS( ousTree() , 'ousTree.rds' )
+          
+          if ( ! 'COUNT' %in% names( dataset() )){
+            
+            showModal(
+              modalDialog( title = "Data is the wrong type and will not be used", 
+                           easyClose = TRUE ,
+                           size = 's' ,
+                           footer= '(click anywhere to continue)'
+                           )
+              )
+            return()
+          } 
+
             
           if ( !'effectiveLeaf' %in% names( dataset() ) ){
             

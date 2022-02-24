@@ -1,6 +1,6 @@
 
 translate_dataset = function( data , formula_elements ){
-  cat('\n* prepare dataset:')
+  cat('\n* translate_dataset:')
   dd = data %>% 
         rename( 
           dataElement.id = dataElement , 
@@ -187,9 +187,12 @@ data_1 = function( data , formula_elements , ousTree   ){
   cat('\n* preparing data_1:')
   
   # TESTING
-  # saveRDS( data , 'data.rds' )
-  # saveRDS( formula_elements , 'formula_elements.rds' )
-  # saveRDS( ousTree , 'ousTree.rds' )
+  saveRDS( data , 'data.rds' )
+  saveRDS( formula_elements , 'formula_elements.rds' )
+  saveRDS( ousTree , 'ousTree.rds' )
+  
+  if ( ! 'COUNT' %in% names( data )) return()
+
   
   cat('\n - translate_dataset:')
   dd = translate_dataset( data , formula_elements )

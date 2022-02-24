@@ -467,7 +467,7 @@ reporting_widget_server <- function( id ,
     
     cat( '\n-' , 'end d():', nrow(data), 'rows' )
     # testing
-    # saveRDS( data, 'd.rds')
+    # saveRDS( data, 'reporting_widger_d.rds')
     
     return( data )
 })
@@ -1057,7 +1057,7 @@ reporting_widget_server <- function( id ,
     
     cat( '\n- end  plotData()')  ; # #print( names( data )) 
     # TESTING
-    # saveRDS( data , "plotData.rds" )
+    saveRDS( data , "plotData.rds" )
   return( data )
 })
 
@@ -1170,7 +1170,7 @@ reporting_widget_server <- function( id ,
     #print( 'data.total finalized' ); # #print( toc())
   
     # test:
-    # saveRDS( data.total, 'data.total.rds')
+    saveRDS( data.total, 'data.total.rds')
     
     cat('\n- end data.total()')
     return( data.total )
