@@ -1090,7 +1090,7 @@ reporting_widget_server <- function( id ,
     req( plotData() )
     # req( group_by_cols() )
     req( period() )
-    cat( '\n*data.total():' )
+    cat( '\n* data.total():' )
   
     
        .period = period()
@@ -1098,7 +1098,7 @@ reporting_widget_server <- function( id ,
        # if ( input$merge & input$all_categories ){
       
       .group_by_cols =  group_by_cols()  
-      cat( '\n# data.total .group_by_cols:' )
+      cat( '\n# data.total .group_by_cols:'  )
   
       # Total categories by facilities and datasets
       data = plotData() 
@@ -1112,6 +1112,8 @@ reporting_widget_server <- function( id ,
       
       mergeDatasets = input$merge %>% str_replace_all( fixed("\n"), "") 
       cat( '\n# mergeDatasets:' , mergeDatasets )
+      
+      # Testing
       saveRDS( input$merge , 'merge.rds' )
       
       if ( !is.null( mergeDatasets )  ){
@@ -1128,13 +1130,15 @@ reporting_widget_server <- function( id ,
                 setDT() %>%
                 .[ , .(dataCol = sum( dataCol , na.rm = TRUE  )) , by =  .group_by_cols ] 
       
-      cat('\n*Combining dataSets %in% input$merge:' , mergeDatasets )
-      # saveRDS( combineSelectDatasets , 'combineSelectDatasets.rds' )
-      # Save dataSets for testing/developmen
-  
+      cat('\n - Combining dataSets %in% input$merge:' , mergeDatasets )
+      
+
       } else { combineSelectDatasets = data }
       
-        # data.table sum/mean 
+      # Testing
+      saveRDS( combineSelectDatasets , 'combineSelectDatasets.rds' )
+      
+          # data.table sum/mean 
         mean.merge = input$dataset_merge_average 
         
         if ( mean.merge ) {
@@ -1153,21 +1157,24 @@ reporting_widget_server <- function( id ,
           # cat('\n glimpse( dataMerge )\n' ); #print(glimpse( dataMerge ))
       }
       
-      # saveRDS( dataMerge, 'dataMerge.rds' )
+      # Testing
+      saveRDS( dataMerge, 'dataMerge.rds' )
       # #print( dataMerge %>% duplicates %>% glimpse )
   
     key.cols = setdiff( group_by_cols() , .period ) 
+    cat('\n - key.cols:' ,  key.cols )
     
     data.total = 
         dataMerge %>% 
-        as_tsibble( index = !! rlang::sym( .period )  , 
-                    key =  all_of(  {{key.cols}} ) ) %>%
         # fill_gaps( .full = TRUE  ) %>%
         mutate( 
                 total = replace_na( dataCol , 0) 
-                )  # for plotting, replace missing with zero 
-    
-    #print( 'data.total finalized' ); # #print( toc())
+                )  %>% # for plotting, replace missing with zero 
+        as_tsibble( index = !! rlang::sym( .period )  , 
+                    key =  all_of(  {{ key.cols }} ) ) 
+
+    cat( '\n - data.total class' , class( data.total ) ) 
+    cat( '\n - data.total cols' , names( data.total ) ) 
   
     # test:
     saveRDS( data.total, 'data.total.rds')

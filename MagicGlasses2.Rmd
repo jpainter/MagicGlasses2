@@ -421,7 +421,7 @@ data1_Widget_output =
 
 ```
 
-### Request {data-height='20%'}
+### Request data from server {data-height='20%'}
 
 ```{r , eval=TRUE}
 source( 'data_request_widget.r' )
@@ -458,7 +458,7 @@ formula1_Widget_output =
 ```
 
 
-Outliers and Errors
+Outliers
 ========================
 
 
