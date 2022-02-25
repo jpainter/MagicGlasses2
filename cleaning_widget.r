@@ -1,3 +1,4 @@
+
 cleaning_widget_ui = function ( id ){
         ns <- NS(id)  
         
@@ -814,5 +815,6 @@ cleaning_widget_server <- function( id ,
   
 })
 }  
+
 
 
