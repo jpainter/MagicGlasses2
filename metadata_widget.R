@@ -916,10 +916,9 @@ metadata_widget_server <- function( id ,
       ous =  get( url )[[1]] 
       
       cat( '\n*joining ous with itself to get parent names')
-      # Test:
-      saveRDS( ous, 'ous.rds')
+
       ouLevels = orgUnitLevels()
-      saveRDS( ouLevels, 'ouLevels.rds')
+      
       
       ous. = ous %>% 
         # select( !!cols ) %>% # closedDate missing for guinea--results in error.  already in url, so why select here? 
@@ -1040,7 +1039,8 @@ metadata_widget_server <- function( id ,
         )
     
     #TESTING
-    saveRDS( ous , 'ous.rds');  saveRDS( ouLevels, 'ouLevels.rds')
+    saveRDS( ous , 'ous.rds');  
+    saveRDS( ouLevels, 'ouLevels.rds')
     
     ous.tree = ous_tree( ous , ouLevels )
     
@@ -1080,7 +1080,8 @@ metadata_widget_server <- function( id ,
      cat( '\n - finished metadata_widget ous.tree \n')
      
      # testing
-     # saveRDS( ous.tree , 'ous.tree.rds' )
+     saveRDS( ous.tree , 'ousTree.rds' )
+     
      return( ous.tree )
   
       
@@ -1259,6 +1260,7 @@ metadata_widget_server <- function( id ,
 ## Map ####
   gf.map = reactive({
     req( geoFeatures() )
+    req( ousTree() )
     # req( orgUnitLevels() )
     cat( '\ngf.map():')
     
@@ -1268,7 +1270,7 @@ metadata_widget_server <- function( id ,
     # Remove slashes from levelNames
     gf$levelName = str_replace_all( gf$levelName , fixed("/") , ";")
 
-    split_geofeatures = split( gf , gf$levelName )
+    split_geofeatures = split( gf , f = gf[['levelName']]  )
 
     levels = names(split_geofeatures)
     cat( '\n geoFeatures map for:' , levels , '\n')
@@ -1307,6 +1309,9 @@ metadata_widget_server <- function( id ,
                  alpha.regions = 0, cex = 1 ,
                  burst = TRUE, hide = TRUE
     )
+    
+    # Testing 
+    
     
     cat('\n**geoFeatures Map prepared for output-\n')
     #test

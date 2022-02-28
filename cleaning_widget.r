@@ -63,7 +63,7 @@ tagList(
         
                         tabPanel( "Outlier Summary",  
                                   textOutput( ns("outlierSummaryText")) ,
-                                  tableOutput( ns("dqaTable") )  
+                                  tableOutput( ns("outlier.summary.table") )  
                         ) ,
                         
                          tabPanel( "Mean Absolute Scaled Error",  
@@ -574,7 +574,7 @@ cleaning_widget_server <- function( id ,
       out
     })
   
-  # Outliers #####
+  # Inspect Outliers #####
     
     outlier.dataset = reactive({
       cat( '\n* outlier.dataset')
@@ -670,7 +670,7 @@ cleaning_widget_server <- function( id ,
       
     })
     
-    outlier.summary = reactive({
+    outlier.summary.table = reactive({
         req( outlier.dataset() )
         req( outlier.summary.cols() )
         req( input$dataElement )
@@ -712,7 +712,7 @@ cleaning_widget_server <- function( id ,
         return( os )
     })
     
-    output$dqaTable = renderTable( outlier.summary() ) 
+    output$outlier.summary.table = renderTable( outlier.summary.table() ) 
     
   ## Visualize cleaning (Inspect )  ####
   errorFlag = reactive({

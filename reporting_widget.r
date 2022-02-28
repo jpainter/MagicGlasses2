@@ -222,8 +222,9 @@ reporting_widget_server <- function( id ,
         cat( '\n - dataset columns are:' , names( data1() ) )
         return()
       }
-        dates = data1() %>% pull( !! rlang::sym( .period )) %>%
-          unique
+        dates = data1() %>% distinct( !! rlang::sym( .period ) ) %>% 
+          arrange(!! rlang::sym( .period ) ) %>% pull() 
+         
 
         cat('\n - done') 
         return( dates )
