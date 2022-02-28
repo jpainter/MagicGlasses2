@@ -88,13 +88,15 @@ tabsetPanel( type = "tabs",
         
         checkboxInput( ns("mostReports") , label ='Most frequently reporting facilities', value = TRUE ) ,
         
-        selectInput( ns("startingMonth") , label = "begining with", 
+        selectizeInput( ns("startingMonth") , label = "begining with", 
                      choices = NULL ,
-                     selected = NULL ) ,
+                     selected = NULL,
+                     server = TRUE ) ,
         
-        selectInput( ns("endingMonth"), label = "ending with", 
+        selectizeInput( ns("endingMonth"), label = "ending with", 
                      choices = NULL , 
-                     selected = NULL )
+                     selected = NULL, 
+                     server = TRUE )
   
   )
   ) , 
@@ -235,7 +237,7 @@ reporting_widget_server <- function( id ,
     observeEvent(  dates() , {
       dates = dates()
       cat('\n-observeEvent dates() update startingMonth-') 
-      updateSelectInput( session, 'startingMonth' ,
+      updateSelectizeInput( session, 'startingMonth' ,
               choices =  dates()  %>% as.character()  ,
               selected = min( dates(), na.rm = TRUE ) %>% as.character() 
       )
@@ -244,7 +246,7 @@ reporting_widget_server <- function( id ,
 
     observeEvent(  dates() , {
       cat('\n- observeEvent dates() update endingMonth-' ) 
-      updateSelectInput( session, 'endingMonth' ,
+      updateSelectizeInput( session, 'endingMonth' ,
               choices =  dates()  %>% as.character() ,
               selected = max( dates() , na.rm = TRUE ) %>% as.character() 
       )
