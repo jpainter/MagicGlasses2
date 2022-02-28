@@ -90,13 +90,11 @@ tabsetPanel( type = "tabs",
         
         selectizeInput( ns("startingMonth") , label = "begining with", 
                      choices = NULL ,
-                     selected = NULL,
-                     server = TRUE ) ,
+                     selected = NULL ) ,
         
         selectizeInput( ns("endingMonth"), label = "ending with", 
                      choices = NULL , 
-                     selected = NULL, 
-                     server = TRUE )
+                     selected = NULL )
   
   )
   ) , 
@@ -227,28 +225,32 @@ reporting_widget_server <- function( id ,
         dates = data1() %>% distinct( !! rlang::sym( .period ) ) %>% 
           arrange(!! rlang::sym( .period ) ) %>% pull() 
          
+        cat('\n - min:' , min( dates ), ', max:' , max( dates )) 
 
         cat('\n - done') 
         return( dates )
 
         })
 
-    # reporting_month_updates
+    # reporting_month selection
     observeEvent(  dates() , {
+      cat('\n-observeEvent dates() update startingMonth-')
       dates = dates()
-      cat('\n-observeEvent dates() update startingMonth-') 
       updateSelectizeInput( session, 'startingMonth' ,
-              choices =  dates()  %>% as.character()  ,
-              selected = min( dates(), na.rm = TRUE ) %>% as.character() 
+              choices =  dates  %>% as.character()  ,
+              selected = min( dates, na.rm = TRUE ) %>% as.character() , 
+              server = TRUE
       )
       cat('-done\n')
       } )
 
     observeEvent(  dates() , {
       cat('\n- observeEvent dates() update endingMonth-' ) 
+      dates = dates()
       updateSelectizeInput( session, 'endingMonth' ,
-              choices =  dates()  %>% as.character() ,
-              selected = max( dates() , na.rm = TRUE ) %>% as.character() 
+              choices =  dates  %>% as.character() ,
+              selected = max( dates , na.rm = TRUE ) %>% as.character() ,
+              server = TRUE
       )
       cat('\n -done\n')
       } )
@@ -1060,7 +1062,8 @@ reporting_widget_server <- function( id ,
     
     cat( '\n- end  plotData()')  ; # #print( names( data )) 
     # TESTING
-    saveRDS( data , "plotData.rds" )
+    # saveRDS( data , "plotData.rds" )
+    
   return( data )
 })
 
@@ -1117,7 +1120,7 @@ reporting_widget_server <- function( id ,
       cat( '\n# mergeDatasets:' , mergeDatasets )
       
       # Testing
-      saveRDS( input$merge , 'merge.rds' )
+      # saveRDS( input$merge , 'merge.rds' )
       
       if ( !is.null( mergeDatasets )  ){
   
@@ -1139,7 +1142,7 @@ reporting_widget_server <- function( id ,
       } else { combineSelectDatasets = data }
       
       # Testing
-      saveRDS( combineSelectDatasets , 'combineSelectDatasets.rds' )
+      # saveRDS( combineSelectDatasets , 'combineSelectDatasets.rds' )
       
           # data.table sum/mean 
         mean.merge = input$dataset_merge_average 
@@ -1161,7 +1164,7 @@ reporting_widget_server <- function( id ,
       }
       
       # Testing
-      saveRDS( dataMerge, 'dataMerge.rds' )
+      # saveRDS( dataMerge, 'dataMerge.rds' )
       # #print( dataMerge %>% duplicates %>% glimpse )
   
     key.cols = setdiff( group_by_cols() , .period ) 
@@ -1391,7 +1394,7 @@ reporting_widget_server <- function( id ,
   return( 
     list(
       dates = dates ,
-      dataset = dataset , 
+      # dataset = dataset , 
       d = d ,
       # data.hts = data.hts ,
       data.total = data.total , 
@@ -1403,7 +1406,8 @@ reporting_widget_server <- function( id ,
       num_datasets = num_datasets ,
       num_facilities = num_facilities ,
       plotData = plotData ,
-      caption.text = caption.text
+      caption.text = caption.text ,
+      selectedOUs = selectedOUs 
     ))
 } )
 }

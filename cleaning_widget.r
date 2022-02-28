@@ -39,19 +39,19 @@ tagList(
                       
                       inputPanel( 
                           
-                          selectInput( ns("level2"), label = "OrgUnit Level2" , 
+                          selectizeInput( ns("level2"), label = "OrgUnit Level2" , 
                                        choices = NULL, 
                                        selected = NULL ,
                                        multiple = TRUE ) ,
-                          selectInput( ns("level3"), label = "OrgUnit Level3" ,
+                          selectizeInput( ns("level3"), label = "OrgUnit Level3" ,
                                        choices = NULL,
                                        selected = NULL ,
                                        multiple = TRUE ) ,
-                          selectInput( ns("level4"), label = "OrgUnit Level4" ,
+                          selectizeInput( ns("level4"), label = "OrgUnit Level4" ,
                                        choices = NULL,
                                        selected = NULL  ,
                                        multiple = TRUE  ) ,
-                          selectInput( ns("level5"), label = "OrgUnit Level5" ,
+                          selectizeInput( ns("level5"), label = "OrgUnit Level5" ,
                                        choices = NULL,
                                        selected = NULL  ,
                                        multiple = TRUE  ) 
@@ -84,7 +84,7 @@ tagList(
                                     # selectInput( ns('seasonalError'), 'Seasonally Adjusted error' ,
                                     #              choices = c( 'seasonal5', 'seasonal3' ) ) ,
                                     
-                                    selectInput( ns( 'flaggedOrgUnit') , 'Select orgUnit having this error' ,
+                                    selectizeInput( ns( 'flaggedOrgUnit') , 'Select orgUnit having this error' ,
                                                  choices = "" ) ,
                                     
                                     checkboxInput( ns('showAllData') , 'Show all data elements')
@@ -173,9 +173,10 @@ cleaning_widget_server <- function( id ,
             unique 
         
         cat( '\n* updating outliers level2' )
-        updateSelectInput( session, 'level2' ,
+        updateSelectizeInput( session, 'level2' ,
                              choices = l2[!is.na(l2)]
-                             , selected = NULL
+                             , selected = NULL ,
+                             server = TRUE 
                                     )
         } )
 
@@ -192,9 +193,10 @@ cleaning_widget_server <- function( id ,
         unique %>% str_sort()
 
       cat( '\n* updating level3' )
-      updateSelectInput( session, 'level3' ,
+      updateSelectizeInput( session, 'level3' ,
                                 choices = l3[!is.na(l3)]
-                                , selected = NULL
+                                , selected = NULL ,
+                            server = TRUE 
                                 )
     } )
 
@@ -211,9 +213,10 @@ cleaning_widget_server <- function( id ,
         unique %>% str_sort()
 
       cat( '\n* updating level4' )
-      updateSelectInput( session, 'level4' ,
+      updateSelectizeInput( session, 'level4' ,
                                 choices = l4[!is.na(l4)]
-                                , selected = NULL
+                                , selected = NULL ,
+                            server = TRUE 
                                 )
     } )
     
@@ -230,9 +233,10 @@ cleaning_widget_server <- function( id ,
         unique %>% str_sort()
 
       cat( '\n* updating level5' )
-      updateSelectInput( session, 'level5' ,
+      updateSelectizeInput( session, 'level5' ,
                                 choices = l5[!is.na(l5)]
-                                , selected = NULL
+                                , selected = NULL ,
+                         server = TRUE 
                                 )
     } )
     
@@ -508,11 +512,10 @@ cleaning_widget_server <- function( id ,
     cat('\n - saving data1.seasonal to replace dataset')
     cat('\n - names(data1.seasonal):', names(data1.seasonal) )
     
+    
     saveRDS( data1.seasonal , paste0( data.folder(), dataset.file() ) )
     removeModal()
     
-    # Testing
-    # saveRDS( data1.seasonal , paste0( data.folder(), dataset.file() ) )
     searchForSeasonalOutliers( FALSE )
     rerunSeasonalOutliers( FALSE )
     
@@ -655,7 +658,7 @@ cleaning_widget_server <- function( id ,
       d = outlierData$df_data
       
       if ( 'seasonal3' %in% names( d )){
-        cols = c('mad15', 'mad10', 'mad5','seasonal5' , 'seasonal3')
+        cols = c('mad15', 'mad10', 'mad5','seasonal5' , 'seasonal3', 'expected')
       } else if( 'mad5' %in% names( d ) ){
         cols = c('mad15', 'mad10', 'mad5' )
       } else { 
@@ -677,11 +680,12 @@ cleaning_widget_server <- function( id ,
         
         cat('\n* outlier.summary' )
         d = outlier.dataset()
+        
         cols = outlier.summary.cols() 
+        if ( 'expected' %in% cols ) cols = setdiff( cols, 'expected' )
   
         cat('\n - totals' )
         
-
         total = d %>%
           summarise( Total = sum( original , na.rm = T ) ,
                      # monthlyN = n() ,
@@ -728,10 +732,12 @@ cleaning_widget_server <- function( id ,
     # saveRDS( d , 'data1.rds')
     # MAD Error
     if ( input$Error %in% names( d ) ){
+      
+            if ( ! 'All' %in% input$dataElement ) d = d %>% filter( data %in% input$dataElement )
             flag = unique( as_tibble( d ) %>% 
                    filter( 
-                     ( !! rlang::sym( input$Error )  == FALSE ),
-                           data %in% input$dataElement ) %>% 
+                      !! rlang::sym( input$Error )  == FALSE 
+                     ) %>% 
                    distinct( orgUnit , orgUnitName )  
                  )
             cat( '\n -  nrow errorFlag() :', nrow( flag ) )
@@ -741,19 +747,25 @@ cleaning_widget_server <- function( id ,
     return( flag )
   })
   
-  observeEvent(  nrow( errorFlag() ) > 0 , {
-    updateSelectInput( session, "flaggedOrgUnit" , 
-                       choices = paste0( errorFlag()$orgUnitName )
-    )
+  observeEvent( errorFlag() , {
+    
+    if (  nrow( errorFlag() ) > 0  ){
+      
+      updateSelectizeInput( session, "flaggedOrgUnit" , 
+                            choices = paste0( errorFlag()$orgUnitName ) ,
+                            server = TRUE 
+      )
+    }
+
   })
   
   output$ouErrorTable = 
     DT::renderDT( DT::datatable(
-      
-      outlier.dataset() %>% as_tibble() %>%
+
+      outlier.dataset() %>% 
+        as_tibble() %>%
         select( data, period, orgUnitName, level, 
-                original, expected,  
-                mad15, mad10, mad5, seasonal5, seasonal3 
+                original, !! rlang::syms( outlier.summary.cols() )
                 ) %>%
         filter( 
           orgUnitName %in% errorFlag()$orgUnitName
@@ -786,10 +798,14 @@ cleaning_widget_server <- function( id ,
         orgUnitName %in% input$flaggedOrgUnit 
               )
     
-    if ( ! input$showAllData ) inspectOrgUnitData = inspectOrgUnitData %>%
-      filter( 
-        data %in% input$dataElement
-      )
+    if ( ! ( input$showAllData ||  'All' %in% input$dataElement ) ){
+      
+      inspectOrgUnitData = inspectOrgUnitData %>%
+        filter( 
+          data %in% input$dataElement
+        )
+      
+    } 
       
     cat('\n* inspectOrgUnitData points:' , nrow(inspectOrgUnitData) )
     
@@ -801,6 +817,7 @@ cleaning_widget_server <- function( id ,
                          )) +
         labs( title = paste( unique( inspectOrgUnitData$orgUnitName ), collapse = ",") )
     
+    cat('\n -done' )
     return( g )
     
   })
@@ -810,7 +827,7 @@ cleaning_widget_server <- function( id ,
  
   # Return ####
   return( list(
-    data2 = reactive({ outlierData$df_data })
+    data2 = reactive({ outlierData$df_data }) 
   ))
   
 })

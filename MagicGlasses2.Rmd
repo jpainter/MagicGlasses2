@@ -498,7 +498,7 @@ reporting_widget_output =
 Evaluation and Trends
 ========================
 
-```{r , eval = FALSE }
+```{r , eval = TRUE }
 source( 'evaluation_widget.r' )
 evaluation_widget_ui( "evaluation1" )
 

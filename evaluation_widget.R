@@ -110,12 +110,15 @@ evaluation_widget_server <- function( id ,
     data.folder = reactive({ directory_widget_output$directory() })
     indicator = reactive({ data_widget_output$indicator() })
     formulas = reactive({ data_widget_output$formulas() })
-    dataset.file = reactive({ data_widget_output$dataset() })
+    dataset.file = reactive({ data_widget_output$dataset.file() })
+    dataset = reactive({ data_widget_output$dataset() })
     formula_elements = reactive({ data_widget_output$formula_elements() })
+    
     orgUnits = reactive({ metadata_widget_output$orgUnits() })  
     orgUnitLevels = reactive({ metadata_widget_output$orgUnitLevels() })
+    
     dates = reactive({ reporting_widget_output$dates() })
-    dataset = reactive({ reporting_widget_output$dataset() })
+    # dataset = reactive({ reporting_widget_output$dataset() })
     # data.hts = reactive({ reporting_widget_output$data.hts() })
     levelNames = reactive({ reporting_widget_output$levelNames() })
     period = reactive({ reporting_widget_output$period() })
@@ -127,6 +130,8 @@ evaluation_widget_server <- function( id ,
     plotData = reactive({ reporting_widget_output$plotData() })
     caption.text = reactive({ reporting_widget_output$caption.text() })
     data.total = reactive({ reporting_widget_output$data.total() })
+    selectedOUs = reactive({ reporting_widget_output$selectedOUs() })
+
     
     # see https://stackoverflow.com/questions/54438495/shift-legend-into-empty-facets-of-a-faceted-plot-in-ggplot2
     shift_legend3 <- function(p) {
@@ -140,12 +145,15 @@ evaluation_widget_server <- function( id ,
     
     # Model ####
     
-    observe({  updateSelectInput( session, 'agg_level' , 
+    observeEvent( levelNames() ,{ updateSelectInput( session, 'agg_level' , 
+                              
                               choices = levelNames() , 
                               selected = levelNames()[1] ) # 12 months before latest date
   } )
 
-    observe({  updateSelectInput( session, 'level2' ,
+    observeEvent( levelNames() ,{ 
+      req( dataset() )
+      updateSelectInput( session, 'level2' ,
                                   choices = 
                                     dataset() %>% 
                                       pull( !! rlang::sym( levelNames()[2]  ) ) %>% 
@@ -154,7 +162,9 @@ evaluation_widget_server <- function( id ,
                                   ) 
       } )
     
-    observe({  updateSelectInput( session, 'level3' ,
+    observeEvent( levelNames() ,{  
+      req( dataset() )
+      updateSelectInput( session, 'level3' ,
                                   choices = 
                                     dataset() %>% 
                                       filter(
@@ -165,7 +175,10 @@ evaluation_widget_server <- function( id ,
                                   ) 
       } )
     
-    observe({  updateSelectInput( session, 'level4' ,
+    observeEvent( levelNames() ,{  
+      
+      req( dataset() )
+      updateSelectInput( session, 'level4' ,
                                   choices = 
                                     dataset() %>% 
                                       filter(
@@ -179,6 +192,7 @@ evaluation_widget_server <- function( id ,
     level5 = reactive({
         req( input$level4 )
         req( levelNames() )
+        
         if( is.na( levelNames()[5] ) ) return( NA ) 
     
         dataset() %>% 
@@ -505,10 +519,13 @@ evaluation_widget_server <- function( id ,
       #       reconcile( 
       #         mint = min_trace(a, method = "mint_shrink") 
       #         )
-        print( 'end tsModel(): arima fit' )
-        glimpse( fit )
+        
+        cat( '\n - end tsModel(): arima fit' )
+        # glimpse( fit )
         # testing model fit for forecasts
-        if ( input$covariates %in% c('ipti', 'doses') ) saveRDS( fit , 'arima.rds' )
+        
+        # if ( input$covariates %in% c('ipti', 'doses') ) saveRDS( fit , 'arima.rds' )
+        
         return( fit )
       } 
       
@@ -890,8 +907,9 @@ evaluation_widget_server <- function( id ,
             #         ) )  +
             # geom_line() +
           theme_minimal() 
-          save(.d, file = 'plot-trend-test-data.rda')
-          # TESTING: 
+          
+          # Testing
+          # save(.d, file = 'plot-trend-test-data.rda')
           
           
           cat( '\n- basic plot done' ); toc()
