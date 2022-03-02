@@ -17,11 +17,11 @@ formula_widget_ui <- function( id ) {
                 tabPanel("Formula Elements", 
                          
                       fluidRow(
-                        column( 5 , 
-                         actionButton( ns("removeSelected") , 
-                                                     "Remove Selected Elements" , style='margin-top:25px' 
-                                                 ) 
-                         ) ,
+                        # column( 5 , 
+                        #  actionButton( ns("removeSelected") , 
+                        #                              "Remove Selected Elements" , style='margin-top:25px' 
+                        #                          ) 
+                        #  ) ,
                         column( 5 , 
                          downloadButton( ns( 'saveFormula' ), 'Save Formula') 
                         )
@@ -68,6 +68,7 @@ formula_widget_server <- function( id ,
   dataElementDictionary = reactive({ metadata_widget_output$dataElements() })
   categories = reactive({ metadata_widget_output$categories() })
   formulas = reactive({ data_Widget_output$formulas() })
+  formulaElements = reactive({ data_Widget_output$formulaElements() })
   formula_elements = reactive({ data_Widget_output$formula_elements() })
   formulaName = reactive({ data_Widget_output$formulaName() })
   dir = reactive({ directory_widget_output$directory() })
@@ -145,7 +146,13 @@ formula_widget_server <- function( id ,
 ## Formula data Elements ####
   hasFormula = reactiveValues( formulas = FALSE )
   
-  observeEvent( formula_elements() , { hasFormula$formulas <- TRUE })
+  observeEvent( formula_elements() , { 
+    cat( '\n* update hasFormula' )
+    if ( nrow( formula_elements() ) > 0  ){
+      cat('\n - nrow( formula_elements() )', nrow( formula_elements() ))
+      hasFormula$formulas <- TRUE 
+      }
+    } )
   
   originalFormula = reactive({  # the formula as read from disc
     cat( '\n* originalFormula:',   )
@@ -200,7 +207,7 @@ formula_widget_server <- function( id ,
       }
       
 
-      # save changes
+      # TESTING save changes
       saveRDS( ufe %>% fill( Formula.Name, .direction =  "downup" )  ,
                paste0( 'Formula_' , Sys.Date() , ".rds" )  )
 
@@ -232,22 +239,54 @@ formula_widget_server <- function( id ,
 
 # Save Formula ####
   output$saveFormula <- downloadHandler(
-
+   
     filename = function() {
       paste0( dir() , "Formulas_", Sys.Date()  ,".xlsx"  )
     } ,
     
     content = function( file ) {
-
+      cat('\n* saving formula')
+ 
       wb <- openxlsx::createWorkbook()
 
-      sheet1  <- addWorksheet( wb, sheetName = "Formula")
-      sheet2  <- addWorksheet( wb, sheetName = "Formula Elements")
-
-      writeDataTable( wb, sheet1, tibble( Formula.Name = formulaName() ,
-                                             Elements = selectedElementNames()
+      sheet1  <- addWorksheet( wb, sheetName = "Formula" )
+      sheet2  <- addWorksheet( wb, sheetName = "Formula Elements" )
+      
+      if ( ! hasFormula$formulas ){
+        
+        cat('\n - preparing new formula')
+        new.Formula.Name = formulaName() 
+        new.Formula = selectedElementNames() 
+        new.formula_elements = updated_formula_elements() 
+        
+      } else {
+        
+        cat('\n - adding new formula')
+        origninal_formula = formulas() %>%
+            filter( ! Formula.Name %in%  formulaName() )
+      
+        cat('\n* orignal formulas had', nrow( formulas()), 'formulas')
+        cat('\n - new formula in original?', formulaName() %in% formulas()$Formula.Name )
+      
+        orginal_formula_elements = formulaElements() %>%
+        filter( ! Formula.Name %in%  formulaName() )
+        cat('\n* orignal formulas elements had', nrow( formulaElements()), 'rows')
+      
+        new.Formula.Name = c( formulaName() , origninal_formula$Formula.Name )
+        new.Formula = c( selectedElementNames() , origninal_formula$Formula  )
+        new.formula_elements = rbind( updated_formula_elements() ,
+                                      orginal_formula_elements 
+                                        ) 
+      }
+      
+      cat('\n - writing sheet1' )
+      writeDataTable( wb, sheet1, tibble( Formula.Name = new.Formula.Name ,
+                                          Elements = new.Formula
                                              ) , rowNames = FALSE )
-      writeDataTable( wb, sheet2, updated_formula_elements() , rowNames = FALSE )
+      
+      cat('\n - writing sheet2' )
+      writeDataTable( wb, sheet2, new.formula_elements , 
+                      rowNames = FALSE )
 
       openxlsx::saveWorkbook( wb , file , overwrite = TRUE )
      }

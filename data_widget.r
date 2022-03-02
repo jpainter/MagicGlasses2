@@ -73,7 +73,7 @@ data_widget_server <- function( id ,
       
       # completedRequest = reactive({ data_request_output$completedRequest() })
         
-        formula.files = reactive({ 
+      formula.files = reactive({ 
           req( data.folder() )
           cat( '\n* looking for formula files in' , data.folder() , '\n')
         
@@ -113,7 +113,7 @@ data_widget_server <- function( id ,
                                       selected = 1  ) 
         })
         
-        formulas =  reactive({
+      formulas =  reactive({
           req( input$formula.file )
           cat( '\n* formulas:' )
           
@@ -139,24 +139,37 @@ data_widget_server <- function( id ,
         
         formula.names = reactive({ formulas()$Formula.Name })
         
-        formula_elements =  reactive({
+        formulaElements =  reactive({
           req( input$formula.file )
-          req( input$indicator )
-          cat( '\n* formula_elements:')
+          cat( '\n* formulaElements:')
           
           file = paste0( data.folder() , input$formula.file )
           cat( '\n - formula file' , input$formula.file )
           
           if ( grepl( fixed('.xlsx'), file ) ){
-          cat( '\n - read xls file' , file )
-            formulas = read_excel( file , sheet = 'Formula Elements' , guess_max = 1e6 )  %>%
-            filter( Formula.Name %in% input$indicator ) 
+            
+            cat( '\n - read xls file' , file )
+            formulas = read_excel( file , 
+                                   sheet = 'Formula Elements' , 
+                                   guess_max = 1e6 )  
           
             } else{
+              
             cat( '\n - read rds file', file )
-            formulas = readRDS( file ) %>% filter( Formula.Name %in% input$indicator )
-          }
+            formulas = readRDS( file ) 
+            }
         
+        })
+        
+        formula_elements =  reactive({
+          req( formulaElements() )
+          req( input$formula.file )
+          req( input$indicator )
+          cat( '\n* formula_elements:')
+
+          cat( '\n - selecting indicator formula' )
+          formulaElements()  %>%
+            filter( Formula.Name %in% input$indicator ) 
         })
         
         data.dir_files = reactive({ 
@@ -167,7 +180,7 @@ data_widget_server <- function( id ,
             # update = completedRequest() > 0  
             # cat( '\n data.dir_files completedRequest:' , completedRequest() )
             dir.files = list.files( data.folder()  )
-            cat( "\n number of dir.files :", length( dir.files ) ) 
+            cat( "\n - number of dir.files :", length( dir.files ) ) 
             return( dir.files )
         })
         
@@ -339,6 +352,7 @@ data_widget_server <- function( id ,
           indicator = reactive({ input$indicator }) ,
           formulas = formulas ,
           formulaName =  reactive({ input$indicator }) ,
+          formulaElements = formulaElements ,
           formula_elements = formula_elements ,
           dataset.file = reactive({ input$dataset }) ,
           dataset =  dataset ,
