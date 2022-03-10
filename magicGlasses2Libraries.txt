@@ -17,13 +17,15 @@ describer
 
 RColorBrewer
 plotly
+cowplot
 
 #  tidyfast 
 #  tidytable 
 #  googleVis
- ggrepel 
+ggrepel 
 scales
- zoo 
+
+zoo 
 knitr
 rlang
 stringi
@@ -49,7 +51,7 @@ tictoc
 ipc
 future
 furrr
- purrr 
+purrr 
 promises
 
 data.tree
@@ -61,13 +63,13 @@ progress
 sf
 mapview
 leaflet 
-# rmapshaper
+rmapshaper
 
- tsibble  
- fable 
- fabletools 
- feasts 
- fable.prophet 
+tsibble  
+fable 
+fabletools 
+feasts 
+fable.prophet 
 #  fable.bsts 
 Metrics
 forecast

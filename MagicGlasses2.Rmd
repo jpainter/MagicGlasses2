@@ -16,8 +16,116 @@ runtime: shiny
 <!-- For mapping, need to install the GDAL library.  On mac, use homebrew.  On windows ?  -->
 <!-- see : https://gitmemory.cn/index.php/repo/r-spatial/sf/issues/1848 -->
 <!-- remotes::install_github("r-spatial/sf", configure.args = "--with-gdal-config=/opt/homebrew/opt/gdal/bin/gdal-config --with-sqlite3-lib=/opt/homebrew/opt/sqlite3") -->
+```{r renv, include=FALSE }
 
-```{r setup, include=FALSE}
+renv::restore(packages = "renv")
+
+```
+
+```{r libraries }
+
+library(conflicted) # For diagnosing function name conflicts
+library(tidyverse)
+library(data.table) # for clean install, run from clean session: 
+    # remove.packages("data.table")
+    # install.packages("data.table", type = "source",
+    # repos = "https://Rdatatable.gitlab.io/data.table")
+library(shiny)
+library(shinyjs)
+library(shinydashboard)
+library(shinyBS)
+library(shinyLP)
+library( shinyFiles )
+library( rstudioapi )
+library(leaflet)
+library( progressr )
+library(RColorBrewer)
+library(plotly)
+# library( summarytools ) # invokes Xquartz on mac.  
+# library( describer )
+
+# library( tidyfast )
+# library( tidytable )
+# library(googleVis)
+library( ggrepel )
+library(scales)
+library( zoo )
+library(knitr)
+library(rlang)
+library(stringi)
+library(tidyselect)
+library(geojsonsf)
+library(geojsonio)
+library(jsonlite)
+library(httr)
+library(curl)
+library(assertthat)
+
+library(futile.logger)
+# library(utils)
+library(DT)
+# library(textutils)
+library(readxl)
+library(openxlsx)
+library(anytime)
+library(lubridate)
+library( tictoc )
+
+library(ipc)
+library(future)
+library(furrr)
+library( purrr )
+library(promises)
+
+library( data.tree )
+library( igraph )
+
+# library( knitrProgressBar)
+# library( progressr )
+library( progress )
+library(sf)
+library(mapview)
+library( leaflet )
+# library(rmapshaper)
+
+library( tsibble  )
+library( fable )
+library( fabletools )
+library( feasts )
+library( fable.prophet )
+# library( Metrics )
+library( forecast )
+# library( fable.bsts )
+
+# busy spinner
+library(shinybusy)
+```
+
+```{r options, include=FALSE }
+
+options(shiny.trace=FALSE)
+options(shiny.reactlog=FALSE)
+knitr::opts_chunk$set(echo = FALSE)
+
+add_busy_spinner(spin = "fading-circle", position = "bottom-right")
+
+# Avoid naming conflicts for functions found in more than 1 package...
+conflict_prefer("filter", "dplyr")
+conflict_prefer("select", "dplyr")
+conflict_prefer("last", "dplyr")
+conflict_prefer("first", "dplyr")
+conflict_prefer("year", "lubridate")
+conflict_prefer("month", "lubridate")
+conflict_prefer("week", "lubridate")
+conflict_prefer("runExample", "shiny")
+conflict_prefer(":=", "rlang")
+conflict_prefer("validate", "jsonlite")
+
+home = getActiveProject()
+cat('\n ## getActiveProject():' , getActiveProject() )
+```
+
+```{r setup, include=FALSE, eval = FALSE }
 options(shiny.trace=FALSE)
 options(shiny.reactlog=FALSE)
 knitr::opts_chunk$set(echo = FALSE)
