@@ -26,7 +26,7 @@ data_request_widget_ui = function ( id )
                         size = 4  ##needed for `selected = FALSE` to work ) 
                        ) 
         ) ,
-      column( 2,         
+      column( 1 ,         
         actionButton( ns("requestDataButton") , 
                       "Request data" , style='margin-top:25px' 
                       )
