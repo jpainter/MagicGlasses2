@@ -7,9 +7,9 @@ output:
     orientation: columns
     vertical_layout: fill
     # css: my-sass-rules.scss
-    theme:
-      version: 4
-      bootswatch: sandstone
+    # theme: !expr bslib::bs_theme( )
+      # version: 4
+      # bootswatch: flatly 
 runtime: shiny
 ---
 
@@ -466,6 +466,16 @@ h3, h4 { font-weight: 200; }
 }
 ```
 
+```{r theme , eval = FALSE }
+
+theme <- bs_theme(
+  bg = "#0b3d91", fg = "white", primary = "#FCC780",
+  base_font = font_google("Space Mono"),
+  code_font = font_google("Space Mono")
+)
+
+```
+
 <!-- Inputs {.sidebar data-width=300} -->
 <!-- ==================================== -->
 
@@ -513,7 +523,7 @@ metadata_widget_output =
 Data
 ========================
 
-Column {data-width=400}
+Column {data-width='33%'}
 -----------------------------------
 
 ### Data (Dictionary/Formulas) {data-height='80%'}
@@ -547,7 +557,7 @@ data_request_output =
 ```
 
 
-Column {data-width=600}
+Column {data-width='67%'}
 -----------------------------------
 
 ### Data Elements
@@ -567,6 +577,21 @@ formula1_Widget_output =
 
 ```
 
+
+Reporting
+========================
+
+```{r  }
+source( 'reporting_widget.r' )
+reporting_widget_ui( "reporting1" )
+
+reporting_widget_output = 
+  reporting_widget_server( "reporting1" ,
+                         dataDirectory = directory_widget_output ,
+                         metadata_widget_output = metadata_widget_output ,
+                         data_widget_output = data1_Widget_output ,
+                         cleaning_widget_output = cleaning_widget_output )
+```
 
 Outliers
 ========================
@@ -588,24 +613,7 @@ cleaning_widget_output =
 
 
 
-Reporting
-========================
-
-```{r  }
-source( 'reporting_widget.r' )
-reporting_widget_ui( "reporting1" )
-
-reporting_widget_output = 
-  reporting_widget_server( "reporting1" ,
-                         dataDirectory = directory_widget_output ,
-                         metadata_widget_output = metadata_widget_output ,
-                         data_widget_output = data1_Widget_output ,
-                         cleaning_widget_output = cleaning_widget_output )
-```
-
-
-
-Evaluation and Trends
+Evaluation
 ========================
 
 ```{r , eval = TRUE }

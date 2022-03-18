@@ -11,25 +11,54 @@ login_widget_ui <- function( id ) {
                          
                          useShinyjs() ,  # Set up shinyjs
                          
-                         inputPanel( 
+                         h4( 'Login to DHIS2 server*') ,
+        
+         
+                        fluidRow( 
+                           # column( 6 , checkboxInput( ns("demo") , 
+                           #                label = "Click to choose from one of the DHIS2 demo instances", 
+                           #                FALSE )
+                           # ) , 
                            
-                           textInput( ns("baseurl") , label = "DHIS2 URL:", NULL ), # "https://play.dhis2.org/2.33.1/"
-                           
-                           textInput( ns("username") , label = "User name:", NULL ), # "admin"
-                           
-                           passwordInput( ns("password") , label = "Password:", NULL )
+                           column( 12, 
+                                   
+                                   h2("Choose from list of DHIS2 Instances**:") ,
+                                
+                                   
+                                   selectInput( ns('instance') , NULL , choices = NULL ) ,
+      
+                                   tags$blockquote("*Once data has been downloaded and saved to the directory (at left), 
+                                                   the app is fully functionaly without being connected to the DHIS2 server") ,
+                                   
+                                   br()  
                            ) ,
+                                   
+                                   tags$blockquote("**the app provides links to the demo versions of DHIS2.  
+                                                   To add other instances, copy the excel file Instances.xlsx and save it as
+                                                   _Instances.xlsx within the MagicGlasses2 folder.  You can insert rows into this 
+                                                   spreadsheet following the same format as the demo instances.
+                                                   [if not saved with '_' prefix, it will be overwritten during the next GIT pull]"
+                           )
                            
-                     
-                         fluidRow( 
-                           column( 6 , checkboxInput( ns("demo") , 
-                                          label = "Click to choose from one of the DHIS2 demo instances", 
-                                          FALSE )
-                           ) , 
                            
-                           column( 6, selectInput( ns('instance') , NULL , choices = NULL ) ,
-                           ) 
                          ) ,
+                         
+                         fluidRow( 
+                           
+                           column( 12, 
+                           
+                           h2('Or enter address and credentials:') ,
+                           
+                           inputPanel( 
+                               textInput( ns("baseurl") , label = "DHIS2 URL:", NULL ), # "https://play.dhis2.org/2.33.1/"
+                               
+                               textInput( ns("username") , label = "User name:", NULL ), # "admin"
+                               
+                               passwordInput( ns("password") , label = "Password:", NULL )
+                           )
+                           ) 
+                           ) ,
+       
                          
                           fluidRow( 
                            column( 12, h2( textOutput( ns("Status") ) ) ) ) ,
@@ -90,8 +119,9 @@ login_widget_server <- function( id ){
 
    observe({
      req( instances()  )
+     req( input$instance )
 
-      if ( !is.null( input$demo ) && input$demo ){ # && any(i_row)
+      if (  nchar( input$instance ) > 0 ){ 
           cat("\n ** DEMO\n")
         
           # cat( '\n instances()$Instance:' , instances()$Instance )
@@ -124,13 +154,8 @@ login_widget_server <- function( id ){
    cat('reactive instances \n')
    iFile = "Instances.xlsx"
    
-  if ( file.exists( '../HMIS/_Instances_jp.xlsx') ){
+  if ( file.exists( '_Instances.xlsx') ){
     
-      iFileJP = '../HMIS/_Instances_jp.xlsx'
-      i = bind_rows( read_excel( iFile ) , read_excel( iFileJP ) )
-      
-    } else if ( file.exists( '_Instances.xlsx') ){
-      
       iFilePrivate = '_Instances.xlsx'
       i = read_excel( iFilePrivate ) 
       
@@ -147,7 +172,7 @@ login_widget_server <- function( id ){
    observe({
     req( instances() )
      
-    updateSelectInput( session, "instance" , choices = instances()$Instance )
+    updateSelectInput( session, "instance" , choices = c( "" , instances()$Instance ) )
       
   })
    
@@ -157,7 +182,7 @@ login_widget_server <- function( id ){
   instance = reactive({
 
     cat('\n* instances:')
-    if( input$demo ){
+    if( nchar( input$instance ) > 0 ){
    
           i_row = which( instances()$Instance %in% input$instance )
 

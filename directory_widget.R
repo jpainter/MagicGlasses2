@@ -2,11 +2,11 @@ directory_widget_ui = function ( id )
 {
         ns <- NS(id)  
         
-        fillCol( height = 600, flex = c(NA ) , 
+        fillCol( height = "100%", flex = c(NA ) , 
 
-         h4( 'Directory for storing/retrieving data files for this project:') ,
+         h2( 'Directory for storing/retrieving data files for this project:') ,
          
-         shinyDirButton( ns('folder') , 'Folder select', 'Please select a folder', FALSE) ,
+         # shinyDirButton( ns('folder') , 'Folder select', 'Please select a folder', FALSE) ,
          
          br(),
           
@@ -20,33 +20,56 @@ directory_widget_ui = function ( id )
          selectInput( ns("metadataFiles") , label = NULL , 
                       width = '95%',
                       choices = NULL , 
-                      selected = FALSE,
+                      selected = NULL ,
                       multiple = FALSE ,
                       selectize = FALSE, 
                       size = 4  ##needed for `selected = FALSE` to work ) 
                      ) ,
          
-         h4( 'Previously downloaded geofeatures (map data):') ,
-        
-         selectInput( ns("geofeturesFiles") , label = NULL , 
-                      width = '95%',
-                      choices = NULL , 
-                      selected = FALSE,
-                      multiple = FALSE ,
-                      selectize = FALSE, 
-                      size = 4  ##needed for `selected = FALSE` to work ) 
-                     ) ,
-        
-         h4( 'Previously downloaded data:') ,
-  
-         selectInput( ns("datasetFiles") , label = NULL , 
-              width = '95%',
-              choices = NULL , 
-              selected = FALSE,
-              multiple = FALSE ,
-              selectize = FALSE, 
-              size = 4  ##needed for `selected = FALSE` to work ) 
-             ) 
+         hr(),
+         
+         tags$blockquote(
+           h3('MagicGlasses: an epidemiological look at DHIS2') ,
+           br() , br() ,
+           
+           "The layout follows a research path using the pages (at top of page) to
+           understanding which data are available " ,
+           tags$b("(Metadata)"), 
+           "requesting data", 
+           tags$b( "(Data)" ), 
+           "adjusting for reporting bias " ,
+           tags$b( "(Reporting)" ) ,
+           ", scanning for outliers " ,
+           tags$b( "(Outliers)" ), 
+           "applying time-series models and estimating intervention effectiveness ",
+           tags$b( "(Evaluation)" ) ,
+           
+           br() , br() ,
+           "The goal is to make the analysis of routine data accessible, transparent, and repeatable."
+         )
+         
+         
+         # h4( 'Previously downloaded geofeatures (map data):') ,
+         # 
+         # selectInput( ns("geofeturesFiles") , label = NULL , 
+         #              width = '95%',
+         #              choices = NULL , 
+         #              selected = FALSE,
+         #              multiple = FALSE ,
+         #              selectize = FALSE, 
+         #              size = 4  ##needed for `selected = FALSE` to work ) 
+         #             ) ,
+         # 
+         # h4( 'Previously downloaded data:') ,
+         # 
+         # selectInput( ns("datasetFiles") , label = NULL , 
+         #      width = '95%',
+         #      choices = NULL , 
+         #      selected = FALSE,
+         #      multiple = FALSE ,
+         #      selectize = FALSE, 
+         #      size = 4  ##needed for `selected = FALSE` to work ) 
+         #     ) 
         
         ) # end fillColl
           
@@ -213,8 +236,10 @@ directory_widget_server <- function( id ) {
         # Update list of data files
         observe({  
             cat( '\n directory_widget -updating metadata file list \n' )
-            updateSelectInput( session, 'metadataFiles' , 
-                                      choices = metadata.files()  ) 
+            updateSelectInput( session, 
+                               'metadataFiles' ,
+                               choices = metadata.files() ,
+                               selected = 1 ) 
           } )
         
         observe({  
