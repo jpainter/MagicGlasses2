@@ -41,14 +41,16 @@ library(leaflet)
 library( progressr )
 library(RColorBrewer)
 library(plotly)
+library( cowplot )
+library( ggrepel )
+library(scales)
 # library( summarytools ) # invokes Xquartz on mac.  
 # library( describer )
 
 # library( tidyfast )
 # library( tidytable )
 # library(googleVis)
-library( ggrepel )
-library(scales)
+
 library( zoo )
 library(knitr)
 library(rlang)
@@ -94,7 +96,7 @@ library( fabletools )
 library( feasts )
 library( fable.prophet )
 # library( Metrics )
-library( forecast )
+library( forecast ) 
 # library( fable.bsts )
 
 # busy spinner

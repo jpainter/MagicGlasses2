@@ -223,9 +223,10 @@ reporting_widget_server <- function( id ,
         return()
       }
         dates = data1() %>% 
-          # distinct( !! rlang::sym( .period ) ) %>% 
-          # arrange(!! rlang::sym( .period ) ) %>% 
-          pull( !! rlang::sym( .period ) ) %>% unique 
+          ungroup %>%
+          distinct( !! rlang::sym( .period ) ) %>%
+          arrange(!! rlang::sym( .period ) ) %>%
+          pull( !! rlang::sym( .period ) ) 
          
         cat('\n - min:' , min( dates ), ', max:' , max( dates )) 
 

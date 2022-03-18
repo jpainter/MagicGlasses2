@@ -345,6 +345,8 @@ data_widget_server <- function( id ,
           removeModal()
           return( data1 )
       })
+      
+      
             
 
 # Return ####

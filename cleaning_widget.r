@@ -28,7 +28,7 @@ tagList(
                     mainPanel( 
                       
                       
-                      h5( 'Use the buttons to search for extreme values using deviation from the median, median absolute deviation (MAD), and then seasonally adjusted outliers') ,
+                      h5( 'Use the buttons to search for extreme values using median absolute deviation (MAD), and then seasonally adjusted outliers') ,
                       actionButton( ns("determineExtremeValues") , 
                                     "Search for Extreme Values" , style='margin-top:25px' 
                       )   ,
@@ -112,7 +112,7 @@ tagList(
               )
 
                   ) , 
-        tabPanel( "Dataset snapshot", tableOutput( ns("contents") ) ),
+        tabPanel( "Data View", DTOutput( ns("contents") ) ),
           
         tabPanel( "Summary (under construction)",
                         html("<div style='display:flex;'>") ,
@@ -560,10 +560,23 @@ cleaning_widget_server <- function( id ,
       
     })
 
-    output$contents <- renderTable({
+    # output$contents <- renderTable({
+    #   cat('\n* contents')
+    #   req( outlier.dataset() )
+    #   head( outlier.dataset() , n = 100 )
+    # })
+    
+    output$contents <- DT::renderDT({
+      
       cat('\n* contents')
       req( outlier.dataset() )
-      head( outlier.dataset() , n = 100 )
+      
+      DT::datatable(
+        outlier.dataset() %>% select( -Month ) ,
+        rownames = FALSE, 
+        filter = 'top' ,
+        options = DToptions_no_buttons()
+      )
     })
     
     output$profileSummary <- renderUI({ #describeData()
@@ -584,27 +597,15 @@ cleaning_widget_server <- function( id ,
       req( outlierData$df_data )
       
       d = outlierData$df_data
-        # if (!is_empty( data1.seasonal()  )){
-        #   cat('\n - data1.seasonal' )
-        #   d = data1.seasonal() 
-        # } else {
-        #   d = data1.mad()
-        # }
-        # } else if( !is_empty( data1.mad() )) {
-        #   cat('\n - data1.mad' )
-        #   d = data1.mad()
-        # } else{ 
-        #   cat('\n - data1' )
-        #   d = data1() 
-        # }
       
       if ( 'mad10' %in% names(d) ) cat('\n - data has mad10' )
       if ( 'seasonal3' %in% names(d) ) cat('\n - data has seasonal3' )
       
       if ( 'effectiveLeaf' %in% names( d ) && input$selectOrgType %in% 'Facilities only'){
-        cat('\n - data has effectiveLeaf' )
+        cat('\n - data has effectiveLeaf; facilities only' )
         d = d %>% filter( effectiveLeaf )
       } else if ( input$selectOrgType %in% 'Admin only' ){
+        cat('\n - Admin only' )
         d = d %>% filter( !effectiveLeaf )
       } 
       

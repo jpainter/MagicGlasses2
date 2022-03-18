@@ -1,6 +1,5 @@
 
 Facilities 
-====================================
 
 checkboxInput( "bootstrap" , label ='Bootstrap prediction',
                value = TRUE  ) 
