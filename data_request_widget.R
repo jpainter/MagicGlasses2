@@ -6,7 +6,7 @@ data_request_widget_ui = function ( id )
                    position = "top-right") 
   
     fluidRow(
-       column( 5, 
+       column( 4, 
          selectInput( ns("level") , label = "OrgUnit Levels:" , 
                       width = '90%',
                       choices = "Load metadata to get values" , 
@@ -16,10 +16,10 @@ data_request_widget_ui = function ( id )
                       size = 4  ##needed for `selected = FALSE` to work ) 
                      )
          ) ,
-       column( 5, 
+       column( 4, 
           selectInput( ns("period") , label = "Period:" , 
                         width = '90%',
-                        choices = c('months_last_year','months_last_2_years','months_last_3_years','months_last_4_years','months_last_5_years') , 
+                        choices = rev( c('months_last_year','months_last_2_years','months_last_3_years','months_last_4_years','months_last_5_years')) , 
                         selected = 1 ,
                         multiple = FALSE ,
                         selectize = FALSE, 

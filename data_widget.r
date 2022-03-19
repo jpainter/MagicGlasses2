@@ -146,6 +146,8 @@ data_widget_server <- function( id ,
           file = paste0( data.folder() , input$formula.file )
           cat( '\n - formula file' , input$formula.file )
           
+          if ( !any(file.exists( file ) )) return( NULL )
+          
           if ( grepl( fixed('.xlsx'), file ) ){
             
             cat( '\n - read xls file' , file )

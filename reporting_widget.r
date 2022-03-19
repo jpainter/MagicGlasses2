@@ -1,3 +1,5 @@
+library(miniUI)
+
 reporting_widget_ui = function ( id ){
         ns <- NS(id)  
         # fillCol( height = 600, flex = c(NA ) , 
@@ -12,6 +14,7 @@ tabsetPanel( type = "tabs",
 # add_busy_spinner(spin = "fading-circle", position = "bottom-right") ,
 
   tabPanel( "Facilities Reporting",  style = "height:90vh;" ,
+
             fluidPage( 
             fluidRow( style = "height:40vh;",
                     column(6, 
@@ -27,13 +30,19 @@ tabsetPanel( type = "tabs",
                       # htmlOutput("x_value") ,
 
                       ### Histogram of Annual Number of Months Reported (plot_reports_in_a_year)
-                      plotOutput( ns('plot_reports_in_a_year') ,
-                          click = "plot1_click" ,
-                          dblclick = "plot1_dblclick" ,
-                          hover = "plot1_hover" ,
-                          brush = "plot1_brush" ) 
-                     )
-                    ) ,
+                          miniContentPanel(
+ 
+                                    plotOutput( ns('plot_reports_in_a_year') ,
+                                      click = "plot1_click" ,
+                                      dblclick = "plot1_dblclick" ,
+                                      hover = "plot1_hover" ,
+                                      brush = "plot1_brush" ) ,
+                                    
+                                    scrollable = TRUE
+                                    )
+                    ) 
+            )
+  ,
             fluidRow( style = "height:40vh;"  ,
                     
                     column(12, 
@@ -947,7 +956,7 @@ reporting_widget_server <- function( id ,
     return( g )
   })
   
-  output$plot_reporting_by_month <- renderPlot({  plot2()  })
+  output$plot_reporting_by_month <- renderPlot({  plot2()  } , height = "auto")
   
   verbatimTextOutput("info")
 
@@ -1034,7 +1043,7 @@ reporting_widget_server <- function( id ,
   }
 })
 
-  output$plot_reports_in_a_year <- renderPlot({  plot1()  })
+  output$plot_reports_in_a_year <- renderPlot({  plot1()  } , height = "auto" )
   
   # Plot values ####
 
