@@ -1,0 +1,64 @@
+
+ /* body */
+.content-wrapper, .right-side {
+                                background-color: #FFFFFF ;
+                                }
+                                
+                                
+ /* logo */
+
+.skin-blue .main-header .logo {
+font-family: "Georgia", Times, "Times New Roman", serif;
+font-weight: bold;
+font-size: 20px;
+color: #000000 ;
+background-color: #FFFAF0;
+}
+
+/* column widths from https://stackoverflow.com/questions/55208855/how-to-set-column-width-in-r-shiny-data-table */
+.nowrap {
+  white-space: nowrap;
+}
+
+/* navbar (rest of the header) */
+.skin-blue .main-header .navbar {
+                              background-color: #FFFAF0;
+                              color: #000000 ;
+                              } 
+
+/* logo when hovered */
+.skin-blue .main-header .logo:hover {
+background-color: #FFFAF0;
+}
+
+/* navbar toggle*/
+.skin-blue .main-header .sidebar-toggle:before {
+  color: #000000 ;
+}
+
+/* main sidebar */
+.skin-blue .main-sidebar {
+background-color: #FFFAF0;
+color: #000000 ;
+}
+
+/* active selected tab in the sidebarmenu */
+.skin-blue .main-sidebar .sidebar .sidebar-menu .active a{
+background-color: #FFFAF0;
+}
+
+/* other links in the sidebarmenu */
+.skin-blue .main-sidebar .sidebar .sidebar-menu a{
+background-color: #FFFAF0;
+color: #000000;
+}
+
+/* other links in the sidebarmenu when hovered */
+.skin-blue .main-sidebar .sidebar .sidebar-menu a:hover{
+background-color: #FFFAF0;
+}
+
+/* toggle button when hovered  */
+.skin-blue .main-header .navbar .sidebar-toggle:hover{
+background-color: #FFFAF0;
+}

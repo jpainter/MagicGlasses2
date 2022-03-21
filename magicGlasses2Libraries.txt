@@ -3,6 +3,8 @@
 conflicted 
 tidyverse
 data.table 
+
+flexdashboard
 shiny
 shinyjs
 shinydashboard
@@ -18,6 +20,7 @@ describer
 RColorBrewer
 plotly
 cowplot
+miniUI
 
 #  tidyfast 
 #  tidytable 
