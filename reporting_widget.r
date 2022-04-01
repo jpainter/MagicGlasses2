@@ -1,4 +1,3 @@
-library(miniUI)
 
 reporting_widget_ui = function ( id ){
         ns <- NS(id)  
@@ -179,7 +178,7 @@ reporting_widget_server <- function( id ,
       
           if( length(pnls) == 0 ) return(p)
       
-          lemon::reposition_legend( p, "center", panel=names(pnls) )
+          reposition_legend( p, "center", panel=names(pnls) )
           }
 
   # dataset/data  ####

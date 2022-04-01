@@ -11,7 +11,7 @@ login_widget_ui <- function( id ) {
                          
                          useShinyjs() ,  # Set up shinyjs
                          
-                         h4( 'Login to DHIS2 server*') ,
+                         h3( 'Login to DHIS2 server*') ,
         
          
                         fluidRow( 
@@ -22,7 +22,7 @@ login_widget_ui <- function( id ) {
                            
                            column( 12, 
                                    
-                                   h2("Choose from list of DHIS2 Instances**:") ,
+                                   h4("Choose from list of DHIS2 Instances**:") ,
                                 
                                    
                                    selectInput( ns('instance') , NULL , choices = NULL ) ,
@@ -47,7 +47,7 @@ login_widget_ui <- function( id ) {
                            
                            column( 12, 
                            
-                           h2('Or enter address and credentials:') ,
+                           h4('Or enter address and credentials:') ,
                            
                            inputPanel( 
                                textInput( ns("baseurl") , label = "DHIS2 URL:", NULL ), # "https://play.dhis2.org/2.33.1/"

@@ -4,16 +4,18 @@ directory_widget_ui = function ( id )
         
         fillCol( height = "100%", flex = c(NA ) , 
 
-         h2( 'Directory for storing/retrieving data files for this project:') ,
+         h3( 'Directory for data files:') ,
          
          # shinyDirButton( ns('folder') , 'Folder select', 'Please select a folder', FALSE) ,
          
-         br(),
+         # br(),
           
          textInput( ns("data.directory"), label = NULL , 
                      value = path.expand("~") ,
                      width = '95%'
                      ) ,
+         
+         
          
          h4( 'Previously downloaded metadata:') ,
         
@@ -29,7 +31,7 @@ directory_widget_ui = function ( id )
          hr(),
          
          tags$blockquote(
-           h3('MagicGlasses: an epidemiological look at DHIS2') ,
+           h4('MagicGlasses: an epidemiological look at DHIS2') ,
            br() , br() ,
            
            "The layout follows a research path using the pages (at top of page) to

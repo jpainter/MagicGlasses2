@@ -19,6 +19,7 @@ runtime: shiny
 <!-- remotes::install_github("r-spatial/sf", configure.args = "--with-gdal-config=/opt/homebrew/opt/gdal/bin/gdal-config --with-sqlite3-lib=/opt/homebrew/opt/sqlite3") -->
 ```{r renv, include=FALSE  }
 
+# renv::snapshot()
 renv::restore( packages = "renv" )
 
 ```
@@ -47,6 +48,7 @@ library( cowplot )
 library( ggrepel )
 library(scales)
 library( miniUI )
+library( lemon ) # for reposition_legend() 
 # library( summarytools ) # invokes Xquartz on mac.  
 # library( describer )
 

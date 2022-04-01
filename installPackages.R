@@ -3,6 +3,7 @@ renv::dependencies()
 renv::snapshot()
 
 
+
 if (!require( 'pacman' )){
   install.packages( 'pacman' , dep=TRUE )
   if( !require( 'pacman' ) ) stop("Package not found")
@@ -23,9 +24,13 @@ libraries =  readLines( 'magicGlasses2Libraries.txt' )
 include = !( grepl( '#' , libraries ) | nchar( libraries ) == 0 ) 
 library.list = trimws( libraries[ include ] )
 
+installed = installed.packages()
+
+needed = setdiff( library.list , installed )
+
 # pacman::p_load( char = library.list , update = TRUE )
 
-renv::install( packages = library.list )
+renv::install( packages = needed )
 
 # save libraries
 renv::snapshot()

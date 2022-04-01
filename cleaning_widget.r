@@ -91,9 +91,18 @@ tagList(
                                   ) ,
                                   
                                   fluidRow( style = "height:50vh;",
-                                    plotOutput( ns("inspect") )
-                                    
-                                  ))
+                                    plotlyOutput( ns("inspect") 
+                                                # , hover = ns("plot_hover") , 
+                                                # click = ns("plot_click") ) 
+                                    # , uiOutput( ns("dynamic") 
+                                    ) 
+    
+                                  ) 
+                                  
+                                  # , fluidRow( style = "height:5vh;",
+                                  #          verbatimTextOutput( ns("info") ))
+                                  
+                                  )
                               )
                         )
                       )
@@ -823,7 +832,28 @@ cleaning_widget_server <- function( id ,
     
   })
   
-  output$inspect = renderPlot({ plot.single.data.series() })
+  output$inspect = renderPlotly({ plot.single.data.series() })
+  
+  output$dynamic <- renderUI({
+    req(input$plot_hover) 
+    verbatimTextOutput("vals")
+  })
+
+  output$vals <- renderPrint({
+    hover <- input$plot_hover 
+    # print(str(hover)) # list
+    y <- nearPoints( outlier.dataset() , input$plot_hover )[ "original" ]
+    req( nrow(y) != 0 )
+    y
+  })
+  
+  output$info <- renderPrint({
+    req( input$plot_hover )
+    x <- input$plot_hover$x
+    y <- input$plot_hover$y
+    # group = 
+    cat("[", x, ", ", y, "]", sep = "")
+  })
   
  
   # Return ####

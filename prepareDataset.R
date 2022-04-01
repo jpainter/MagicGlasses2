@@ -12,11 +12,10 @@ translate_dataset = function( data , formula_elements ){
                    by = c("dataElement.id", "categoryOptionCombo.ids")
                    )
   
-  d.ts = df_pre_ts( dd )
+  # d.ts = df_pre_ts( dd )
   
-  return( d.ts )
+  return( dd )
 }
-
 
 ous_tree = function( ous , ouLevels ){
   

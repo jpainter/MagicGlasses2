@@ -48,7 +48,9 @@ tagList(
               multiple = FALSE ,
               selectize = FALSE, 
               size = 4  ##needed for `selected = FALSE` to work ) 
-             ) , 
+             ) ,
+      
+      actionButton( ns("update"), "Update")
 
 )       
         ) # end fillColl
@@ -94,10 +96,32 @@ data_widget_server <- function( id ,
           })
         
         # trigger refresh after completed download
+        observeEvent(input$update, {
+          cat( '\n* Update data widget text boxes')
+          
+          aa = data.folder()
+          a = formula.files()
+          
+          cat( '\n - Update data formula files')
+          updateSelectInput( session, 'formula.file' , 
+                                      choices = a , 
+                                      selected = 1  ) 
+        
+         b =  formula.names()
+         cat( '\n - Update data formula.names')
+         updateSelectInput( session, 'indicator' , 
+                            choices =  b  ,
+                            selected = 1 )  
+         
+         cat( '\n - Update rds_data_file')
+         updateSelectInput( session, 'dataset' ,
+                                      choices = "" ,
+                                      selected = NULL ) # rds_data_file()[1] )            }            
+        })
+        
         observeEvent( completedRequest() , { 
             cat('\n- data_widget completedRequest():' )
             a = formula.files()
-          
         })
         
         observe({
@@ -216,12 +240,12 @@ data_widget_server <- function( id ,
           
           if ( sum( f.indicator ) == 0 ){
             cat( '\n - no data files for this indicator' )
-            return( NULL )
+            return( "" )
           } 
           
           if ( !dir.exists( data.folder() )){
             cat( '\n - no folder matching data.folder()' )
-            return( NULL )
+            return( "" )
           } 
           
           data_files = data.files[f.indicator] # %>% most_recent_file()
@@ -253,11 +277,9 @@ data_widget_server <- function( id ,
         # Update list of data files
         observe({  
             cat( '\n updating dataset list' )
-            if ( !is.null( rds_data_file() )){
               updateSelectInput( session, 'dataset' ,
                                       choices = rds_data_file() ,
                                       selected = NULL ) # rds_data_file()[1] )
-            }
             
           })
         

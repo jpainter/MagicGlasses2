@@ -55,6 +55,9 @@ df_pre_ts = function( df , period = "Month" , missing.value = NA  ){
    
    .period = rlang::enquo( period ) 
    
+   # remove rows with no count (e.g.orgUnit = LEVEL-7 COUNT = NA)
+   df = filter( df , !is.na( COUNT ) )
+   
    if (  period %in% 'Month' & !weekly ){
      df = df %>% mutate( Month =  Month_Year( period ) )
      df_pre_ts = df %>%

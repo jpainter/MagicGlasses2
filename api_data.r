@@ -1008,7 +1008,7 @@ api_data = function(      periods = "LAST_YEAR" ,
        good.prev.data = prev.data %>% filter( !period %in% unique( d$period ))
        
        updated.data  = bind_rows( good.prev.data , d ) %>% 
-         filter( !is.na( COUNT ) || COUNT == 0 ) %>%
+         filter( !is.na( COUNT ) || COUNT == "0.0" ) %>%
          arrange( period , orgUnit, dataElement , categoryOptionCombo  ) 
 
        return( updated.data )
