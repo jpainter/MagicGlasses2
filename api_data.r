@@ -494,8 +494,9 @@ translate_fetch = function( df , formulaElements = NULL , ous = NULL ){
 
 
 # api_data ####
-api_data = function(      periods = "LAST_YEAR" ,
+api_data = function(      periods = NA ,
                           periodType = 'Monthly' ,
+                          YrsPrevious = 1 ,
                           orgUnits = "LEVEL-1" ,
                           elements = NA ,
                           baseurl = NA , 
@@ -525,9 +526,14 @@ api_data = function(      periods = "LAST_YEAR" ,
   if ( periods %in% 'months_last_5_years' ) periods = date_code( YrsPrevious = 5 )
   if ( periods %in% 'weeks_last_5_years' ) periods = date_code_weekly( YrsPrevious = 5 )
 
-  if ( all( is.na( periods )  ) ) periods = date_code( YrsPrevious = 4 )
+  cat('\n - setting periods - ') 
+  if ( all( is.na( periods )  ) ) periods = date_code( YrsPrevious = YrsPrevious )
+  cat('\n -  ' , periods )  
     
   period_vectors = strsplit( periods , ";" , fixed = TRUE )[[1]]
+  
+  if ( print ) cat( '\n - Requesting data for periods:\n' ,
+                    paste( period_vectors , collapse = ';') , "\n" )
 
   if ( update & !file.exists( previous_dataset_file ) ){
         cat('\n - previous data file missing') 
@@ -720,10 +726,15 @@ api_data = function(      periods = "LAST_YEAR" ,
           filter( all( same ) ) %>%
           pull( period ) %>% unique 
         
+        
+        cat(  '\n - prev.periods.same.data for ' , 
+              paste( prev.periods.same.data , collapse = ';') , "\n"
+        )
+        
         update.periods = setdiff( period_vectors, prev.periods.same.data )
         
-        if ( print ) cat(  'Need to update or get new data data for ' , 
-                                   paste( update.periods , collapse = ';') , "\n"
+        cat(  '\n - Need to update or get new data data for ' , 
+              paste( update.periods , collapse = ';') , "\n"
         )
         
         period_vectors = update.periods
@@ -754,7 +765,7 @@ api_data = function(      periods = "LAST_YEAR" ,
     # df of imputs for parallel mapping (pmap)
     pmap.df = expand.grid( period_vectors, orgUnits, elements$id ) 
     if ( print ){
-      cat( '\nMaking' , 
+      cat( '\n Making' , 
                     nrow( pmap.df ), "data requests" , "\n" 
   )  
      cat('\n glimpse( pmap.df ) '); print( head( pmap.df , n=10 ) )
@@ -921,12 +932,7 @@ api_data = function(      periods = "LAST_YEAR" ,
       
     # progress$close() # Close the progress bar
     
-      cat('\n compiling requested data ')
-      d = bind_rows( d )
-      cat( '\n' , nrow(d), 'records with sum and count' )
-      cat( '\n' , 'of these, there was no value for' , sum( is.na(d$SUM) ), 'records \n' )
    
-      return( d )
     }
     } else {
     # Non shiny evalution: 
@@ -988,22 +994,23 @@ api_data = function(      periods = "LAST_YEAR" ,
             
             # Save data up to this point
             
-            
-            return( d )
-                
             } 
         )
     })
     }
     
-     if ( print ) message( "binding downloads" )
-     d = bind_rows( d )
-     
-     if ( print ) cat( comma( nrow( d ) ), "records downloaded"  ,  "\n" )
-     if ( print ) message( toc() )
-     
-     # update value in most_recent_data_file
-     if ( update &  nrow( prev.data ) > 0 ){
+    if ( print ) message( "binding downloads" )
+    
+    cat('\n\n compiling requested data ')
+    d = bind_rows( d )
+    
+    cat( '\n' , nrow(d), 'records with sum and count' )
+    cat( '\n' , 'of these, there was no value for' , sum( is.na(d$SUM) ), 'records \n' )
+    
+    # update value in most_recent_data_file
+    if ( update &&  nrow( prev.data ) > 0 ){
+      
+      cat( '\n Updating data')
 
        good.prev.data = prev.data %>% filter( !period %in% unique( d$period ))
        

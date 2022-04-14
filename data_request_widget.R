@@ -5,6 +5,7 @@ data_request_widget_ui = function ( id )
     add_busy_spinner(spin = "fading-circle", 
                    position = "top-right") 
   
+    fluidPage(
     fluidRow(
        column( 4, 
          selectInput( ns("level") , label = "OrgUnit Levels:" , 
@@ -16,21 +17,46 @@ data_request_widget_ui = function ( id )
                       size = 4  ##needed for `selected = FALSE` to work ) 
                      )
          ) ,
-       column( 4, 
+       column( 3, 
+          # selectInput( ns("period") , label = "Period:" , 
+          #               width = '90%',
+          #               choices = rev( c('months_last_year','months_last_2_years','months_last_3_years','months_last_4_years','months_last_5_years')) , 
+          #               selected = 1 ,
+          #               multiple = FALSE ,
+          #               selectize = FALSE, 
+          #               size = 4  ##needed for `selected = FALSE` to work ) 
+          #              ) ,
+          
           selectInput( ns("period") , label = "Period:" , 
-                        width = '90%',
-                        choices = rev( c('months_last_year','months_last_2_years','months_last_3_years','months_last_4_years','months_last_5_years')) , 
-                        selected = 1 ,
-                        multiple = FALSE ,
-                        selectize = FALSE, 
-                        size = 4  ##needed for `selected = FALSE` to work ) 
-                       ) 
-        ) ,
-      column( 1 ,         
+                       width = '90%',
+                       choices =  c('months')  , 
+                       selected = 1 ,
+                       multiple = FALSE ,
+                       selectize = FALSE, 
+                       size = 4  ##needed for `selected = FALSE` to work ) 
+          ) )  ,
+          
+        column( 3,
+               selectInput( ns("years") , label = "Years:" , 
+                       width = '90%',
+                       choices =  1:20  , 
+                       selected = 1 ,
+                       multiple = FALSE ,
+                       selectize = FALSE, 
+                       size = 4  ##needed for `selected = FALSE` to work ) 
+          ) 
+          
+        ) 
+       
+      ) ,
+    
+    fluidRow(
+      column( 12 ,         
         actionButton( ns("requestDataButton") , 
                       "Request data" , style='margin-top:25px' 
                       )
       )
+    )
     )
         } 
         
@@ -162,7 +188,8 @@ data_request_widget_server <- function( id ,
           .baseurl = baseurl() 
           .username = username() 
           .password = password()
-          .periods = input$period
+          .period = input$period
+          .years = input$years
           .level = input$level
           # .orgUnitLevels = orgUnitLevels()
           .orgUnits = orgUnitRequest()
@@ -194,6 +221,8 @@ data_request_widget_server <- function( id ,
             .previous_dataset_file = ''
           }
           
+          .periods = NA  # use period (e.g. Month) and year (e.g. 5) instead of 'months_last_5_years'
+          
           x  = api_data( 
                          update = .update , 
                          baseurl = .baseurl , 
@@ -201,7 +230,9 @@ data_request_widget_server <- function( id ,
                          password = .password ,
                          elements = .elements, 
                          orgUnits = .orgUnits ,
-                         periods = .periods , 
+                         # periods = .periods , 
+                         periodType = .period ,
+                         YrsPrevious = as.integer( .years ) ,
                          formula = .formula.name ,
                          previous_dataset_file = .previous_dataset_file ,
                          prev.data =  .dataset ,
@@ -210,10 +241,12 @@ data_request_widget_server <- function( id ,
                          shinyApp = TRUE,
                          parallel = FALSE )
           
+          if ( is.na( .periods ) ) .periods = paste0( .years, 'yrs' )
+          
           saveAs = paste0( .dir, .formula.name , "_" , 
                            .level ,"_", .periods ,"_", Sys.Date() , ".rds")
           
-          cat( '\nsaving formula.request as', saveAs )  
+          cat( '\n saving formula.request as', saveAs )  
           
         showModal(
           modalDialog( title = "Finished downloading.  Now saving the file", 

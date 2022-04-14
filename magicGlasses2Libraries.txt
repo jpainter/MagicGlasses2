@@ -21,6 +21,7 @@ RColorBrewer
 plotly
 cowplot
 miniUI
+lemon
 
 #  tidyfast 
 #  tidytable 

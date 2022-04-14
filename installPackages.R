@@ -1,6 +1,6 @@
 
 renv::dependencies()
-renv::snapshot()
+# renv::snapshot()
 
 
 
