@@ -17,10 +17,28 @@ runtime: shiny
 <!-- For mapping, need to install the GDAL library.  On mac, use homebrew.  On windows ?  -->
 <!-- see : https://gitmemory.cn/index.php/repo/r-spatial/sf/issues/1848 -->
 <!-- remotes::install_github("r-spatial/sf", configure.args = "--with-gdal-config=/opt/homebrew/opt/gdal/bin/gdal-config --with-sqlite3-lib=/opt/homebrew/opt/sqlite3") -->
-```{r renv, include=FALSE  }
+```{r renv, include=FALSE , eval=FALSE }
 
 # renv::snapshot()
 renv::restore( packages = "renv" )
+
+```
+
+```{r check_installed_libraries, eval=FALSE}
+
+
+libraries =  readLines( 'magicGlasses2Libraries.txt' ) 
+include = !( grepl( '#' , libraries ) | nchar( libraries ) == 0 ) 
+library.list = trimws( libraries[ include ] )
+
+installed = installed.packages()
+
+needed = setdiff( library.list , installed )
+
+if ( length( needed ) > 0 ){
+  message( 'please run installPackages.R' )
+  knitr::knit_exit()
+} 
 
 ```
 
@@ -504,7 +522,7 @@ Outliers
 ========================
 
 
-```{r  }
+```{r  eval=TRUE}
 source( 'cleaning_widget.r' )
 
 cleaning_widget_ui( "cleaning1" )
@@ -532,7 +550,8 @@ evaluation_widget_output =
                          directory_widget_output = directory_widget_output ,
                          metadata_widget_output = metadata_widget_output ,
                          data_widget_output = data1_Widget_output ,
-                         reporting_widget_output = reporting_widget_output )
+                         reporting_widget_output = reporting_widget_output ,
+                         cleaning_widget_output = cleaning_widget_output )
 ```
 
 About

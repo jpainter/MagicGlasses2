@@ -764,6 +764,7 @@ api_data = function(      periods = NA ,
     # v2 <- expand_grid( period_vectors , orgUnits )
     # df of imputs for parallel mapping (pmap)
     pmap.df = expand.grid( period_vectors, orgUnits, elements$id ) 
+    
     if ( print ){
       cat( '\n Making' , 
                     nrow( pmap.df ), "data requests" , "\n" 
@@ -1012,11 +1013,20 @@ api_data = function(      periods = NA ,
       
       cat( '\n Updating data')
 
-       good.prev.data = prev.data %>% filter( !period %in% unique( d$period ))
+       good.prev.data = prev.data %>% 
+         filter( !period %in% unique( d$period )) %>%
+         mutate_all( as.character )
+       
+       cat("\n - glimpse good.prev.data:\n") ; glimpse( good.prev.data )
+       cat("\n - glimpse d:\n") ; glimpse( d )
+       
+       d = d %>% mutate_all( as.character )
        
        updated.data  = bind_rows( good.prev.data , d ) %>% 
          filter( !is.na( COUNT ) || COUNT == "0.0" ) %>%
          arrange( period , orgUnit, dataElement , categoryOptionCombo  ) 
+       
+        cat("\n - glimpse updated.data:\n") ; glimpse( updated.data )
 
        return( updated.data )
      }

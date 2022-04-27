@@ -2,143 +2,170 @@
 reporting_widget_ui = function ( id ){
         ns <- NS(id)  
         # fillCol( height = 600, flex = c(NA ) , 
-    tagList( 
+  tagList( 
           shinybusy::add_busy_spinner(
             spin = "fading-circle" , # "self-building-square",
             position = 'bottom-right'
             # , margins = c(70, 1200)
           ) ,
 
-tabsetPanel( type = "tabs",
-# add_busy_spinner(spin = "fading-circle", position = "bottom-right") ,
-
-  tabPanel( "Facilities Reporting",  style = "height:90vh;" ,
-
-            fluidPage( 
-            fluidRow( style = "height:40vh;",
-                    column(6, 
-                      ### Number of Facilties Reporting each Period (plot_reporting_by_month)
-                      plotOutput( ns('plot_reporting_by_month') , 
-                          click = "plot2_click" ,
-                          dblclick = "plot2_dblclick" ,
-                          hover = "plot2_hover" ,
-                          brush = "plot2_brush" )
-                      ) ,
-                      
-                     column(6,  
-                      # htmlOutput("x_value") ,
-
-                      ### Histogram of Annual Number of Months Reported (plot_reports_in_a_year)
-                          miniContentPanel(
+    sidebarLayout(
+      sidebarPanel(
+          tabsetPanel( type = "tabs",
+          tabPanel( "Monthly reporting",  
  
-                                    plotOutput( ns('plot_reports_in_a_year') ,
-                                      click = "plot1_click" ,
-                                      dblclick = "plot1_dblclick" ,
-                                      hover = "plot1_hover" ,
-                                      brush = "plot1_brush" ) ,
-                                    
-                                    scrollable = TRUE
-                                    )
-                    ) 
-            )
-  ,
-            fluidRow( style = "height:40vh;"  ,
-                    
-                    column(12, 
-                      plotOutput( ns('plot_values') ,
-                          hover = "plotSelectedOusValues_hover" ,
-                          brush = "plotSelectedOusValues_brush"
-                          )
-                    )
-                    )
-            )
-  ) ,
-    
-  tabPanel( "Monthly reporting",  
- 
-     inputPanel(
-       selectInput( ns("level") , label = "Organization Level:" ,
-                    choices = c( 'leaf'  ) ,
-                    selected = NULL ) ,
-       
-      checkboxInput( ns("exclude_recent_month") , label ='Exclude most recent month?',
-                 value = TRUE  ) ,
+            inputPanel(
+             selectInput( ns("level") , label = "Organization Level:" ,
+                          choices = c( 'leaf'  ) ,
+                          selected = NULL ) ,
+             
+            checkboxInput( ns("exclude_recent_month") , label ='Exclude most recent month?',
+                       value = TRUE  ) ,
+            
+              selectInput( ns("level2"), label = "OrgUnit Level2" , 
+                            choices = NULL, 
+                            selected = NULL ,
+                            multiple = TRUE ) ,
+              
+              selectInput( ns("level3"), label = "OrgUnit Level3" ,
+                            choices = NULL,
+                            selected = NULL ,
+                            multiple = TRUE ) ,
+              
+              selectInput( ns("level4"), label = "OrgUnit Level4" ,
+                            choices = NULL,
+                            selected = NULL  ,
+                            multiple = TRUE  ) ,
+              
+              selectInput( ns("level5"), label = "OrgUnit Level5" ,
+                            choices = NULL,
+                            selected = NULL  ,
+                            multiple = TRUE  ) ,
+            
+              selectInput( ns("source") , label = "Original/Cleaned" , 
+                          choices = c( 'Original', 'Cleaned' ) , 
+                          selected = 'Original' ) ,
+              
+              selectInput( ns("split") , label = "Split Data By:" , 
+                          choices = "None" , 
+                          selected = "None" ) , 
+              
+              checkboxInput( ns("count.any") , label ='Count any categories', value = FALSE ) 
+              
       
-        selectInput( ns("level2"), label = "OrgUnit Level2" , 
-                      choices = NULL, 
-                      selected = NULL ,
-                      multiple = TRUE ) ,
+        ) ,
         
-        selectInput( ns("level3"), label = "OrgUnit Level3" ,
-                      choices = NULL,
-                      selected = NULL ,
-                      multiple = TRUE ) ,
+        h5( 'Filter to consistently reporting facilties') ,
         
-        selectInput( ns("level4"), label = "OrgUnit Level4" ,
-                      choices = NULL,
-                      selected = NULL  ,
-                      multiple = TRUE  ) ,
+        inputPanel( 
+          
+          checkboxInput( ns("mostReports") , label ='Find facilities reporting each month', value = TRUE ) ,
+          
+          selectizeInput( ns("startingMonth") , label = "Begining with", 
+                          choices = NULL ,
+                          selected = NULL ) ,
+          
+          selectizeInput( ns("endingMonth"), label = "Ending with", 
+                          choices = NULL , 
+                          selected = NULL )
+          
+          ) ,
         
-        selectInput( ns("level5"), label = "OrgUnit Level5" ,
-                      choices = NULL,
-                      selected = NULL  ,
-                      multiple = TRUE  ) ,
+        h5( 'Filter display dates') ,
+        
+        inputPanel( 
+          
+          selectizeInput( ns("startDisplayMonth") , label = "begining", 
+                          choices = NULL ,
+                          selected = NULL ) ,
+          
+          selectizeInput( ns("endDisplayMonth"), label = "ending", 
+                          choices = NULL , 
+                          selected = NULL )
+          
+        )
+        )  
       
-        selectInput( ns("source") , label = "Original/Cleaned" , 
-                    choices = c( 'Original', 'Cleaned' ) , 
-                    selected = 'Original' ) ,
-        
-        selectInput( ns("split") , label = "Split Data By:" , 
-                    choices = "None" , 
-                    selected = "None" ) , 
-        
-        checkboxInput( ns("count.any") , label ='Count any categories', value = FALSE ) ,
-        
-        checkboxInput( ns("mostReports") , label ='Most frequently reporting facilities', value = TRUE ) ,
-        
-        selectizeInput( ns("startingMonth") , label = "begining with", 
-                     choices = NULL ,
-                     selected = NULL ) ,
-        
-        selectizeInput( ns("endingMonth"), label = "ending with", 
-                     choices = NULL , 
-                     selected = NULL )
-  
-  )
-  ) , 
-
- tabPanel( "Choose dataElements, categories, and dataSets ",  
-  inputPanel(
-         checkboxInput( ns("all_categories") , 
-                                label = 'Select all dataElement/Categories',
-                                value = TRUE )  ,
-
-         selectInput( ns("data_categories") , 
-                            label = "DataElement/Category" , 
-                    choices = NULL  ,
-                    selected = 1 ,
-                    width = "100%" ,
-                    multiple = TRUE ,
-                    selectize = TRUE
-                    ) ,
-
-         checkboxInput( ns("dataset_merge"), 
-                       label ='Merge all datasets', value = FALSE ) ,
+        , 
+      
+       tabPanel( "Choose dataElements, categories, and dataSets ",  
+        # inputPanel(
+               checkboxInput( ns("all_categories") , 
+                                      label = 'Select all dataElement/Categories',
+                                      value = TRUE )  ,
+      
+               selectInput( ns("data_categories") , 
+                                  label = "DataElement/Category" , 
+                          choices = NULL  ,
+                          selected = 1 ,
+                          width = "100%" ,
+                          multiple = TRUE ,
+                          selectize = TRUE
+                          ) ,
+      
+               checkboxInput( ns("dataset_merge"), 
+                             label ='Merge all datasets', value = FALSE ) ,
+               
+              checkboxInput( ns("dataset_merge_average") , 
+                             label ='Average values when reported to mutliple datasets', value = FALSE ) ,
          
-        checkboxInput( ns("dataset_merge_average") , 
-                       label ='Average values when reported to mutliple datasets', value = FALSE ) ,
-   
-        selectInput( ns("merge") , 
-                      label ='Merge selected datasets with selected dataElements/Categories', 
-                choices = NULL  ,
-                selected = 1 ,
-                width = "100%" ,
-                multiple = TRUE ,
-                selectize = TRUE ) 
-         ) 
-  ) 
-)
-)
+              selectInput( ns("merge") , 
+                            label ='Merge selected datasets with selected dataElements/Categories', 
+                      choices = NULL  ,
+                      selected = 1 ,
+                      width = "100%" ,
+                      multiple = TRUE ,
+                      selectize = TRUE ) 
+               # ) # end inputPanel 
+        ) # end tabPanel
+      ) # end tabset panel
+      ) , # end sidebar panel 
+      
+      mainPanel( 
+        tabPanel( "Facilities Reporting",  style = "height:90vh;" ,
+      
+                  fluidPage( 
+                  fluidRow( style = "height:40vh;",
+                          column(6, 
+                            ### Number of Facilties Reporting each Period (plot_reporting_by_month)
+                            plotOutput( ns('plot_reporting_by_month') , 
+                                click = "plot2_click" ,
+                                dblclick = "plot2_dblclick" ,
+                                hover = "plot2_hover" ,
+                                brush = "plot2_brush" )
+                            ) ,
+                            
+                           column(6,  
+                            # htmlOutput("x_value") ,
+      
+                            ### Histogram of Annual Number of Months Reported (plot_reports_in_a_year)
+                                miniContentPanel(
+       
+                                          plotOutput( ns('plot_reports_in_a_year') ,
+                                            click = "plot1_click" ,
+                                            dblclick = "plot1_dblclick" ,
+                                            hover = "plot1_hover" ,
+                                            brush = "plot1_brush" ) ,
+                                          
+                                          scrollable = TRUE
+                                          )
+                          ) 
+                  )
+        ,
+                  fluidRow( style = "height:40vh;"  ,
+                          
+                          column(12, 
+                            plotOutput( ns('plot_values') ,
+                                hover = "plotSelectedOusValues_hover" ,
+                                brush = "plotSelectedOusValues_brush"
+                                )
+                          )
+                          )
+                  )
+        ) 
+        ) # end main panel
+) # end sidbar layout
+) # end tagset
 }
         
 reporting_widget_server <- function( id , 
@@ -245,26 +272,37 @@ reporting_widget_server <- function( id ,
 
     # reporting_month selection
     observeEvent(  dates() , {
-      cat('\n-observeEvent dates() update startingMonth-')
+      cat('\n-observeEve
+          nt dates() update startingMonth-')
       dates = dates()
       updateSelectizeInput( session, 'startingMonth' ,
               choices =  dates  %>% as.character()  ,
               selected = min( dates, na.rm = TRUE ) %>% as.character() , 
               server = TRUE
       )
-      cat('-done\n')
-      } )
-
-    observeEvent(  dates() , {
+      
+      updateSelectizeInput( session, 'startDisplayMonth' ,
+                            choices =  dates  %>% as.character()  ,
+                            selected = min( dates, na.rm = TRUE ) %>% as.character() , 
+                            server = TRUE
+      )
+      
       cat('\n- observeEvent dates() update endingMonth-' ) 
-      dates = dates()
       updateSelectizeInput( session, 'endingMonth' ,
               choices =  dates  %>% as.character() ,
               selected = max( dates , na.rm = TRUE ) %>% as.character() ,
               server = TRUE
       )
-      cat('\n -done\n')
+      
+      updateSelectizeInput( session, 'endDisplayMonth' ,
+                            choices =  dates  %>% as.character() ,
+                            selected = max( dates , na.rm = TRUE ) %>% as.character() ,
+                            server = TRUE
+      )
+      
+      cat('-done\n')
       } )
+
 
   # Update data
   observe({
@@ -917,7 +955,7 @@ reporting_widget_server <- function( id ,
               .breaks = seq(2, 53, 4)
     }
   
-    cat('\n- ggplot( monthly.reports() ... ')
+    cat('\n- plot2: ggplot( monthly.reports() ... ')
     g = ggplot( monthly.reports() %>% mutate( facilities = 'All' ), 
                 aes( x =  !! rlang::sym( .period ) 
                      , y = n  
@@ -1022,6 +1060,8 @@ reporting_widget_server <- function( id ,
             .breaks = seq(2, 53, 4)
   }
     
+  cat('\n- plot1: ggplot( annual.reports() ... ')
+  
   g = ggplot( annual.reports() , 
               aes( x = n_periods , y = n ) ) +
     geom_col() + 
@@ -1053,16 +1093,17 @@ reporting_widget_server <- function( id ,
    cat("\n* plotData():")
   
     data = d() %>%
-      mutate( Selected = 'All' )
+      mutate( Selected = 'All' ) 
+    
     
     # filter to selected category
-    #print( 'plotData filtered by' ); #print( input$data_categories )
+    cat( '\n - plotData filtered by' , input$data_categories )
 
     if ( !input$all_categories )  
       data = data %>% filter( data %in% input$data_categories )
     
     # Add var for selected ous
-    cat( '\n plotData length( selectedOUs()): ' , length( selectedOUs())  )
+    cat( '\n - plotData length( selectedOUs()): ' , length( selectedOUs())  )
     
    if ( length( selectedOUs()) > 0 ) data  = data %>%
       mutate( Selected = ifelse( 
@@ -1107,6 +1148,9 @@ reporting_widget_server <- function( id ,
     req( plotData() )
     # req( group_by_cols() )
     req( period() )
+    req( input$startDisplayMonth )
+    req( input$endDisplayMonth )
+    
     cat( '\n* data.total():' )
   
     
@@ -1119,8 +1163,9 @@ reporting_widget_server <- function( id ,
   
       # Total categories by facilities and datasets
       data = plotData() 
-   
       
+      
+
       # Merge  datasets 
       # Set all dataSets to Combined and re-summaries taking mean
       # #print( 'data.total datasets' );  #print( dataSets() )
@@ -1192,6 +1237,28 @@ reporting_widget_server <- function( id ,
 
     cat( '\n - data.total class' , class( data.total ) ) 
     cat( '\n - data.total cols' , names( data.total ) ) 
+    
+    # Filter display dates
+    # cat( '/n - data.total cols:', names( data.total ) )
+    
+    if ( .period %in% 'Month' ){
+      cat( '/n -  .period %in% Month' )
+      data.total = data.total %>% 
+        filter( 
+          Month >=  yearmonth( input$startDisplayMonth )  ,
+          Month <=  yearmonth( input$endDisplayMonth )  
+        )
+    } 
+    
+    if ( .period %in% 'Week' ){
+      cat( '/n -  .period %in% weeks' )
+      data.total = data.total %>% 
+        filter( 
+          Week >=  yearweek( input$startDisplayMonth )  ,
+          Week <=  yearweek( input$endDisplayMonth )  
+        )
+    } 
+    
   
     # test:
     saveRDS( data.total, 'data.total.rds')

@@ -1,4 +1,5 @@
 
+install.packages("yaml")
 renv::dependencies()
 # renv::snapshot()
 
@@ -30,7 +31,7 @@ needed = setdiff( library.list , installed )
 
 # pacman::p_load( char = library.list , update = TRUE )
 
-renv::install( packages = needed )
+if ( length( needed ) > 0 ) renv::install( packages = needed, type = "binary" )
 
 # save libraries
 renv::snapshot()

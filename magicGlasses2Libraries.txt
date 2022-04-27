@@ -57,6 +57,7 @@ future
 furrr
 purrr 
 promises
+future.apply
 
 data.tree
 igraph
@@ -77,4 +78,4 @@ fable.prophet
 #  fable.bsts 
 Metrics
 forecast
-
+HDInterval

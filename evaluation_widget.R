@@ -9,14 +9,23 @@ evaluation_widget_ui = function ( id ){
             # , margins = c(70, 1200)
           ) ,
           
-tabsetPanel( type = "tabs",
-# add_busy_spinner(spin = "fading-circle", position = "bottom-right") ,
+  tabsetPanel( type = "tabs",
+  # add_busy_spinner(spin = "fading-circle", position = "bottom-right") ,
 
   tabPanel( 'Impact' ,
         sidebarLayout(
           sidebarPanel(
             
-              checkboxInput(ns('hts'), label = "Aggregate across full administrative hierarchy", 
+            selectizeInput( ns("evaluation_month") , label = "Intervention Start", 
+                    choices = NULL ,
+                    selected = NULL ) ,
+            
+            # div(id = "expr-container",
+              selectInput( ns("horizon") , label = "Number periods after intervention:" , 
+                            choices = c(3,6,12,18,24,36) , 
+                            selected = 12  ) ,
+
+              checkboxInput( ns('hts'), label = "Aggregate across full administrative hierarchy", 
                      value = FALSE ) ,
        
               selectInput( ns("hts_level") , label = "Aggregate only from level:" ,
@@ -48,8 +57,8 @@ tabsetPanel( type = "tabs",
              plotOutput( ns( "plotOutput" ) , hover = "plot_hover"  )
           )
         )    
-        
-        ) ,
+
+,
     
   tabPanel( "Model",  
     inputPanel(
@@ -83,11 +92,15 @@ tabsetPanel( type = "tabs",
                 value = FALSE ) ,
     
     checkboxInput( ns( "forecast_ci" ) , label ='Confidence interval',
+                   value = FALSE  ) ,
+    
+    checkboxInput( ns( "bootstrap" ) , label ='Bootstrap estimate',
                    value = FALSE  ) 
     
           )
 )
 ))
+)
 
 }
         
@@ -95,7 +108,8 @@ evaluation_widget_server <- function( id ,
                                      directory_widget_output = NULL ,
                                      metadata_widget_output = NULL,
                                      data_widget_output = NULL ,
-                                     reporting_widget_output = NULL ){
+                                     reporting_widget_output = NULL ,
+                                     cleaning_widget_output = NULL ){
   moduleServer(
     id ,
     function( input, output, session 
@@ -111,14 +125,15 @@ evaluation_widget_server <- function( id ,
     indicator = reactive({ data_widget_output$indicator() })
     formulas = reactive({ data_widget_output$formulas() })
     dataset.file = reactive({ data_widget_output$dataset.file() })
-    dataset = reactive({ data_widget_output$dataset() })
+    # dataset = reactive({ data_widget_output$data1() })
+    data1 = reactive({ data_widget_output$data1() })
     formula_elements = reactive({ data_widget_output$formula_elements() })
     
     orgUnits = reactive({ metadata_widget_output$orgUnits() })  
     orgUnitLevels = reactive({ metadata_widget_output$orgUnitLevels() })
     
     dates = reactive({ reporting_widget_output$dates() })
-    # dataset = reactive({ reporting_widget_output$dataset() })
+    # dataset = reactive({ reporting_widget_output$data1() })
     # data.hts = reactive({ reporting_widget_output$data.hts() })
     levelNames = reactive({ reporting_widget_output$levelNames() })
     period = reactive({ reporting_widget_output$period() })
@@ -143,6 +158,35 @@ evaluation_widget_server <- function( id ,
           lemon::reposition_legend( p, "center", panel=names(pnls) )
     }
     
+    # Dates 
+    
+    dates = reactive({ 
+      req( data1() )
+      print('dates():'); 
+      .period = period()
+      dates = data1() %>% pull( !! rlang::sym( .period )) %>% 
+        unique 
+      
+      # print( dates )
+      print( max( dates ))
+      print( 'end dates()')
+      return( dates )
+      
+    })
+    
+    observeEvent(  dates() , {  
+      updateSelectInput( session, 'evaluation_month' ,
+                         choices =  dates()  , 
+                         selected = dates()[ round(length(dates())/2) ]
+                         # ifelse( period() %in% 'Month' , 
+                         #                  dates()[12], 
+                         #                  dates()[52] )
+                         # length(  dates()  ) - 12  ,
+                         # length(  dates()  ) - 12            )
+      )
+    } )
+    
+    
     # Model ####
     
     observeEvent( levelNames() ,{ updateSelectInput( session, 'agg_level' , 
@@ -152,10 +196,10 @@ evaluation_widget_server <- function( id ,
   } )
 
     observeEvent( levelNames() ,{ 
-      req( dataset() )
+      req( data1() )
       updateSelectInput( session, 'level2' ,
                                   choices = 
-                                    dataset() %>% 
+                                    data1() %>% 
                                       pull( !! rlang::sym( levelNames()[2]  ) ) %>% 
                                       unique %>% str_sort(),
                                   selected = NULL 
@@ -163,10 +207,10 @@ evaluation_widget_server <- function( id ,
       } )
     
     observeEvent( levelNames() ,{  
-      req( dataset() )
+      req( data1() )
       updateSelectInput( session, 'level3' ,
                                   choices = 
-                                    dataset() %>% 
+                                    data1() %>% 
                                       filter(
                                       !! rlang::sym( levelNames()[2] ) %in% input$level2 ) %>% 
                                       pull( !! rlang::sym( levelNames()[3]  ) ) %>% 
@@ -177,10 +221,10 @@ evaluation_widget_server <- function( id ,
     
     observeEvent( levelNames() ,{  
       
-      req( dataset() )
+      req( data1() )
       updateSelectInput( session, 'level4' ,
                                   choices = 
-                                    dataset() %>% 
+                                    data1() %>% 
                                       filter(
                                       !! rlang::sym( levelNames()[3] ) %in% input$level3 ) %>% 
                                       pull( !! rlang::sym( levelNames()[4]  ) ) %>% 
@@ -195,7 +239,7 @@ evaluation_widget_server <- function( id ,
         
         if( is.na( levelNames()[5] ) ) return( NA ) 
     
-        dataset() %>% 
+        data1() %>% 
             filter(
                 !! rlang::sym( levelNames()[4] ) %in% 
                            input$level4 ) %>% 
@@ -229,7 +273,6 @@ evaluation_widget_server <- function( id ,
                                    )
         } )
                   
-      
       observeEvent(
         split()  , 
         { 
@@ -436,8 +479,9 @@ evaluation_widget_server <- function( id ,
     evaluationParameters <- reactiveValues( Month  = NULL )
     
     model_formula = reactive({
+      
       req( input$model.formula )
-      print( 'model_formula' )
+      cat( '\n* model_formula' )
     
         
       # if (input$model %in% 'BSTS'){
@@ -446,6 +490,8 @@ evaluation_widget_server <- function( id ,
       # } 
       
       if (input$model %in% 'ARIMA' ){
+        cat("\n - input$model = ARIMA")
+        
         formula.string = paste( 'fabletools::box_cox( total , lambda = .5  ) ~ ',
                                 ' pdq() ' ,  
                                 '+ PDQ( period = 12 )' 
@@ -453,23 +499,27 @@ evaluation_widget_server <- function( id ,
          if ( nchar( input$covariates ) > 0 ) formula.string = 
              paste( formula.string , '+ xreg(' , input$covariates , ' ) ' )
          
-         f = as.formula( formula.string)
+         f = as.formula( formula.string )
       }
       
       if (input$model %in% 'BSTS' ){
+        cat("\n - input$model = BSTS")
+        
          f = as.formula( paste( 'total ~ season("year")' 
                            )
          )
          }
                          
        if ( any(input$model %in% c( 'TSLM', 'ETS',  'Prophet' ) ) ){
-          
+        cat("\n - input$model %in% c( 'TSLM', 'ETS',  'Prophet' )")
+         
         f = as.formula(  input$model.formula )
     
         }
     
-      cat( '\n - end model_formula', f )
+      cat( '\n - end model_formula:', input$model.formula  )
       return( f )
+      
     })
     
     tsModel = reactive({
@@ -574,18 +624,26 @@ evaluation_widget_server <- function( id ,
     tsPreModel = reactive({
       req( trendData() )
       req( input$evaluation_month )
+      req( model_formula() )
     
       if ( !input$pre_evaluation ) return( NULL )
-      print( 'tsPreModel():' )
+      cat( '\n* tsPreModel():' , as.character( model_formula() ) )
     
       eval_month = input$evaluation_month 
       time_period = yearmonth( eval_month  ) - 12
+      
+      cat("\n - time_period:" , time_period )
       
       fit.data  = trendData() %>%
         filter_index( ~ as.character( time_period ) ,
                       .preserve = TRUE )
       
-        if (input$model %in% 'TSLM' ){
+      cat("\n - nrow(trendData()):" , nrow( trendData() )  )
+      cat("\n - nrow(fit.data:" , nrow( fit.data )  )
+      saveRDS( trendData() , 'trendData.rds' )
+      saveRDS( fit.data , 'fit.data.rds' )
+      
+      if (input$model %in% 'TSLM' ){
         fit = fit.data %>% model( l = TSLM( model_formula() ) ) 
         print( 'end tsPreModel():' )
         return( fit )
@@ -684,14 +742,17 @@ evaluation_widget_server <- function( id ,
       req( tsPreModel() ) 
       req( input$horizon )
       
+      cat( '\n* tsPreForecast' )
       fcast = tsPreModel() %>% forecast( h = 12 )
+      
       
       fcast = fcast %>%
           mutate( !! input$agg_level := 
                     as.character( !! rlang::sym( input$agg_level  ) ) )
       
         
-      # print( 'pre-fcast' ) ; print( fcast )
+      # cat( '\n - fcast' , fcast )
+      saveRDS( fcast , 'tsPreForecast.rds' )
       return( fcast )
       })
     
@@ -948,8 +1009,8 @@ evaluation_widget_server <- function( id ,
           
           g = g +
         
-            scale_x_yearmonth("", date_breaks="1 year" ) +
-            scale_y_continuous( label=comma, limits = .limits ) +
+            scale_x_yearmonth("", date_breaks = "1 year" ) +
+            scale_y_continuous( label = comma, limits = .limits ) +
             scale_color_discrete( drop = TRUE  ) +
             labs( y = "" , x="" ,
                   title = str_wrap( input$indicator , 200 ) ,

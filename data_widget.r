@@ -50,7 +50,7 @@ tagList(
               size = 4  ##needed for `selected = FALSE` to work ) 
              ) ,
       
-      actionButton( ns("update"), "Update")
+      actionButton( ns("refresh"), "Refresh")
 
 )       
         ) # end fillColl
@@ -96,7 +96,7 @@ data_widget_server <- function( id ,
           })
         
         # trigger refresh after completed download
-        observeEvent(input$update, {
+        observeEvent(input$refresh, {
           cat( '\n* Update data widget text boxes')
           
           aa = data.folder()
@@ -202,8 +202,8 @@ data_widget_server <- function( id ,
             # req( completedRequest() )
             req( input$formula.file )
             if ( !dir.exists( data.folder() ) ) return( NULL )
-            # trigger  update when there is a data request finishes
-            # update = completedRequest() > 0  
+            # trigger   when there is a data request finishes
+            #  = completedRequest() > 0  
             # cat( '\n data.dir_files completedRequest:' , completedRequest() )
             dir.files = list.files( data.folder()  )
             cat( "\n - number of dir.files :", length( dir.files ) ) 
