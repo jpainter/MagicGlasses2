@@ -157,7 +157,7 @@ formula_widget_server <- function( id ,
   originalFormula = reactive({  # the formula as read from disc
     cat( '\n* originalFormula:',   )
     
-    fe =  if( is_empty( formulas() )  ){
+  fe =  if( is_empty( formulas() )  ){
       
         dataElementDictionary()[0, ] 
 
@@ -173,10 +173,15 @@ formula_widget_server <- function( id ,
     # req( formula_elements )
     cat( '\n* updated_formula_elements starting with formula:',  hasFormula$formulas )
     
-    ufe =  if( !hasFormula$formulas  ){
-      dataElementDictionary()[0, ] 
+    if( !hasFormula$formulas  ){
+      cat( '\n- !hasFormula$formulas')
+      saveRDS( dataElementDictionary()[0, ]  , 'emptyDataDictionary.rds')
+      ufe = dataElementDictionary()[0, ] 
+      
     } else {
-      formula_elements()
+      cat( '\n- hasFormula$formulas')
+      saveRDS( formula_elements()  , 'formula_elements.rds')
+      ufe =  formula_elements()
     }
     
     cat('\n - updated_formula_elements has' , nrow( ufe ) , 'rows')
@@ -195,12 +200,13 @@ formula_widget_server <- function( id ,
    
     
       if ( nrow( ufe ) == 0 ){
+        cat( '\n- ufe == 0')
         ufe = selected_categories  %>%
         arrange( dataElement ) %>%
         select( Formula.Name, everything() )
                 
       } else {
-        
+        cat( '\n- ufe > 0')
         ufe = bind_rows( ufe , selected_categories ) %>%
         arrange( dataElement ) %>%
         select( Formula.Name, everything() )
