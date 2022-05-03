@@ -521,7 +521,7 @@ reporting_widget_server <- function( id ,
     
     cat( '\n-' , 'end d():', nrow(data), 'rows' )
     # testing
-    # saveRDS( data, 'reporting_widger_d.rds')
+    saveRDS( data, 'reporting_widget_d.rds')
     
     return( data )
 })
@@ -886,7 +886,7 @@ reporting_widget_server <- function( id ,
         cat( "\n***end selectedOUs:", length(s), 'orgUnits' ); toc()  # #print( selectedOUs )
         
         # Testing
-        # saveRDS( s, 'selectedOUs.rds')
+        saveRDS( s, 'selectedOUs.rds')
         
         return( s )
       })
@@ -1114,7 +1114,7 @@ reporting_widget_server <- function( id ,
     
     cat( '\n- end  plotData()')  ; # #print( names( data )) 
     # TESTING
-    # saveRDS( data , "plotData.rds" )
+    saveRDS( data , "plotData.rds" )
     
   return( data )
 })
@@ -1326,7 +1326,12 @@ reporting_widget_server <- function( id ,
     .d = data.total() %>% 
       aggregate_key(  .spec = !!rlang::parse_expr( aggregateDataKey() ) ,
                       total = sum( total , na.rm = T )
-                      ) %>%
+                      ) 
+    
+    indexVar = index_var( .d )
+    keyVars = key_vars( .d )
+    
+    .d = .d %>%
       filter(
           ! is.na( !! rlang::sym( levelNames()[1] ) )
           , is_aggregated( !! rlang::sym( levelNames()[1] ) )
@@ -1366,6 +1371,13 @@ reporting_widget_server <- function( id ,
          # #print( glimpse( .d ))
          
        } 
+    
+    # ensure output is tbl_ts
+    if ( ! 'tbl_ts' %in% class( .d )  ){
+      cat( '\n - convert .d to tsibble ')
+      .d = .d  %>% as_tsibble( key = keyVars , index = indexVar  )
+    }
+    
        
        cat('\n- end aggregatePlotData()' )
        return( .d )
