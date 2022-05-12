@@ -67,7 +67,7 @@ evaluation_widget_ui = function ( id ){
               choices = c('ETS' , 'ARIMA', 'BSTS' , 'Prophet', 
                           'TSLM', 'TSLM (trend)', 
                           'TSLM (trend+season)') , 
-              selected = 'ETS'  ) ,
+              selected = 'ARIMA'  ) ,
 
       textInput( ns( 'model.formula' ) , 'Model Formula' ,
           value =  'total ~ 1' ) ,
@@ -640,24 +640,24 @@ evaluation_widget_server <- function( id ,
       
       cat("\n - nrow(trendData()):" , nrow( trendData() )  )
       cat("\n - nrow(fit.data:" , nrow( fit.data )  )
-      saveRDS( trendData() , 'trendData.rds' )
+      # saveRDS( trendData() , 'trendData.rds' )
       saveRDS( fit.data , 'fit.data.rds' )
       
       if (input$model %in% 'TSLM' ){
         fit = fit.data %>% model( l = TSLM( model_formula() ) ) 
-        print( 'end tsPreModel():' )
+        cat( '\n - end tsPreModel():' )
         return( fit )
         } 
       
       if (input$model %in% 'TSLM (trend)' ){
         fit = fit.data %>% model( l = TSLM( total ~ trend()  ) )
-        print( 'end tsPreModel():' )
+        cat( 'end tsPreModel():' )
         return( fit )
       } 
       
       if (input$model %in% 'TSLM (trend+season)' ){
         fit = fit.data %>% model( l = TSLM( total ~ trend() + season() ) )
-        print( 'end tsPreModel():' )
+        cat( '\n - end tsPreModel():' )
         return( fit )
       } 
       
@@ -665,26 +665,26 @@ evaluation_widget_server <- function( id ,
         fit = fit.data %>% model( 
           arima = ARIMA( model_formula()  )
           )    
-        print( 'end tsPreModel(): arima fit' )
+        cat( '\n - end tsPreModel(): arima fit' )
         return( fit )
       } 
       
       if (input$model %in% 'BSTS' ){
         fit = fit.data %>% model( b = BSTS( model_formula() ) )
-        print( 'end tsPreModel():' )
+        cat( '\n - end tsPreModel():' )
         return( fit )
       } 
       
       if (input$model %in% 'ETS' ){
         fit = fit.data %>% model( a = ETS( total )  ) 
         
-        print('ETS model') ; #print( fit )
+        cat('\n - ETS model') ; #print( fit )
         
       # if ( input$reconcile ) fit = fit %>% 
       #       reconcile( 
       #         mint = min_trace(a, method = "mint_shrink") 
       #         )
-        print( 'end tsPreModel():' )
+        cat( '\n - end tsPreModel():' )
         return( fit )
       } 
       
@@ -705,7 +705,7 @@ evaluation_widget_server <- function( id ,
                                    future.seed=TRUE )
             )
        
-        print( 'end tsPreModel():' )
+        cat( '\n - end tsPreModel():' )
         return( fit )
       } 
       
@@ -745,14 +745,15 @@ evaluation_widget_server <- function( id ,
       cat( '\n* tsPreForecast' )
       fcast = tsPreModel() %>% forecast( h = 12 )
       
+      cat( '\n - tsPreForecast done.  Adding agg_level' )
       
       fcast = fcast %>%
           mutate( !! input$agg_level := 
                     as.character( !! rlang::sym( input$agg_level  ) ) )
       
         
-      # cat( '\n - fcast' , fcast )
-      saveRDS( fcast , 'tsPreForecast.rds' )
+      cat( '\n - tsPreForecast done.  Saving model...' )
+      # saveRDS( fcast , 'tsPreForecast.rds' )z
       return( fcast )
       })
     
@@ -803,7 +804,8 @@ evaluation_widget_server <- function( id ,
     req( data.total() )
   
     cat('\n* data.hts():' );   tic()
-  
+    saveRDS( data.total(), 'data.total.hts.rds' )
+    
     .d = data.total()
     
     # testing exogenous vaiables
@@ -833,6 +835,7 @@ evaluation_widget_server <- function( id ,
       cat( '\n* evaluation_widget: trendData(): ' )
       
       .d = data.hts()
+      # cat( '\n - data.hts datasets:' , unique( .d$dataSet ) )
       
       if ( input$selected  & num_facilities() > 1 ){ 
         
@@ -857,7 +860,7 @@ evaluation_widget_server <- function( id ,
       cat( "\n- input$agg_level:", input$agg_level )
   
       sub_agg = sub_agg_level() 
-      cat( "\n- sub agg level filter" , sub_agg )
+      cat( "\n- sub agg level" , sub_agg )
       
       .d = .d %>% 
           filter( 
@@ -931,7 +934,7 @@ evaluation_widget_server <- function( id ,
         )
       
       cat( '\n- end trend data():'); # print( glimpse( .d ) ); # print(.d)
-      # saveRDS( .d , 'trendData.rds' )
+      saveRDS( .d , 'trendData.rds' )
   
   return( .d )
 })

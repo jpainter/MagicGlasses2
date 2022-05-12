@@ -23,11 +23,13 @@ cowplot
 miniUI
 lemon
 
-#  tidyfast 
-#  tidytable 
 #  googleVis
 ggrepel 
 scales
+
+#  tidyfast 
+#  tidytable 
+feather
 
 zoo 
 knitr

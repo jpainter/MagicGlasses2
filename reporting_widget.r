@@ -103,7 +103,7 @@ reporting_widget_ui = function ( id ){
                           selectize = TRUE
                           ) ,
       
-               checkboxInput( ns("dataset_merge"), 
+              checkboxInput( ns("dataset_merge"), 
                              label ='Merge all datasets', value = FALSE ) ,
                
               checkboxInput( ns("dataset_merge_average") , 
@@ -290,7 +290,7 @@ reporting_widget_server <- function( id ,
       cat('\n- observeEvent dates() update endingMonth-' ) 
       updateSelectizeInput( session, 'endingMonth' ,
               choices =  dates  %>% as.character() ,
-              selected = max( dates , na.rm = TRUE ) %>% as.character() ,
+              selected = ( max( dates , na.rm = TRUE ) - 1 ) %>% as.character() ,
               server = TRUE
       )
       
@@ -1185,8 +1185,8 @@ reporting_widget_server <- function( id ,
               ) %>%
                 mutate(
                     dataSet = ifelse( 
-                        dataSet %in% mergeDatasets , 'Combined' ,
-                        dataSet) ,
+                        str_replace_all(dataSet, fixed("\n"), "") %in% 
+                          mergeDatasets , 'Combined' , dataSet) ,
                     data = 'Total'
                 ) %>% 
                 setDT() %>%
@@ -1242,7 +1242,7 @@ reporting_widget_server <- function( id ,
     # cat( '/n - data.total cols:', names( data.total ) )
     
     if ( .period %in% 'Month' ){
-      cat( '/n -  .period %in% Month' )
+      cat( '\n -  .period %in% Month' )
       data.total = data.total %>% 
         filter( 
           Month >=  yearmonth( input$startDisplayMonth )  ,
@@ -1251,7 +1251,7 @@ reporting_widget_server <- function( id ,
     } 
     
     if ( .period %in% 'Week' ){
-      cat( '/n -  .period %in% weeks' )
+      cat( '\n -  .period %in% weeks' )
       data.total = data.total %>% 
         filter( 
           Week >=  yearweek( input$startDisplayMonth )  ,
