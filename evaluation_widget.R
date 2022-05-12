@@ -28,11 +28,11 @@ evaluation_widget_ui = function ( id ){
               checkboxInput( ns('hts'), label = "Aggregate across full administrative hierarchy", 
                      value = FALSE ) ,
        
-              selectInput( ns("hts_level") , label = "Aggregate only from level:" ,
-                    choices = 1:6 ,
-                    selected = 1 ) ,
+              # selectInput( ns("hts_level") , label = "Aggregate only from level:" ,
+              #       choices = 1:6 ,
+              #       selected = 1 ) ,
             
-              selectInput( ns( "agg_level") , label = "Aggregate to" , 
+              selectInput( ns( "agg_level") , label = "Aggregate to admin level:" , 
                 choices = NULL , 
                 selected = 1  ) ,
 
@@ -64,9 +64,12 @@ evaluation_widget_ui = function ( id ){
     inputPanel(
       
       selectInput( ns( "model" ), label = "Time-series model:" , 
-              choices = c('ETS' , 'ARIMA', 'BSTS' , 'Prophet', 
-                          'TSLM', 'TSLM (trend)', 
-                          'TSLM (trend+season)') , 
+              choices = c( 'TSLM',  'ETS' , 'ARIMA', 'BSTS' , 
+                          'Prophet'
+                          
+                          # , 'TSLM (trend)'
+                          # , 'TSLM (trend+season)'
+                          ) , 
               selected = 'ARIMA'  ) ,
 
       textInput( ns( 'model.formula' ) , 'Model Formula' ,
@@ -762,14 +765,25 @@ evaluation_widget_server <- function( id ,
   hts = reactive({   
     req( num_facilities() ) 
     req( num_datasets() ) 
+    req( input$agg_level )
+    req( levelNames() )
     cat("\n* hts():" )
 
     adms = backtick( levelNames() )
     
     if (input$hts){ 
       hts = paste( adms, collapse = "/" ) 
+      
     } else {
-      hts = paste( adms[1:( as.integer(input$hts_level) + 1 )] , 
+      
+      cat( '\n - amds:',  adms )
+      cat( '\n - input$agg_level:',  input$agg_level )
+      
+      hts_level = which( input$agg_level == levelNames()   )
+      
+      cat( '\n - hts_level:',  hts_level )
+      
+      hts = paste( adms[1:( hts_level + 1 )] , 
                    collapse = "/" ) 
     }
     

@@ -10,6 +10,10 @@ if (!require( 'pacman' )){
   if( !require( 'pacman' ) ) stop("Package not found")
 }
 
+
+install.packages("remotes")
+remotes::install_github("davidtedfordholt/fable.bsts")
+
 # if (!require( 'devtools' )){
 #   install.packages( 'devtools' , dep=TRUE )
 #   if( !require( 'devtools' ) ) stop("Package not found")
