@@ -25,7 +25,7 @@ evaluation_widget_ui = function ( id ){
                             choices = c(3,6,12,18,24,36) , 
                             selected = 12  ) ,
 
-              checkboxInput( ns('hts'), label = "Aggregate across full administrative hierarchy", 
+              checkboxInput( ns('hts'), label = "hts across full admin hierarchy", 
                      value = FALSE ) ,
        
               # selectInput( ns("hts_level") , label = "Aggregate only from level:" ,
@@ -46,15 +46,35 @@ evaluation_widget_ui = function ( id ){
                              value = TRUE  ) ,
               
               checkboxInput( ns( "legend" ) , label ='Show legend',
-                             value = FALSE  ) ,
+                             value = FALSE  )
               
-              checkboxInput( ns( "plotly" ) , label ='Plotly Chart',
-                             value = FALSE  ) 
+              # checkboxInput( ns( "plotly" ) , label ='Plotly Chart',
+              #                value = FALSE  ) 
           ),
           
           mainPanel( 
-            
-             plotOutput( ns( "plotOutput" ) , hover = "plot_hover"  )
+              
+                # conditionalPanel( "input.plotly == 1" , ns = ns ,
+                #     plotlyOutput( ns("plotlyOutput") , height = "100%" )
+                #       ) ,
+                
+                # conditionalPanel( "input.plotly == 0" , ns = ns ,
+                #     plotOutput( ns("plotOutput") , height = "600px" ,
+                #              hover = "plot_hover"  )
+                #  )
+                
+             tabsetPanel(
+                  tabPanel( "Plot" ,
+                    
+                    fluidPage(
+                      fluidRow( style = "height:60vh;",
+                                plotOutput( ns("plotOutput") ) )
+                      ) ) ,
+                  tabPanel("Plotly", plotlyOutput(  ns("plotlyOutput") ) ),
+                  tabPanel("Table", plotlyOutput( ns("tableOutput" )  ) )
+                )
+                 
+             # plotOutput( ns( "plotOutput" ) , hover = "plot_hover"  )
           )
         )    
 
@@ -64,7 +84,8 @@ evaluation_widget_ui = function ( id ){
     inputPanel(
       
       selectInput( ns( "model" ), label = "Time-series model:" , 
-              choices = c( 'TSLM',  'ETS' , 'ARIMA', 'BSTS' , 
+              choices = c( 'TSLM',  'TSLM (trend)' , 'TSLM (trend+season)' , 
+                           'ETS' , 'ARIMA', 'BSTS' , 
                           'Prophet'
                           
                           # , 'TSLM (trend)'
@@ -396,7 +417,18 @@ evaluation_widget_server <- function( id ,
                 ) %>%
         as_tibble() %>%
             mutate( !! input$agg_level := 
-                      as.character( !! rlang::sym( input$agg_level  ) ) )
+                      as.character( !! rlang::sym( input$agg_level  ) ) ) 
+        
+        if ( !split() %in% 'None' ){
+           cat( '\n - key.mape grouping_var' , split() ) 
+           e = e %>%
+             mutate( 
+               grouping_var = as.character( !! rlang::sym( split() ) ) 
+             )
+     } else {
+           e = e %>%
+             mutate(  grouping_var = 'Total' )
+         } 
         
         print( "end key.mape"); #glimpse(e )
         return( e )
@@ -468,6 +500,17 @@ evaluation_widget_server <- function( id ,
             mutate( !! input$agg_level := 
                       as.character( !! rlang::sym( input$agg_level  ) ) )
         
+        if ( !split() %in% 'None' ){
+           cat( '\n - key.mape grouping_var' , split() ) 
+           e = e %>%
+             mutate( 
+               grouping_var = as.character( !! rlang::sym( split() ) ) 
+             )
+     } else {
+           e = e %>%
+             mutate(  grouping_var = 'Total' )
+         } 
+        
         print( "mpe"); #glimpse(e )
         return( e )
       })
@@ -511,9 +554,11 @@ evaluation_widget_server <- function( id ,
          f = as.formula( paste( 'total ~ season("year")' 
                            )
          )
-         }
+      }
+
                          
-       if ( any(input$model %in% c( 'TSLM', 'ETS',  'Prophet' ) ) ){
+       if ( any(input$model %in% c( 'TSLM', 'TSLM (trend+season)' ,'TSLM (trend)',
+                                    'ETS',  'Prophet' ) ) ){
         cat("\n - input$model %in% c( 'TSLM', 'ETS',  'Prophet' )")
          
         f = as.formula(  input$model.formula )
@@ -583,7 +628,12 @@ evaluation_widget_server <- function( id ,
       } 
       
       if (input$model %in% 'BSTS' ){
-        fit = fit.data %>% model( b = BSTS( model_formula() ) )
+        fit = fit.data %>% 
+          model( 
+            # b = BSTS( model_formula() ) 
+            bsts = BSTS( total ~  ar() + seasonal("1 year"))
+            )
+        
         print( 'end tsModel():' )
         return( fit )
       } 
@@ -611,13 +661,13 @@ evaluation_widget_server <- function( id ,
                                                 # capacity = 1e5 ,
                                                 # floor = 0 
                                                 ) +
-                                        season(period=12, 
+                                        season(period = 12, 
                                                order = 4 ,
                                                type='multiplicative'),
-                                   seed = TRUE ,
-                                   future.seed=TRUE )
+                                   seed = TRUE )
             )
-       
+        
+ 
         print( 'end tsModel():' )
         return( fit )
       } 
@@ -704,8 +754,7 @@ evaluation_widget_server <- function( id ,
                                         season(period=12, 
                                                order = 4 ,
                                                type='multiplicative'),
-                                   seed = TRUE ,
-                                   future.seed=TRUE )
+                                   seed = TRUE  )
             )
        
         cat( '\n - end tsPreModel():' )
@@ -732,9 +781,30 @@ evaluation_widget_server <- function( id ,
           forecast( h = as.numeric( input$horizon ) ) 
       }
       
+      # preserve tsibble key and index,
+      indexVar = index_var( fcast )
+      keyVars = key_vars( fcast )
+        
+      
       fcast = fcast %>%
           mutate( !! input$agg_level := 
                     as.character( !! rlang::sym( input$agg_level  ) ) )
+      
+      if ( !split() %in% 'None' ){
+           cat( '\n - tsForecast grouping_var' , split() ) 
+           fcast = fcast %>%
+             mutate( 
+               grouping_var = as.character( !! rlang::sym( split() ) ) 
+             )
+      } else {
+           fcast = fcast %>%
+             mutate(  grouping_var = 'Total' )
+      } 
+      
+      # Ensure result is tstiblle
+      fcast = fcast %>%
+             as_tsibble( key = keyVars , index = indexVar  ) %>%
+             fill_gaps( .full = TRUE  )
       
       print( 'fcast:' );  #glimpse( fcast )
       return( fcast )
@@ -746,7 +816,11 @@ evaluation_widget_server <- function( id ,
       req( input$horizon )
       
       cat( '\n* tsPreForecast' )
-      fcast = tsPreModel() %>% forecast( h = 12 )
+      fcast = tsPreModel() %>% forecast( h = 12  )
+      
+      # preserve tsibble key and index,
+      indexVar = index_var( fcast )
+      keyVars = key_vars( fcast )
       
       cat( '\n - tsPreForecast done.  Adding agg_level' )
       
@@ -754,9 +828,26 @@ evaluation_widget_server <- function( id ,
           mutate( !! input$agg_level := 
                     as.character( !! rlang::sym( input$agg_level  ) ) )
       
+      cat( '\n - tsPreForecast grouping_var' , split() ) 
+      if ( !split() %in% 'None' ){
+           fcast = fcast %>%
+             mutate( 
+               grouping_var = as.character( !! rlang::sym( split() ) ) 
+             )
+           
+      } else {
+           fcast = fcast %>%
+             mutate(  grouping_var = 'Total' )
+         } 
+      cat( '\n - tsPreForecast grouping_var values:' , unique(fcast$grouping_var) ) 
+      
+      # Ensure result is tsibble  
+      fcast = fcast %>%
+             as_tsibble( key = keyVars , index = indexVar  ) %>%
+             fill_gaps( .full = TRUE  )
         
       cat( '\n - tsPreForecast done.  Saving model...' )
-      # saveRDS( fcast , 'tsPreForecast.rds' )z
+      # saveRDS( fcast , 'tsPreForecast.rds' )
       return( fcast )
       })
     
@@ -878,9 +969,9 @@ evaluation_widget_server <- function( id ,
       
       .d = .d %>% 
           filter( 
-            ! is_empty( !! rlang::sym( input$agg_level   ) ) 
+            ! is_empty( !! rlang::sym( input$agg_level   ) ) ,
             # next line is good for level 0
-            , ! is_aggregated(  !! rlang::sym( input$agg_level   ) )
+            ! is_aggregated(  !! rlang::sym( input$agg_level   ) )
           )
               
       cat( '\n- !is_empty(sub_agg)' , sub_agg , !is_empty(sub_agg) )
@@ -891,10 +982,16 @@ evaluation_widget_server <- function( id ,
               is_aggregated( !! rlang::sym( sub_agg  ) )
         )
       }
+      
+         # preserve tsibble key and index,
+         indexVar = index_var( .d )
+         keyVars = key_vars( .d )
         
         .d = .d %>%
            mutate( 
              grouping_var = 'Total' ) %>%
+             # ensure tsibble before using fill_gaps
+             as_tsibble( key = keyVars , index = indexVar  ) %>%
              fill_gaps( .full = TRUE  )
     
          
@@ -913,7 +1010,7 @@ evaluation_widget_server <- function( id ,
            .d = .d %>%
            filter( !is_aggregated( Selected )  ) %>%
            mutate( Selected = as.character( Selected ) %>%
-               str_remove_all( "<aggregated>" )  )
+               str_remove_all( "<aggregated>" )  ) 
     
            cat( '\n- Facilities:' ,  unique(.d$Selected) )
          }
@@ -947,6 +1044,10 @@ evaluation_widget_server <- function( id ,
             total = scale( total ) + 1
         )
       
+      
+      # ensure tsibble before using fill_gaps
+      .d = .d %>% as_tsibble( key = keyVars , index = indexVar  ) 
+      
       cat( '\n- end trend data():'); # print( glimpse( .d ) ); # print(.d)
       saveRDS( .d , 'trendData.rds' )
   
@@ -977,13 +1078,15 @@ evaluation_widget_server <- function( id ,
           #                   input$filter_display )
         
           tic() 
+          
+          ## Main plot ####
           g = .d %>%
-          autoplot( total ) +
-            # ggplot( aes(x = Month, y = total
-            #          , group = grouping_var
-            #          , color =  grouping_var
-            #         ) )  +
-            # geom_line() +
+          # autoplot( total ) +
+          ggplot( aes(x = Month, y = total
+                     , group = grouping_var
+                     , color =  grouping_var
+                    ) )  +
+          geom_line() +
           theme_minimal() 
           
           # Testing
@@ -1011,18 +1114,30 @@ evaluation_widget_server <- function( id ,
         
           # if ( input$agg_level != levelNames()[1] & input$facet_admin ){
           if ( num_agg_levels  > 1 & input$facet_admin ){
-            cat( '\n- facets' )
+            cat( '\n- admin facets' )
+            
+            if ( input$facet_split ){
+              cat( '\n-  facet admin - split' )
+              
+                g = g +
+                    facet_grid( vars(!! rlang::sym( input$agg_level )) ~ grouping_var   ,
+                                   scales = "free_y" )
+          } else {
+            
             g = g +
             facet_wrap( vars(!! rlang::sym( input$agg_level ) ) ,
                            scales = "free_y" )
-          }
-          
-          if ( input$facet_split ){
+          }} else { 
+            
+           if ( input$facet_split ){
             cat( '\n- facet_split' )
             g = g +
             facet_wrap( ~grouping_var   ,
                            scales = "free_y" )
           }
+            }
+          
+ 
           
           g = g +
         
@@ -1036,23 +1151,62 @@ evaluation_widget_server <- function( id ,
                   ) 
           cat( '\n- axis scales and labs done' )
           
-          #### Evaluation Trend Line
+          eval_date =   yearmonth( input$evaluation_month  ) 
+
+          
+          ### Pre-Evaluation trend line #####
+          if ( input$pre_evaluation ){
+            
+            cat( '\n- pre evaluation line ' )
+            pre_eval_date = yearmonth( input$evaluation_month  ) - 12
+                # month( as.integer( input$horizon ) )
+              
+            cat( '\n- pre_eval_date is' ); print( pre_eval_date )
+            g = g + 
+            # autolayer( tsPreForecast()
+            #            , level = ci_levels()
+            #            , color = 'black' 
+            #            , linetype = 'dotted'  , size = 1
+            #            ,  alpha = .5 ) +
+            geom_line( data = tsPreForecast(), aes( y = .mean )
+              # ,   color = 'light blue'
+              , alpha = .75 
+              , linetype = 'dotted'  , size = 2
+            ) +
+            # geom_vline( xintercept = as.Date( pre_eval_date ) ,
+            #             color = 'brown' ,
+            #             alpha = .25 ) +
+            geom_vline( xintercept = as.Date( eval_date ) ,
+                        color = 'black', alpha = 1 ) +
+        
+            geom_label_repel( data =  key.mape() ,
+                       aes(  x = !! rlang::sym( period() ) , y = actual ,
+                       label = paste( "MAPE:" , percent( mape, accuracy = 1.0 ) ) ,
+                       hjust = just ) ,
+                       # force_pull = 0 ,
+                       segment.colour = NA
+                       )
+        
+          }
+          
+          cat( '\n- pre-evaluation line done' )
+                    
+          
+          #### Evaluation Trend Line ####
           if ( input$evaluation ){
             cat( '\n- evaluation line ' )
-            eval_date =   yearmonth( input$evaluation_month  ) 
             
            g = g + 
-            autolayer( tsForecast()
-                       , level = ci_levels()
-                       , color = 'black'
-                       , linetype = 'dashed', size = 1
-                       ,  alpha = .5 ) +
-             
-            # geom_line( data = tsForecast() %>%
-            #   as_tibble %>%
-            #   mutate( !! input$agg_level := as.character( !! rlang::sym( input$agg_level  ) ) ) ,
-            #            aes( x = Month, y = .mean ) ,
-            #            color = 'blue' , alpha = .5 ) 
+            # autolayer( tsForecast()
+            #            , level = ci_levels()
+            #            , color = 'black'
+            #            , linetype = 'dashed', size = 1
+            #            ,  alpha = .5 ) +
+            geom_line( data = tsForecast(), aes( y = .mean )
+              # ,   color = 'light blue'
+              , alpha = .75 
+              , linetype = 'dotted'  , size = 2
+            ) +             
             geom_vline( xintercept = as.Date( eval_date ) ,
                         color = 'black', alpha = 1 ) +
             # annotate( "text" ,
@@ -1073,37 +1227,8 @@ evaluation_widget_server <- function( id ,
           
           cat( '\n- evaluation line done' )
         
-          ### Pre-Evaluation trend line
-          if ( input$pre_evaluation ){
-            
-            cat( '\n- pre evaluation line ' )
-            pre_eval_date = yearmonth( input$evaluation_month  ) - 12
-                # month( as.integer( input$horizon ) )
-              
-            cat( '\n- pre_eval_date is' ); print( pre_eval_date )
-            g = g + 
-            autolayer( tsPreForecast()
-                       , level = ci_levels()
-                       , color = 'black' 
-                       , linetype = 'dotted'  , size = 1
-                       ,  alpha = .5 ) +
-            # geom_line( data = tsPreForecast(), aes( y = .mean ) ,   color = 'light blue', alpha = 1 ) +
-            geom_vline( xintercept = as.Date( pre_eval_date ) ,
-                        color = 'brown' ,
-                        alpha = .25 ) +
-        
-            geom_label_repel( data =  key.mape() ,
-                       aes(  x = !! rlang::sym( period() ) , y = actual , 
-                       label = paste( "MAPE:" , percent( mape, accuracy = 1.0 ) ) ,
-                       hjust = just ) ,
-                       # force_pull = 0 , 
-                       segment.colour = NA 
-                       )
-        
-          }
-          
-          cat( '\n- pre-evaluation line done' )
-           
+
+          # Smooth line ##### 
           if (input$smooth){
             cat( '\n- agg level', input$agg_level )
             .d. = .d %>% 
@@ -1118,6 +1243,7 @@ evaluation_widget_server <- function( id ,
           } 
           
          
+          # End ####
           cat( '\n- end plotTrends():' )
           
           # saveRDS( g, 'plotTrends.rds')
@@ -1151,6 +1277,9 @@ evaluation_widget_server <- function( id ,
       }
       return( g )
 })
+    
+    output$plotlyOutput <- renderPlotly({
+      plotly::ggplotly( plotOutput() )  })
 
     output$plotOutput <-  renderPlot({ plotOutput()  })
         

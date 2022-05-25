@@ -120,7 +120,7 @@ library( feasts )
 library( fable.prophet )
 # library( Metrics )
 library( forecast ) 
-# library( fable.bsts )
+library( fable.bsts )
 
 # busy spinner
 library(shinybusy)
