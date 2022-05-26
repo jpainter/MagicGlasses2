@@ -59,15 +59,25 @@ df_pre_ts = function( df , period = "Month" , missing.value = NA  ){
    df = filter( df , !is.na( COUNT ) )
    
    if (  period %in% 'Month' & !weekly ){
-     df = df %>% mutate( Month =  Month_Year( period ) )
-     df_pre_ts = df %>%
-       mutate( COUNT = as.integer( COUNT ) ,
-            SUM = as.numeric( SUM ) ,
-            Categories = ifelse( is.na( Categories ), "", Categories )
-            ) %>%
+      if ( ! "data.table" %in% class( df ) ) df = data.table::as.data.table(df)
+      df_pre_ts = df[ , ':=' ( Month = Month_Year( period ) ,
+                       COUNT = as.integer( COUNT ) ,
+                       SUM = as.numeric( SUM ) ,
+                       Categories = ifelse( is.na( Categories ), "", Categories )
+                       ) ] %>%
+       as_tibble()%>%
        unite( "data" , dataElement, Categories , remove = FALSE ) %>%
        unite( "data.id" , dataElement.id, categoryOptionCombo.ids, remove = FALSE  ) 
-       
+    
+     # df = df %>% mutate( Month =  Month_Year( period ) )
+     # df_pre_ts = df %>%
+     #   mutate( COUNT = as.integer( COUNT ) ,
+     #        SUM = as.numeric( SUM ) ,
+     #        Categories = ifelse( is.na( Categories ), "", Categories )
+     #        ) %>%
+     #   unite( "data" , dataElement, Categories , remove = FALSE ) %>%
+     #   unite( "data.id" , dataElement.id, categoryOptionCombo.ids, remove = FALSE  ) 
+     #   
        # rename( raw = SUM ) %>%
        # pivot_longer( c( SUM , COUNT ) )
        # as_tsibble( key = c(orgUnit, data, name ) , index = !! .period ) %>%
@@ -81,20 +91,20 @@ df_pre_ts = function( df , period = "Month" , missing.value = NA  ){
      
      # use Tsibble yearweek instead of week_year. results identical 
      # df = df %>% mutate( Week =  yearweek( period ) ,
-       # COUNT = as.numeric( COUNT ) ,
-       #      SUM = as.numeric( SUM )
-       #      )
+     # COUNT = as.numeric( COUNT ) ,
+     #      SUM = as.numeric( SUM )
+     #      )
      # df = data.table::as.data.table( df )
      # convert to data.table
     if ( ! "data.table" %in% class( df ) ) df = data.table::as.data.table(df)
-    df = df[ , ':=' ( Week = yearweek( period ) ,
-                       COUNT = as.numeric( COUNT ) ,
-                       SUM = as.numeric( SUM ) 
+    df_pre_ts = df[ , ':=' ( Week = yearweek( period ) ,
+                       COUNT = as.integer( COUNT ) ,
+                       SUM = as.numeric( SUM ) ,
+                       Categories = ifelse( is.na( Categories ), "", Categories )
                        ) ] %>%
-       as_tibble() %>%
-       unite( "data" , dataElement, ifelse( is.na( Categories ) ,
-                                            "", Categories ) 
-       )
+       as_tibble()%>%
+       unite( "data" , dataElement, Categories , remove = FALSE ) %>%
+       unite( "data.id" , dataElement.id, categoryOptionCombo.ids, remove = FALSE  ) 
        # rename( raw = SUM ) %>%
        # pivot_longer( c( SUM , COUNT ) ) 
        # as_tsibble( key = c(orgUnit, data, name ) , index = !! .period ) %>%
@@ -103,21 +113,30 @@ df_pre_ts = function( df , period = "Month" , missing.value = NA  ){
        # fill_gaps( value = missing.value , .full = TRUE )
 
      
-     return( df )
+     return( df_pre_ts )
 }}
 
 df_ts = function( df.pre.ts , period = "Month" , 
                   fill.gaps = FALSE , 
                   missing.value = NA ){
   
+  cat('\n* TS_Modeiing_Functions.R: df_ts')
+
+  
    # weekly = any( grepl( "W", df_pre_ts$period[1:10]) )
    # if (weekly ) period =  "Week" 
    # 
-   # .period = rlang::enquo( period )
+  # .period = rlang::enquo( period )
+   
+  if ( period == "Week") .period = "Week"
+  if ( period == "Month") .period = "Month"
   
+  .period = rlang::enquo( period )
+  
+  cat( '\n - .period is' , period )
   
   ts = df.pre.ts %>%  
-    as_tsibble( key = c(orgUnit, data.id ) , index = !! period ) 
+    as_tsibble( key = c(orgUnit, data.id ) , index = !! .period ) 
 
     # set NA to missing 
     if ( fill.gaps ) ts = ts %>% fill_gaps( value = missing.value , .full = TRUE )

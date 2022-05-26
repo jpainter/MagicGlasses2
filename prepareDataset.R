@@ -113,38 +113,78 @@ data_leaves = function( d ){
 
 # Wrapper function to prepare data before testing for outliers
 # data can be used with reporting_widget
+# data_1 = function( data , formula_elements , ousTree   ){
+#   cat('\n* preparing data_1:')
+#   
+#   # TESTING
+#   saveRDS( data , 'data.rds' )
+#   saveRDS( formula_elements , 'formula_elements.rds' )
+#   saveRDS( ousTree , 'ousTree.rds' )
+#   
+#   if ( ! 'COUNT' %in% names( data )) return()
+# 
+#   
+#   cat('\n - translate_dataset:')
+#   dd = translate_dataset( data , formula_elements )
+#   
+#   cat('\n* - df_pre_ts:')
+#   d = df_pre_ts( dd )
+#   
+#   cat('\n - df_ts:')
+#   d.ts = df_ts( d )
+# 
+#   cat('\n - data_leaves')
+#   data.leaves = data_leaves( d )
+#   
+#   cat('\n - d.')
+#   d. = d.ts %>% 
+#   left_join( data.leaves , by = 'orgUnit') %>%
+#   left_join( ousTree , by = 'orgUnit')  %>%
+#   mutate( original = SUM , value = !is.na( SUM ))
+#   # left_join( ouLevels %>% select( level, levelName) , by = 'level' )
+# # glimpse( d. )
+#   return( d. )
+# }
+
 data_1 = function( data , formula_elements , ousTree   ){
   cat('\n* preparing data_1:')
   
-  # TESTING
-  saveRDS( data , 'data.rds' )
-  saveRDS( formula_elements , 'formula_elements.rds' )
-  saveRDS( ousTree , 'ousTree.rds' )
+  #   # TESTING
+  # saveRDS( data , 'data.rds' )
+  # saveRDS( formula_elements , 'formula_elements.rds' )
+  # saveRDS( ousTree , 'ousTree.rds' )
   
   if ( ! 'COUNT' %in% names( data )) return()
-
+  
+  ptype = min( formula_elements$periodType , na.rm = T)
+  if ( ptype == "Weekly") p = "Week"
+  if ( ptype == "Monthly") p = "Month"
+  cat( '\n - periodType is' , p )
   
   cat('\n - translate_dataset:')
   dd = translate_dataset( data , formula_elements )
   
-  cat('\n* - df_pre_ts:')
-  d = df_pre_ts( dd )
+  cat('\n - df_pre_ts:')
+  d = df_pre_ts( dd , period = p  )
   
   cat('\n - df_ts:')
-  d.ts = df_ts( d )
+  d.ts = df_ts( d , period = p ) 
 
   cat('\n - data_leaves')
   data.leaves = data_leaves( d )
   
   cat('\n - d.')
-  d. = d.ts %>% 
+  
+  d. = d.ts %>%
   left_join( data.leaves , by = 'orgUnit') %>%
   left_join( ousTree , by = 'orgUnit')  %>%
   mutate( original = SUM , value = !is.na( SUM ))
+  
+  # %>%
   # left_join( ouLevels %>% select( level, levelName) , by = 'level' )
 # glimpse( d. )
+  
   return( d. )
 }
 
 # Outlier detection-flag
-

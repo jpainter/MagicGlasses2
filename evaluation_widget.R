@@ -939,7 +939,7 @@ evaluation_widget_server <- function( id ,
       # req( aggregatePlotData() )
       cat( '\n* evaluation_widget: trendData(): ' )
       
-      .d = data.hts()
+      .d = data.hts() 
       # cat( '\n - data.hts datasets:' , unique( .d$dataSet ) )
       
       if ( input$selected  & num_facilities() > 1 ){ 
@@ -970,6 +970,7 @@ evaluation_widget_server <- function( id ,
       .d = .d %>% 
           filter( 
             ! is_empty( !! rlang::sym( input$agg_level   ) ) ,
+            ! is.na( !! rlang::sym( input$agg_level   ) ) ,
             # next line is good for level 0
             ! is_aggregated(  !! rlang::sym( input$agg_level   ) )
           )

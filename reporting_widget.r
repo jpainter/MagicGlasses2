@@ -812,6 +812,7 @@ reporting_widget_server <- function( id ,
     #print( 'selectedOUS()' )
     tic()
     req( input$endingMonth )
+    req( input$startingMonth  )
     
     if ( input$mostReports ){
        cat( "\ndetermining most frequently reported facilities..." ,
@@ -833,6 +834,7 @@ reporting_widget_server <- function( id ,
        } 
       
        if ( period() %in% 'Week' ){
+         cat( '\n - selectedOUS by Week')
          data = data %>% as_tibble %>%
          filter( 
            period >=  yearweek( input$startingMonth )  ,

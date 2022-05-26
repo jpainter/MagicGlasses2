@@ -283,15 +283,28 @@ data_widget_server <- function( id ,
             
           })
         
+      dataset.file = reactive({
+          req( input$dataset )
+          req( data.folder() )
+          
+          cat('\n* data_widget  dataset.file():')
+          
+          file = paste0( data.folder() , input$dataset  )
+          
+          cat('\n - ', file )
+          return( file )
+          
+      })
+        
       dataset = reactive({ 
           # req( input$dataset ) # file name from data_widget (on Dictionary tab)
           cat('\n* data_widget  dataset():')
           
-          file = paste0( data.folder() , input$dataset  )
-          cat('\n - ', file )
-          
+        req( dataset.file() )
+  
+        file  = dataset.file()
 
-          if ( file_test("-f",  file) ){
+        if ( file_test("-f",  file) ){
             
           showModal(
               modalDialog( title = "Reading data", 
@@ -315,6 +328,7 @@ data_widget_server <- function( id ,
       })
       
       data1 = reactive({
+          req( dataset.file() )
           req( dataset() )
           req( formula_elements() )
           req( ousTree() )
@@ -325,6 +339,7 @@ data_widget_server <- function( id ,
             # saveRDS( formula_elements() , 'formula_elements.rds' )
             # saveRDS( ousTree() , 'ousTree.rds' )
           
+        
           if ( ! 'COUNT' %in% names( dataset() )){
             
             showModal(
@@ -352,6 +367,23 @@ data_widget_server <- function( id ,
             data1 = data_1( dataset() , formula_elements() , ousTree()  )
             cat( '\n - data1 names:', names( data1 ))
             cat( '\n - data1 rows:', nrow( data1 ))
+            
+            removeModal()
+            
+            
+            showModal(
+              modalDialog( title = 'Saving prepared data....', 
+                           easyClose = TRUE ,
+                           size = 's' ,
+                           footer= '(click anywhere to continue)'
+                           )
+              )
+            
+            
+            # Save prepared file
+            cat('\n - saving prepared file'  )
+            saveRDS( data1, file = dataset.file() )
+            removeModal()
           
           } else {
             cat( '\n* data1 already prepared') 
@@ -367,6 +399,7 @@ data_widget_server <- function( id ,
           }
           
           removeModal()
+          
           return( data1 )
       })
       

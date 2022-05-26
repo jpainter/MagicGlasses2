@@ -29,7 +29,7 @@ data_request_widget_ui = function ( id )
           
           selectInput( ns("period") , label = "Period:" , 
                        width = '90%',
-                       choices =  c('months')  , 
+                       choices =  c('Monthly', 'Weekly')  , 
                        selected = 1 ,
                        multiple = FALSE ,
                        selectize = FALSE, 
@@ -51,10 +51,12 @@ data_request_widget_ui = function ( id )
       ) ,
     
     fluidRow(
-      column( 12 ,         
+      column( 6 ,         
         actionButton( ns("requestDataButton") , 
                       "Request data" , style='margin-top:25px' 
-                      )
+                      ) ),
+      column( 6 ,         
+        h5("After download complete, use refresh button to see file.")
       )
     )
     )
@@ -104,6 +106,17 @@ data_request_widget_server <- function( id ,
               updateSelectInput( session, 'level' ,
                                choices = oulvls,
                                selected = 1 )
+            }
+          } )
+      
+      # Update period: choose largest value of month or week
+      observe({
+            cat( '\n* updating period' )
+            if ( !is.null( formula_elements() )){
+              oulvls = orgUnitLevels() %>% pull( levelName )
+              oulvls = c( 'All-levels' , oulvls )
+              p = min( formula_elements()$periodType , na.rm = T ) 
+              updateSelectInput( session, 'period' , selected = p )
             }
           } )
       

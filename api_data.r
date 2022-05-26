@@ -201,6 +201,49 @@ date_code = function(
   return( period )
 }
 
+date_code_weekly = function( 
+  years = NULL , 
+  weeks = NULL ,
+  startPeriod = NULL , 
+  YrsPrevious = 1 ,
+  monthsPrevious = NULL , 
+  currentWeek = TRUE  # include current month
+  ){
+  
+  if ( is.null( years ) ){
+    
+    this.year = year( Sys.Date() )
+    YrsPrevious = this.year - YrsPrevious
+    
+    years = YrsPrevious:this.year
+  }
+  
+  # endMonth: get current month.  
+  endDate =Sys.Date()  # %>% format( "%Y%W" )
+                    
+  
+  # start month
+  if ( !is.null( startPeriod ) ){
+    startMonth = as.yearmon( startPeriod , "%Y%m")
+    } else {
+      if ( !is.null( monthsPrevious ) ){
+        startMonth =  endWeek - monthsPrevious/12
+        } else {
+          startMonth = ymd( paste0( YrsPrevious, "0101" ) )
+        }
+    }
+  
+
+  weeks = seq( startMonth , endDate, by = '1 week') %>% 
+    yearweek() %>% format( "%YW%W")
+  
+  # remove current month ;
+  if (currentWeek == FALSE ) weeks = weeks[ 1:( length(weeks) - 1)]
+  
+  period = paste( weeks, collapse = ";" )
+  return( period )
+}
+
 
 api_formula_elements = function( formulaName , dir = NULL , ...  ){
   
@@ -519,17 +562,22 @@ api_data = function(      periods = NA ,
   ##### cycle through each period, each data element...
 
   # Periods ####
-  if ( periods %in% 'months_last_year' ) periods = date_code( monthsPrevious = 12 )
-  if ( periods %in% 'months_last_2_years' ) periods = date_code( YrsPrevious = 2 )
-  if ( periods %in% 'months_last_3_years' ) periods = date_code( YrsPrevious = 3 )
-  if ( periods %in% 'months_last_4_years' ) periods = date_code( YrsPrevious = 4 )
-  if ( periods %in% 'months_last_5_years' ) periods = date_code( YrsPrevious = 5 )
-  if ( periods %in% 'weeks_last_5_years' ) periods = date_code_weekly( YrsPrevious = 5 )
+  # if ( periods %in% 'months_last_year' ) periods = date_code( monthsPrevious = 12 )
+  # if ( periods %in% 'months_last_2_years' ) periods = date_code( YrsPrevious = 2 )
+  # if ( periods %in% 'months_last_3_years' ) periods = date_code( YrsPrevious = 3 )
+  # if ( periods %in% 'months_last_4_years' ) periods = date_code( YrsPrevious = 4 )
+  # if ( periods %in% 'months_last_5_years' ) periods = date_code( YrsPrevious = 5 )
+  # if ( periods %in% 'weeks_last_5_years' ) periods = date_code_weekly( YrsPrevious = 5 )
 
   cat('\n - setting periods - ') 
-  if ( all( is.na( periods )  ) ) periods = date_code( YrsPrevious = YrsPrevious )
+  # if ( all( is.na( periods )  ) ) 
+          # # check for last x years only 
+      if ( periodType == 'Monthly') periods = date_code( YrsPrevious = YrsPrevious ) # 'months_last_5_years' # 
+      if ( periodType == 'Weekly') periods = date_code_weekly( YrsPrevious = YrsPrevious )
+
+      # periods = date_code( YrsPrevious = YrsPrevious )
   cat('\n -  ' , periods )  
-    
+  
   period_vectors = strsplit( periods , ";" , fixed = TRUE )[[1]]
   
   if ( print ) cat( '\n - Requesting data for periods:\n' ,
@@ -546,8 +594,8 @@ api_data = function(      periods = NA ,
       cat('\n - retrieving details of previous dataset ')
       
       # # check for last x years only 
-      # if ( periodType == 'Monthly') periods = date_code( YrsPrevious = check_previous_years ) # 'months_last_5_years' # 
-      # if ( periodType == 'Weekly') periods = date_code_weekly( YrsPrevious = check_previous_years )
+      if ( periodType == 'Monthly') periods = date_code( YrsPrevious = check_previous_years ) # 'months_last_5_years' # 
+      if ( periodType == 'Weekly') periods = date_code_weekly( YrsPrevious = check_previous_years )
       # cat('\n - periodType is' ,  periodType)
       
       # excel version
@@ -564,15 +612,15 @@ api_data = function(      periods = NA ,
          cat('\n - previous data file empty'); next()
       }  
       
-      first.month = min( prev.data$period  )
-      last.month =  max( prev.data$period )
+      first.period = min( prev.data$period  )
+      last.period =  max( prev.data$period )
       
       # excel version
       # des = prev.data %>% select( dataElement, dataElement.id , Categories ,
       #                      categoryOptionCombo.ids ) %>%
       #   unique 
       
-      cat('\n - date range:' , first.month , last.month )
+      cat('\n - date range:' , first.period , last.period )
       
       #NB: use *.id if downloaded data was prepared and saved 
       cat('\n - extracting previously downloaded elements'  )
