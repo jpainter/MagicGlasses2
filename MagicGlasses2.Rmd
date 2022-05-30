@@ -120,7 +120,8 @@ library( feasts )
 library( fable.prophet )
 # library( Metrics )
 library( forecast ) 
-library( fable.bsts )
+
+if ( 'fable.bsts' %in% installed.packages() ) library( fable.bsts )
 
 # busy spinner
 library(shinybusy)
