@@ -1,6 +1,6 @@
 {
   "R": {
-    "Version": "4.1.3",
+    "Version": "4.2.0",
     "Repositories": [
       {
         "Name": "CRAN",
@@ -19,20 +19,20 @@
     },
     "Boom": {
       "Package": "Boom",
-      "Version": "0.9.7",
+      "Version": "0.9.8",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "bf9bb926184a3ad6594d2ef39910ccf7",
+      "Hash": "fa421db039c77e719072113b0be1b361",
       "Requirements": [
         "MASS"
       ]
     },
     "BoomSpikeSlab": {
       "Package": "BoomSpikeSlab",
-      "Version": "1.2.4",
+      "Version": "1.2.5",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "5e9fcb5039a8733b03a8d8a2ea06cf22",
+      "Hash": "339b88d04461ec1d953f64fc17d0c624",
       "Requirements": [
         "Boom"
       ]
@@ -796,27 +796,6 @@
         "rlang",
         "tibble",
         "tidyr",
-        "tsibble"
-      ]
-    },
-    "fable.bsts": {
-      "Package": "fable.bsts",
-      "Version": "0.1.0",
-      "Source": "GitHub",
-      "RemoteType": "github",
-      "RemoteHost": "api.github.com",
-      "RemoteRepo": "fable.bsts",
-      "RemoteUsername": "davidtedfordholt",
-      "RemoteRef": "HEAD",
-      "RemoteSha": "4488a125849b0d7fecf539b806153184bd262bc4",
-      "Hash": "18957357c853f0a2db5362679267c1ff",
-      "Requirements": [
-        "Rcpp",
-        "bsts",
-        "dplyr",
-        "fabletools",
-        "lubridate",
-        "rlang",
         "tsibble"
       ]
     },
@@ -1916,10 +1895,10 @@
     },
     "openssl": {
       "Package": "openssl",
-      "Version": "2.0.1",
+      "Version": "2.0.2",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "edde731e84cf3d42aa9b7f04b8de5941",
+      "Hash": "6d3bef2e305f55c705c674653c7d7d3d",
       "Requirements": [
         "askpass"
       ]
