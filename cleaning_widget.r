@@ -356,12 +356,104 @@ cleaning_widget_server <- function( id ,
      
      if ( searchForMAD() ){
        scanForMAD( TRUE ) 
-       outlierData$df_data = data1.mad()
+       outlierData$df_data = data1.mad_seasonal()
      }
 
      cat( '\n - searchForMAD names(outlierData$df_data) ' , names(outlierData$df_data) )
+     
+      scanForMAD( FALSE )
+      afterMAD( FALSE )
+      afterMAD( TRUE )
+      
  
    })
+    
+    data1.mad_seasonal = reactive({
+      
+        req( outlierData$df_data )
+        cat('\n* data1.mad' )
+        cat('\n - scanForMAD:' , scanForMAD() )
+        
+        if ( scanForMAD() ){
+          cat('\n - data1.mad search')
+        
+          d = outlierData$df_data
+          nrow1 = nrow( d )
+          if ( nrow1 == 0 ){
+            cat('\n - nrow1 = 0')
+            return()
+          } else { cat('\n - outlierData has' , nrow1 , 'rows')}
+          
+          # remove duplicate rows because downloads may create duplicates
+          u = d %>% as.data.table() %>% unique 
+          nrow2 = nrow( u )
+          cat('\n - There were', nrow1-nrow2, 'duplicates' )
+        
+         cat( '\n - Scanning for repetive key entry errors')
+         key_entry_errors =
+           count( as_tibble( d %>% 
+                           filter( nchar(original)>3 , 
+                                  effectiveLeaf ) ) , 
+                 original ) %>% 
+           arrange(-n) 
+       
+        # Default: values where the number happens at least 3 > than 
+         # medianof the top 10 rows 
+         key_entry_errors = key_entry_errors %>% 
+           filter(  n > 3 * median( 
+             key_entry_errors %>% filter( row_number()<11 )  %>%
+               pull( n ) )
+             ) %>% pull( original )
+      
+         # print( head( key_entry_errors ) )
+         if ( is_empty( key_entry_errors )  ) key_entry_errors = NA
+           
+         
+        cat( '\n - scanning for MAD outliers')
+        .total = length( key_size( d ) )
+      
+        .threshold = 50
+    
+        withProgress(     message = "Searchng",
+                            detail = "starting ...",
+                            value = 0, {
+          
+
+              data.mad = mad_outliers( d , .total = .total , 
+                              .threshold = 50,
+                              key_entry_errors = key_entry_errors  )
+        })
+        
+       cat( '\n - scanning for Seasonal outliers')
+       d = data.mad
+      .total = length( key_size( d ) )
+       cat( '\n - .total' , .total )
+  
+      withProgress(  message = "Seasonal Outliers",
+                        detail = "starting ...",
+                        value = 0, {
+      
+              data1.seasonal = seasonal_outliers( d , .total = .total , .threshold = 50)
+        })  
+        
+        showModal(
+              modalDialog( title = "Finished scanning for seasonal values; saving data", 
+                           easyClose = TRUE ,
+                           size = 'm' ,
+                           footer = "(click anywhere to close dialog box)"
+                           )
+              )
+        
+    cat('\n - saving data1.seasonal to replace dataset')
+    cat('\n - names(data1.seasonal):', names(data1.seasonal) )
+    
+    
+    saveRDS( data1.seasonal , paste0( data.folder(), dataset.file() ) )
+    removeModal()
+        
+        } # end if scan for mad
+        
+    })
 
     data1.mad = reactive({
         req( outlierData$df_data )
@@ -412,37 +504,8 @@ cleaning_widget_server <- function( id ,
                             detail = "starting ...",
                             value = 0, {
           
-        data1.mad = d %>%  
-            group_by( orgUnit, data.id ) %>%
-            mutate(
-              .max = ifelse( 
-                grepl("jour|day", data ) &
-                grepl("out|rupture", data )   &
-                effectiveLeaf
-                , 31, NA  )  
-              ) %>%
-            mutate( 
-                mad15 = extremely_mad( original , 
-                                       deviation = 15 , 
-                                       smallThreshold = .threshold ,
-                                       key_entry_error = key_entry_errors ,
-                                       maximum_allowed = .max , 
-                                       logical = TRUE, .pb = NULL , 
-                                       .progress = TRUE ,
-                                       total = .total ) 
-                , mad10 = extremely_mad( ifelse( mad15, original , NA ), 
-                                         deviation = 10 , 
-                                         smallThreshold = .threshold ,
-                                         maximum_allowed = .max , 
-                                         logical = TRUE ) 
-                , mad5 = extremely_mad( ifelse( mad10, original , NA ), 
-                                        deviation = 5 , 
-                                        smallThreshold = .threshold * 2 ,
-                                        maximum_allowed = .max , 
-                                        logical = TRUE ) 
-            )
-          
-          
+
+           data.mad = mad_outliers( d )
         })
         
         outlierData$df_data = data1.mad  
@@ -460,13 +523,10 @@ cleaning_widget_server <- function( id ,
         saveRDS( data1.mad , paste0( data.folder(), dataset.file() ) )
         # removeModal()
         
-        afterMAD( FALSE )
-        afterMAD( TRUE )
         } 
+       
         
-        scanForMAD( FALSE )
-        
-        return( outlierData$df_data )
+        return( data1.mad )
     })
     
     # Option to rerun seasonal outliers
@@ -496,15 +556,15 @@ cleaning_widget_server <- function( id ,
       cat( '\n - afterMAD names(outlierData$df_data) ' , names(outlierData$df_data) )
       
       if ( afterMAD() ){
-        # 2. Scan for seasonally adjusted outliers
-        if ( 'seasonal5' %in% names( outlierData$df_data ) ){
-           showModal( rerunSeasonalModal() )
-  
-        } else {
-            searchForSeasonalOutliers( FALSE )
-            searchForSeasonalOutliers( TRUE )
-            cat('\n - determine seasonal outliers button:' , searchForSeasonalOutliers() )
-        } 
+      #   # 2. Scan for seasonally adjusted outliers
+      #   if ( 'seasonal5' %in% names( outlierData$df_data ) ){
+      #      showModal( rerunSeasonalModal() )
+      # 
+      #   } else {
+            # searchForSeasonalOutliers( FALSE )
+            # searchForSeasonalOutliers( TRUE )
+            # cat('\n - determine seasonal outliers button:' , searchForSeasonalOutliers() )
+        # } 
       }
     })
  
@@ -513,10 +573,10 @@ cleaning_widget_server <- function( id ,
      cat( '\n* observeEvent searchForSeasonalOutliers: ' , searchForSeasonalOutliers() )
      
      if ( searchForSeasonalOutliers() ){
-       scanForSeasonal( FALSE ) 
-       scanForSeasonal( TRUE ) 
-       cat( '\n - searchForSeasonalOutliers names(outlierData$df_data) ' , names(outlierData$df_data) )
-       outlierData$df_data = data1.seasonal()
+       # scanForSeasonal( FALSE ) 
+       # scanForSeasonal( TRUE ) 
+       # cat( '\n - searchForSeasonalOutliers names(outlierData$df_data) ' , names(outlierData$df_data) )
+       # outlierData$df_data = data1.seasonal()
      }
    })
          
@@ -536,10 +596,9 @@ cleaning_widget_server <- function( id ,
       # outlierData$df_data = data1.mad() 
     
       # Stop if mad10 not in dataset
-      d = outlierData$df_data
       
-      cat('\n - names(d)' , names(d) )
-      if ( !'mad10' %in% names( d ) ){
+      cat('\n - names(outlierData$df_data)' , names(outlierData$df_data) )
+      if ( !'mad10' %in% names( outlierData$df_data ) ){
             
         showModal(
               modalDialog( title = "Please search for extreme values first", 
@@ -554,6 +613,7 @@ cleaning_widget_server <- function( id ,
       }
  
        cat( '\n - scanning for Seasonal outliers')
+       d = outlierData$df_data
       .total = length( key_size( d ) )
        cat( '\n - .total' , .total )
   
@@ -563,27 +623,7 @@ cleaning_widget_server <- function( id ,
                         detail = "starting ...",
                         value = 0, {
       
-      data1.seasonal = d %>%  
-        group_by( orgUnit, data.id ) %>%
-        mutate(
-          
-          expected = unseasonal(  original , 
-                                  smallThreshold = .threshold * 2  , 
-                                  logical = FALSE , # Returns forecasted value
-                                  .progress = TRUE ,
-                                   total = .total 
-                                  ) ,
-          
-          seasonal5 = unseasonal(  ifelse( mad10, original , NA) , 
-                                  smallThreshold = .threshold * 2  , 
-                                  deviation = 5 ,
-                                  logical = TRUE ) ,
-          
-          seasonal3 = unseasonal(  ifelse( seasonal5, original , NA) , 
-                                  smallThreshold = .threshold * 2 , 
-                                  deviation = 3 ,
-                                  logical = .total )  
-      )
+              data1.seasonal = data1.seasonal( d )
         })  
         
         showModal(
