@@ -218,20 +218,23 @@ data_request_widget_server <- function( id ,
           cat( '\n - data_request elements:' , length( .elements$name ) , ':\n' ,
                .elements$name )
           
-          # Previous dataset file: 
-          .dataset = dataset() 
 
           cat( '\n - dataset():' , dataset.file() )
           file =  paste0( data.folder() , dataset.file() )
+          
           
           if ( file_test("-f", file )  ){
             .previous_dataset_file = file 
             .update = TRUE 
             cat( '\n - previous file exists:' ,  file  ) 
+           # Previous dataset file: 
+          .dataset = dataset() 
+
           } else {
             cat( '\n - no previous dataset file:'  )
             .update = FALSE 
             .previous_dataset_file = ''
+            .dataset = NA 
           }
           
           .periods = NA  # use period (e.g. Month) and year (e.g. 5) instead of 'months_last_5_years'
