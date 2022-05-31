@@ -799,27 +799,6 @@
         "tsibble"
       ]
     },
-    "fable.bsts": {
-      "Package": "fable.bsts",
-      "Version": "0.1.0",
-      "Source": "GitHub",
-      "RemoteType": "github",
-      "RemoteHost": "api.github.com",
-      "RemoteRepo": "fable.bsts",
-      "RemoteUsername": "davidtedfordholt",
-      "RemoteRef": "HEAD",
-      "RemoteSha": "4488a125849b0d7fecf539b806153184bd262bc4",
-      "Hash": "18957357c853f0a2db5362679267c1ff",
-      "Requirements": [
-        "Rcpp",
-        "bsts",
-        "dplyr",
-        "fabletools",
-        "lubridate",
-        "rlang",
-        "tsibble"
-      ]
-    },
     "fable.prophet": {
       "Package": "fable.prophet",
       "Version": "0.1.0",

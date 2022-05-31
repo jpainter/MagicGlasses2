@@ -121,9 +121,9 @@ library( fable.prophet )
 # library( Metrics )
 library( forecast ) 
 
+
 # older package that may not be able to install on some machines (e.g. Mac ARM)
 if ( 'fable.bsts' %in% installed.packages() ) library( fable.bsts )
-
 
 # busy spinner
 library(shinybusy)
