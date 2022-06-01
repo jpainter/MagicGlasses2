@@ -17,7 +17,7 @@ runtime: shiny
 <!-- For mapping, need to install the GDAL library.  On mac, use homebrew.  On windows ?  -->
 <!-- see : https://gitmemory.cn/index.php/repo/r-spatial/sf/issues/1848 -->
 <!-- remotes::install_github("r-spatial/sf", configure.args = "--with-gdal-config=/opt/homebrew/opt/gdal/bin/gdal-config --with-sqlite3-lib=/opt/homebrew/opt/sqlite3") -->
-```{r renv, include=FALSE  }
+```{r renv, include=FALSE , eval=FALSE}
 
 # renv::snapshot()
 renv::restore()

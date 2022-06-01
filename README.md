@@ -57,11 +57,11 @@ or open and run the file installPackages.R
 
 This page is used to define the data for analysis (dataElements, categoryOptionCombos, and then to request the data
 
-### Data dictionary (formulas)
+- ### Data dictionary (formulas)
 
 - Create and update formulas (data dictionary).  Before downloading any data, you must define which elements and categories will be included.  This data dictionary (formerly called formulas) will be stored in an excel file with the name 'formulas_*date*'
-- 
-### Request data
+
+- ### Request data
 
 - To update data, click on the file to load it, then request data.  When a data file is already loaded, the app will check the previous national level values in file against the ones on the server.  If the values are the same for a given period (e.g. Month), then the app skips to the next period. This prevents re-requesting data that is unchanged and may save a lot of time.  
 
@@ -71,20 +71,25 @@ This page is used to define the data for analysis (dataElements, categoryOptionC
 
 ## Outliers
 
-- MAD
+Several outlier algorithms are employed in succession, beginning with the most lax, *mad15*, and continuing to the most restrictive, *seasonal3*. The algorithms are applied to values entered at each orgUnit for each dataElement_category.  If there are 5 yrs of data, there will be 60 points (if complete reporting) in each time-series. If there are 1000 orgUnits and 2 dataElement_orgUnits, 
+
+- ### MAD
 
 The mean absolute deviation (MAD) [https://en.wikipedia.org/wiki/Median_absolute_deviation] is similar to a mean and standard deviation, but is more robust to outliers.  When there are multiple outliers in a series, the values may not be detected by the mean +/- standard deviation (or x times the SD), because the outliers may greatly inflate the mean and sd.  Therefore, the MAD is recommended [https://www.sciencedirect.com/science/article/abs/pii/S0022103113000668]. 
 
 
-### Seasonal outliers
+- ### Seasonal outliers
 
-Two algorithms are run to detect seasonally adjusted outliers, which are outliers when compared with values during the same time period, such as high value when value are usually low, or a low value when values usually run high. These values are not necessarily the largest or the smallest values, but their timing is incongrous with the timing of past values.  Seasonal5 looks for values 5x greater than the difference between the observed and expected, divided by the MAD
+Two algorithms are run to detect seasonally adjusted outliers, which are outliers when compared with values during the same time period, such as high value when value are usually low, or a low value when values usually run high. These values are not necessarily the largest or the smallest values, but their timing is incongrous with the timing of past values.  The *seasonal5* algorithm looks for values 5x greater than the difference between the observed and expected, divided by the MAD.  Values that pass the *seasonal5* are tested against *seasonal3*, which reduces the allowable range of values to 3x abs( observed - expected )/MAD
 
-- An alternative set of outliers come from the tsoutlier funciont in the forecast package, which compares values to an STL model (https://robjhyndman.com/hyndsight/tsoutliers/)
+[An alternative set of outliers come from the tsoutlier function in the forecast package, which compares values to an STL model (https://robjhyndman.com/hyndsight/tsoutliers/)]
 
 
 
 ## Evaluation
+
+The evaluation section follows a process outlined by Linden for evaluation of disease management programs [https://www.researchgate.net/profile/John-Adams-28/publication/8909526_Evaluating_Disease_Management_Program_Effectiveness_An_Introduction_to_Time-Series_Analysis/links/0046352152020e4f60000000/Evaluating-Disease-Management-Program-Effectiveness-An-Introduction-to-Time-Series-Analysis.pdf].
+
 
 
 ## Other Notes
