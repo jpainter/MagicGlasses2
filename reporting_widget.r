@@ -19,7 +19,7 @@ reporting_widget_ui = function ( id ){
                           choices = c( 'leaf'  ) ,
                           selected = NULL ) ,
              
-            checkboxInput( ns("exclude_recent_month") , label ='Exclude most recent month?',
+            checkboxInput( ns("exclude_recent_month") , label ='Exclude most recent period?',
                        value = TRUE  ) ,
             
               selectInput( ns("level2"), label = "OrgUnit Level2" , 
@@ -407,8 +407,9 @@ reporting_widget_server <- function( id ,
       cat( '\nmost recent ', period(),  'is', mrp )
 
       if ( input$exclude_recent_month ){
+        cat('\n - exclude most recent period')
         if ( period() == "Month" ) mrp = mrp - month(1)
-        if ( period() == "Week" ) mrp = mrp - week(1)
+        if ( period() == "Week" ) mrp = mrp - 1
       }
 
       cat( '\n- mrp:' , mrp )

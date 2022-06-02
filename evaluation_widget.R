@@ -45,6 +45,12 @@ evaluation_widget_ui = function ( id ){
               checkboxInput( ns( "selected" ) , label ='Selected facilities only',
                              value = TRUE  ) ,
               
+              checkboxInput( ns( "label" ) , label ='Show labels',
+                             value = FALSE  ) ,
+            
+              checkboxInput( ns( "pe" ) , label ='Show mean percent difference from expected',
+                             value = FALSE  ) ,
+            
               checkboxInput( ns( "legend" ) , label ='Show legend',
                              value = FALSE  )
               
@@ -539,9 +545,14 @@ evaluation_widget_server <- function( id ,
         cat("\n - input$model = ARIMA")
         
         formula.string = paste( 'fabletools::box_cox( total , lambda = .5  ) ~ ',
-                                ' pdq() ' ,  
-                                '+ PDQ( period = 12 )' 
-        )
+                                ' pdq() ' ) 
+        
+        if ( period() %in% "Month" ) formula.string = paste0( formula.string ,
+                                                           '+ PDQ( period = "1 year" )'   )
+        if ( period() %in% "Week" ) formula.string = paste0( formula.string ,
+                                                           '+ PDQ( period = 52 )'   )
+                                   
+
          if ( nchar( input$covariates ) > 0 ) formula.string = 
              paste( formula.string , '+ xreg(' , input$covariates , ' ) ' )
          
@@ -559,7 +570,7 @@ evaluation_widget_server <- function( id ,
                          
        if ( any(input$model %in% c( 'TSLM', 'TSLM (trend+season)' ,'TSLM (trend)',
                                     'ETS',  'Prophet' ) ) ){
-        cat("\n - input$model %in% c( 'TSLM', 'ETS',  'Prophet' )")
+        cat("\n - input$model not ARIMA' )")
          
         f = as.formula(  input$model.formula )
     
@@ -585,7 +596,8 @@ evaluation_widget_server <- function( id ,
       # Filter data to period just before evaluation start
       print( input$evaluation_month )
       eval_month = input$evaluation_month
-      time_period = yearmonth( eval_month  ) # - month(1)
+      if ( period() %in% "Month" ) time_period = yearmonth( eval_month  ) # - month(1)
+      if ( period() %in% "Week" ) time_period = yearweek( eval_month  )
       
       fit.data  = trendData() %>%
         filter_index( ~ as.character( time_period ) ,
@@ -683,7 +695,8 @@ evaluation_widget_server <- function( id ,
       cat( '\n* tsPreModel():' , as.character( model_formula() ) )
     
       eval_month = input$evaluation_month 
-      time_period = yearmonth( eval_month  ) - 12
+      if ( period() %in% "Month" ) time_period = yearmonth( eval_month  ) - 12
+      if ( period() %in% "Week" ) time_period = yearweek( eval_month  ) - 25
       
       cat("\n - time_period:" , time_period )
       
@@ -767,7 +780,7 @@ evaluation_widget_server <- function( id ,
       
       req( tsModel() ) 
       req( input$horizon )
-      print( 'tsForecast()' )
+      cat( '\n* tsForecast()' )
       
       if ( input$bootstrap ){
         
@@ -806,7 +819,9 @@ evaluation_widget_server <- function( id ,
              as_tsibble( key = keyVars , index = indexVar  ) %>%
              fill_gaps( .full = TRUE  )
       
-      print( 'fcast:' );  #glimpse( fcast )
+      # saveRDS( fcast , 'tsForecast.rds')
+      cat( '\n - fcast end:' );  #glimpse( fcast )
+      print( names( fcast ) )
       return( fcast )
       })
     
@@ -816,7 +831,8 @@ evaluation_widget_server <- function( id ,
       req( input$horizon )
       
       cat( '\n* tsPreForecast' )
-      fcast = tsPreModel() %>% forecast( h = 12  )
+      if ( period() %in% 'Month' ) fcast = tsPreModel() %>% forecast( h = 12  )
+      if ( period() %in% 'Week' ) fcast = tsPreModel() %>% forecast( h = 25  )
       
       # preserve tsibble key and index,
       indexVar = index_var( fcast )
@@ -846,7 +862,8 @@ evaluation_widget_server <- function( id ,
              as_tsibble( key = keyVars , index = indexVar  ) %>%
              fill_gaps( .full = TRUE  )
         
-      cat( '\n - tsPreForecast done.  Saving model...' )
+      cat( '\n - tsPreForecast done.' )
+      print( names( fcast ) ) 
       # saveRDS( fcast , 'tsPreForecast.rds' )
       return( fcast )
       })
@@ -958,7 +975,7 @@ evaluation_widget_server <- function( id ,
         if ( period() %in% 'Week' ){ 
           .d = .d %>% filter( 
             Week >=  yearweek( startingMonth() )   ,
-            Week <= yearweek( endingMonth )  )
+            Week <= yearweek( endingMonth() )  )
         }
   } 
     
@@ -1059,6 +1076,8 @@ evaluation_widget_server <- function( id ,
     plotTrends = reactive({
           
           req( trendData() )
+          req( period() )
+          input$agg_level
           # req( split() )
           # req( input$evaluation_month )
           cat( '\n* plotTrends():' )
@@ -1080,11 +1099,16 @@ evaluation_widget_server <- function( id ,
         
           tic() 
           
-          ## Main plot ####
+          .period = period()
+          
+      ## Main plot ####
           g = .d %>%
+            filter( !is.na( total ) ) %>%
           # autoplot( total ) +
-          ggplot( aes(x = Month, y = total
-                     , group = grouping_var
+          ggplot( aes( x = !! rlang::sym( .period ), y = total
+                       
+                     # , group =  !! rlang::sym( input$agg_level  )
+                     
                      , color =  grouping_var
                     ) )  +
           geom_line() +
@@ -1099,9 +1123,13 @@ evaluation_widget_server <- function( id ,
           if ( !input$legend ) g = g + 
             theme(legend.position = "none")
           
-          if ( !split() %in% 'None' ){ 
+          if ( input$label ){ 
             g = g + geom_label_repel( 
-                       data = .d %>% filter( Month == max( .d$Month , na.rm = T )) ,
+                       data = .d %>% 
+                         filter( 
+                           !! rlang::sym( .period ) == max( .d %>% pull( .period ) , 
+                                                            na.rm = T )
+                           ) ,
                        aes( label = grouping_var , group = grouping_var )
                        )
           }
@@ -1138,11 +1166,13 @@ evaluation_widget_server <- function( id ,
           }
             }
           
- 
-          
+          # Time scale 
+          cat( '\n - Evaluation: setting x axis time scale', period() )
+          if ( .period %in% 'Month') g = g + scale_x_yearmonth("", date_breaks = "1 year" )
+          # Default for weeks seems ok - 6 months
+          # if ( .period %in% 'Week') g = g + scale_x_yearweek("", date_breaks = "1 year" )
+         
           g = g +
-        
-            scale_x_yearmonth("", date_breaks = "1 year" ) +
             scale_y_continuous( label = comma, limits = .limits ) +
             scale_color_discrete( drop = TRUE  ) +
             labs( y = "" , x="" ,
@@ -1152,24 +1182,27 @@ evaluation_widget_server <- function( id ,
                   ) 
           cat( '\n- axis scales and labs done' )
           
-          eval_date =   yearmonth( input$evaluation_month  ) 
-
+          # Eval Date
+          cat( '\n - evaluation date' , input$evaluation_month )
+          if ( .period %in% 'Month' ) eval_date =   yearmonth( input$evaluation_month  ) 
+          if ( .period %in% 'Week' ) eval_date =   yearweek( input$evaluation_month  ) 
+          cat( '\n - eval_date:' , eval_date )
           
-          ### Pre-Evaluation trend line #####
+      ## Pre-Evaluation trend line #####
           if ( input$pre_evaluation ){
-            
-            cat( '\n- pre evaluation line ' )
-            pre_eval_date = yearmonth( input$evaluation_month  ) - 12
-                # month( as.integer( input$horizon ) )
-              
-            cat( '\n- pre_eval_date is' ); print( pre_eval_date )
-            g = g + 
+
+          cat( '\n - pre-evaluation date'  )
+          if ( .period %in% 'Month' ) pre_eval_date =   yearmonth( input$evaluation_month  ) -12
+          if ( .period %in% 'Week' ) pre_eval_date =   yearweek( input$evaluation_month  ) - 25
+          cat( '\n - pre_eval_date:' , pre_eval_date )
+   
+          g = g + 
             # autolayer( tsPreForecast()
             #            , level = ci_levels()
             #            , color = 'black' 
             #            , linetype = 'dotted'  , size = 1
             #            ,  alpha = .5 ) +
-            geom_line( data = tsPreForecast(), aes( y = .mean )
+            geom_line( data = tsPreForecast(), aes(  y = .mean )
               # ,   color = 'light blue'
               , alpha = .75 
               , linetype = 'dotted'  , size = 2
@@ -1178,9 +1211,10 @@ evaluation_widget_server <- function( id ,
             #             color = 'brown' ,
             #             alpha = .25 ) +
             geom_vline( xintercept = as.Date( eval_date ) ,
-                        color = 'black', alpha = 1 ) +
-        
-            geom_label_repel( data =  key.mape() ,
+                        color = 'black', alpha = 1 ) 
+            
+            if ( input$pe ) g = g + 
+              geom_label_repel( data =  key.mape() ,
                        aes(  x = !! rlang::sym( period() ) , y = actual ,
                        label = paste( "MAPE:" , percent( mape, accuracy = 1.0 ) ) ,
                        hjust = just ) ,
@@ -1193,7 +1227,7 @@ evaluation_widget_server <- function( id ,
           cat( '\n- pre-evaluation line done' )
                     
           
-          #### Evaluation Trend Line ####
+      ## Evaluation Trend Line ####
           if ( input$evaluation ){
             cat( '\n- evaluation line ' )
             
@@ -1203,20 +1237,24 @@ evaluation_widget_server <- function( id ,
             #            , color = 'black'
             #            , linetype = 'dashed', size = 1
             #            ,  alpha = .5 ) +
-            geom_line( data = tsForecast(), aes( y = .mean )
+            geom_line( data = tsForecast() , aes( y = .mean )
               # ,   color = 'light blue'
               , alpha = .75 
               , linetype = 'dotted'  , size = 2
-            ) +             
+            ) +         
+             
             geom_vline( xintercept = as.Date( eval_date ) ,
-                        color = 'black', alpha = 1 ) +
+                        color = 'blue', alpha = 1 ) 
+             
             # annotate( "text" ,
             #           x = as.Date( eval_date ) ,
             #           y = Inf ,
             #           hjust = 0 , vjust = 1 ,
             #           label = paste( "MPE:\n" )
             #           ) +
-            geom_label_repel( data =  key.mpe() ,
+             
+            if (input$pe) g = g + 
+              geom_label_repel( data =  key.mpe() ,
                        aes(  x = !! rlang::sym( period() ) , y = actual , 
                        label = paste( "MPE:" , percent( mpe, accuracy = 1.0 ) ) ,
                        hjust = just 
@@ -1229,7 +1267,7 @@ evaluation_widget_server <- function( id ,
           cat( '\n- evaluation line done' )
         
 
-          # Smooth line ##### 
+      ## Smooth line ##### 
           if (input$smooth){
             cat( '\n- agg level', input$agg_level )
             .d. = .d %>% 
@@ -1244,7 +1282,7 @@ evaluation_widget_server <- function( id ,
           } 
           
          
-          # End ####
+      ## End ####
           cat( '\n- end plotTrends():' )
           
           # saveRDS( g, 'plotTrends.rds')

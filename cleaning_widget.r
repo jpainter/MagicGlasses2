@@ -360,6 +360,11 @@ cleaning_widget_server <- function( id ,
      }
 
      cat( '\n - searchForMAD names(outlierData$df_data) ' , names(outlierData$df_data) )
+     
+      scanForMAD( FALSE )
+      afterMAD( FALSE )
+      afterMAD( TRUE )
+      
  
    })
 
@@ -460,13 +465,10 @@ cleaning_widget_server <- function( id ,
         saveRDS( data1.mad , paste0( data.folder(), dataset.file() ) )
         # removeModal()
         
-        afterMAD( FALSE )
-        afterMAD( TRUE )
         } 
+       
         
-        scanForMAD( FALSE )
-        
-        return( outlierData$df_data )
+        return( data1.mad )
     })
     
     # Option to rerun seasonal outliers
@@ -496,15 +498,15 @@ cleaning_widget_server <- function( id ,
       cat( '\n - afterMAD names(outlierData$df_data) ' , names(outlierData$df_data) )
       
       if ( afterMAD() ){
-        # 2. Scan for seasonally adjusted outliers
-        if ( 'seasonal5' %in% names( outlierData$df_data ) ){
-           showModal( rerunSeasonalModal() )
-  
-        } else {
+      #   # 2. Scan for seasonally adjusted outliers
+      #   if ( 'seasonal5' %in% names( outlierData$df_data ) ){
+      #      showModal( rerunSeasonalModal() )
+      # 
+      #   } else {
             searchForSeasonalOutliers( FALSE )
             searchForSeasonalOutliers( TRUE )
             cat('\n - determine seasonal outliers button:' , searchForSeasonalOutliers() )
-        } 
+        # } 
       }
     })
  
@@ -536,10 +538,9 @@ cleaning_widget_server <- function( id ,
       # outlierData$df_data = data1.mad() 
     
       # Stop if mad10 not in dataset
-      d = outlierData$df_data
       
-      cat('\n - names(d)' , names(d) )
-      if ( !'mad10' %in% names( d ) ){
+      cat('\n - names(outlierData$df_data)' , names(outlierData$df_data) )
+      if ( !'mad10' %in% names( outlierData$df_data ) ){
             
         showModal(
               modalDialog( title = "Please search for extreme values first", 
@@ -554,6 +555,7 @@ cleaning_widget_server <- function( id ,
       }
  
        cat( '\n - scanning for Seasonal outliers')
+       d = outlierData$df_data
       .total = length( key_size( d ) )
        cat( '\n - .total' , .total )
   
