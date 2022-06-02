@@ -17,7 +17,7 @@ runtime: shiny
 <!-- For mapping, need to install the GDAL library.  On mac, use homebrew.  On windows ?  -->
 <!-- see : https://gitmemory.cn/index.php/repo/r-spatial/sf/issues/1848 -->
 <!-- remotes::install_github("r-spatial/sf", configure.args = "--with-gdal-config=/opt/homebrew/opt/gdal/bin/gdal-config --with-sqlite3-lib=/opt/homebrew/opt/sqlite3") -->
-```{r renv, include=FALSE  }
+```{r renv, include=FALSE , eval=FALSE}
 
 # renv::snapshot()
 # renv::restore()
@@ -121,6 +121,8 @@ library( fable.prophet )
 # library( Metrics )
 library( forecast ) 
 
+
+# older package that may not be able to install on some machines (e.g. Mac ARM)
 if ( 'fable.bsts' %in% installed.packages() ) library( fable.bsts )
 
 # busy spinner
@@ -154,14 +156,14 @@ cat('\n ## getActiveProject():' , getActiveProject() )
 ```{r sources, include=FALSE}
 # Functions ####
 # source( "data_time_libraries.r")
-source( "outlier.r" )
+# source( "outlier.r" )
 source( "ingest_formula_data.r")
 source( 'TS_Modeling_Functions.r')
 source( "Summary_TS.R") # new version of summary_ts()
 source( 'TS_model_outlier_impute.R') # model_ts()
 source( 'Deviation_Expected_Functions.R')
 # source( 'theme_ppt.R')
-source( 'clean_ts.r' )
+# source( 'clean_ts.r' )
 source( 'DToptions.R')
 source( 'model_ts2.r' )
 source( 'api_data.r' )
@@ -525,7 +527,7 @@ Outliers
 ========================
 
 
-```{r  eval=TRUE}
+```{r  eval= TRUE }
 source( 'cleaning_widget.r' )
 
 cleaning_widget_ui( "cleaning1" )
@@ -560,14 +562,12 @@ evaluation_widget_output =
 About MagicGlasses2
 ========================
 
+
 ```{r README}
- 
+
 # source( 'leaflet_widget.r' )
 # leaflet_widget_ui( "leaflet1" )
 # leaflet_widget_server( "leaflet1" )  
 
 includeMarkdown( 'README.md' )
 ```
-
-
-

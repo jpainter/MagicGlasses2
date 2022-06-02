@@ -122,3 +122,70 @@ mase = function (actual, predicted, step_size = 1 ){
     # } else { mase = NA }
     return( mase )
 }
+
+mad_outliers = function( d ,
+                              .total = NULL , 
+                              .threshold = 50,
+                         key_entry_errors = NULL ){
+   m_o = d %>%  
+            group_by( orgUnit, data.id ) %>%
+            mutate(
+              .max = ifelse( 
+                grepl("jour|day", data ) &
+                grepl("out|rupture", data )   &
+                effectiveLeaf
+                , 31, NA  )  
+              ) %>%
+            mutate( 
+                mad15 = extremely_mad( original , 
+                                       deviation = 15 , 
+                                       smallThreshold = .threshold ,
+                                       key_entry_error = key_entry_errors ,
+                                       maximum_allowed = .max , 
+                                       logical = TRUE, .pb = NULL , 
+                                       .progress = TRUE ,
+                                       total = .total ) 
+                , mad10 = extremely_mad( ifelse( mad15, original , NA ), 
+                                         deviation = 10 , 
+                                         smallThreshold = .threshold ,
+                                         maximum_allowed = .max , 
+                                         logical = TRUE  ) 
+                , mad5 = extremely_mad( ifelse( mad10, original , NA ), 
+                                        deviation = 5 , 
+                                        smallThreshold = .threshold * 2 ,
+                                        maximum_allowed = .max , 
+                                        logical = TRUE ) 
+            )
+   
+   return( m_o )
+}
+
+seasonal_outliers = function( d ,
+                              .total = NULL , 
+                              .threshold = 50 ){
+  
+        data1.seasonal = d %>%  
+        group_by( orgUnit, data.id ) %>%
+        mutate(
+          
+          expected = unseasonal(  original , 
+                                  smallThreshold = .threshold * 2  , 
+                                  logical = FALSE , # Returns forecasted value
+                                  .progress = TRUE ,
+                                   total = .total 
+                                  ) ,
+          
+          seasonal5 = unseasonal(  ifelse( mad10, original , NA) , 
+                                  smallThreshold = .threshold * 2  , 
+                                  deviation = 5 ,
+                                  logical = TRUE ) ,
+          
+          seasonal3 = unseasonal(  ifelse( seasonal5, original , NA) , 
+                                  smallThreshold = .threshold * 2 , 
+                                  deviation = 3 ,
+                                  logical = .total )  
+      )
+        
+        return( data1.seasonal )
+}
+          
