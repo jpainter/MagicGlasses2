@@ -90,6 +90,7 @@ Two algorithms are run to detect seasonally adjusted outliers, which are outlier
 
 The evaluation section follows a process outlined by Linden for evaluation of disease management programs [https://www.researchgate.net/profile/John-Adams-28/publication/8909526_Evaluating_Disease_Management_Program_Effectiveness_An_Introduction_to_Time-Series_Analysis/links/0046352152020e4f60000000/Evaluating-Disease-Management-Program-Effectiveness-An-Introduction-to-Time-Series-Analysis.pdf].
 
+- **Background on modeling with grouped and/or hierarchical time-series models**. The data in this project is typically grouped by orgUnit hierarchy as well as categories like age and sex.  While the display shows the total across all cateogries, the modeling may be done at each category level and then aggregated, a process called reconciliation.  The principles and R code are described in the book [**Forecasting: principles and practice**](https://otexts.com/fpp3/hierarchical.html) by the authors of the tsibble and fable packages. The aggregation levels are specified with the aggregate_key function.  [This post](https://notast.netlify.app/post/2021-06-09-hierarchical-forecasting-of-hospital-admissions-classical-forecast/) provides a worked example and helps illustrate the method.  
 
 
 ## Other Notes
