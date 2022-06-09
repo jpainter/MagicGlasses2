@@ -35,6 +35,10 @@ evaluation_widget_ui = function ( id ){
               selectInput( ns( "agg_level") , label = "Aggregate to admin level:" , 
                 choices = NULL , 
                 selected = 1  ) ,
+            
+            selectInput( ns( "agg_method") , label = "Aggregate (regression) method:" , 
+                choices = c( "None", "Bottum up", "MINT(ols)" , "MINT(cov)") , 
+                selected = 1  ) ,
 
               checkboxInput( ns( "facet_admin" ) , label ="Facet by admin",
                              value = FALSE  ) ,
@@ -49,7 +53,7 @@ evaluation_widget_ui = function ( id ){
                              value = FALSE  ) ,
             
               checkboxInput( ns( "pe" ) , label ='Show mean percent difference from expected',
-                             value = FALSE  ) ,
+                             value = TRUE  ) ,
             
               checkboxInput( ns( "legend" ) , label ='Show legend',
                              value = FALSE  )
@@ -819,6 +823,22 @@ evaluation_widget_server <- function( id ,
              as_tsibble( key = keyVars , index = indexVar  ) %>%
              fill_gaps( .full = TRUE  )
       
+      # Reconcile
+      if ( input$agg_method %in% "None" ){ 
+        if ( inpt$agg_method %in% 'Bottom up' ){
+            fcast = fcast %>%
+              reconcile( bu = bottom_up(base) ) 
+        } 
+        if ( inpt$agg_method %in% 'MINT(ols)' ){
+          fcast = fcast %>%
+              reconcile( ols = min_trace(base, method = "ols") ) 
+        } 
+        if ( inpt$agg_method %in% 'MINT(cov)' ){
+          fcast = fcast %>%
+              reconcile( mint = min_trace(base, method = "mint_cov") ) 
+        } 
+      }
+        
       # saveRDS( fcast , 'tsForecast.rds')
       cat( '\n - fcast end:' );  #glimpse( fcast )
       print( names( fcast ) )

@@ -49,16 +49,15 @@ df.ts = function( df , period = "Month" , missing.value = NA ){
 df_pre_ts = function( df , period = "Month" , missing.value = NA  ){
   # if ( !is.null( pb )) pb()
    
-  # flag periods with W as weekly 
-   weekly = any( grepl( "W", df$period[1:10]) )
-   if (weekly ) period =  "Week" 
-   
-   .period = rlang::enquo( period ) 
+  if ( period %in% c( "Week", "Weekly") ) .period = "Week"
+  if ( period %in% c( "Month", "Monthly") ) .period = "Month"
+
+   .period = rlang::enquo( .period ) 
    
    # remove rows with no count (e.g.orgUnit = LEVEL-7 COUNT = NA)
    df = filter( df , !is.na( COUNT ) )
    
-   if (  period %in% 'Month' & !weekly ){
+   if (  period %in% 'Month'  ){
       if ( ! "data.table" %in% class( df ) ) df = data.table::as.data.table(df)
       df_pre_ts = df[ , ':=' ( Month = Month_Year( period ) ,
                        COUNT = as.integer( COUNT ) ,
@@ -128,14 +127,14 @@ df_ts = function( df.pre.ts , period = "Month" ,
    # 
   # .period = rlang::enquo( period )
    
-  if ( period == "Week") .period = "Week"
-  if ( period == "Month") .period = "Month"
+  if ( period %in% c( "Week", "Weekly") ) .period = "Week"
+  if ( period %in% c( "Month", "Monthly") ) .period = "Month"
   
   .period = rlang::enquo( period )
   
   cat( '\n - .period is' , period )
   
-  ts = df.pre.ts %>%  
+  ts = df.pre.ts %>%  distinct() %>%
     as_tsibble( key = c(orgUnit, data.id ) , index = !! .period ) 
 
     # set NA to missing 
