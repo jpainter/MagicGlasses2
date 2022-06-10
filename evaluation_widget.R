@@ -597,6 +597,12 @@ evaluation_widget_server <- function( id ,
                    )
       )
       
+      # Dickey-Fuller test for stationary series
+      # Null hypothese is non-stationary.  
+      # Evidence that series is stationary when p-v < .05
+      # dickeyFuller = tseries::adf.test( trendData()$total )
+      # print( dickeyFuller )
+      
       # Filter data to period just before evaluation start
       print( input$evaluation_month )
       eval_month = input$evaluation_month
@@ -825,15 +831,15 @@ evaluation_widget_server <- function( id ,
       
       # Reconcile
       if ( input$agg_method %in% "None" ){ 
-        if ( inpt$agg_method %in% 'Bottom up' ){
+        if ( input$agg_method %in% 'Bottom up' ){
             fcast = fcast %>%
               reconcile( bu = bottom_up(base) ) 
         } 
-        if ( inpt$agg_method %in% 'MINT(ols)' ){
+        if ( input$agg_method %in% 'MINT(ols)' ){
           fcast = fcast %>%
               reconcile( ols = min_trace(base, method = "ols") ) 
         } 
-        if ( inpt$agg_method %in% 'MINT(cov)' ){
+        if ( input$agg_method %in% 'MINT(cov)' ){
           fcast = fcast %>%
               reconcile( mint = min_trace(base, method = "mint_cov") ) 
         } 
