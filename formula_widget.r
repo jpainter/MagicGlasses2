@@ -3,12 +3,14 @@ formula_widget_ui <- function( id ) {
   # Create a namespace function using the provided id
   ns <- NS(id)
 
-  fillCol( height = 600, flex = c(NA ) ,
+  # fillCol( height = 600, flex = c(NA ) ,
            
   tagList(
     
     add_busy_spinner(spin = "fading-circle", 
                    position = "top-right") ,
+    
+    fluidPage(
 
 
     tabsetPanel(type = "tabs",
@@ -22,12 +24,16 @@ formula_widget_ui <- function( id ) {
                         #                              "Remove Selected Elements" , style='margin-top:25px' 
                         #                          ) 
                         #  ) ,
-                        column( 5 , 
+                        column( 3 , 
                          downloadButton( ns( 'saveFormula' ), 'Save Formula') 
                         )
                         ) ,
  
-                           DTOutput( ns('forumlaDictionaryTable') ) 
+                           # DTOutput( ns('forumlaDictionaryTable') ) 
+                      
+                      div(DT::dataTableOutput( ns('forumlaDictionaryTable') ), 
+                          style = "font-size: 75%; width: 100%"
+                      )
                          ) ,
                 
                 tabPanel("All Elements", 
@@ -37,15 +43,21 @@ formula_widget_ui <- function( id ) {
                          
                          # wellPanel(
                            h5("selected elements:") ,
+                         
                            verbatimTextOutput( ns("selected") ),
                            
-                           DTOutput( ns('dataElementDictionaryTable') ) 
+                           # DTOutput( ns('dataElementDictionaryTable') ) 
+                         
+                           div(DT::dataTableOutput(  ns('dataElementDictionaryTable') ), 
+                               style = "font-size: 75%; width: 100%"
+                               )
+                         
                          # )
                 ) 
 
 
                 ) 
-    )
+    ) 
     
     
   )  # end fillColl
@@ -80,21 +92,29 @@ formula_widget_server <- function( id ,
     DT::renderDT( DT::datatable(
    
       dataElementDictionary()   ,
+      
       selection = 'multiple' ,
       rownames = FALSE, 
       filter = 'top' ,
       # options = DToptions_no_buttons()
       options = list(
         # bPaginate = FALSE, 
-        scrollY = "40vh"  ,
-        searching = TRUE, 
-        info = FALSE,
-        lengthMenu = list( c( -1, 1, 5, 10, 25, 100 ), 
-                           list( 'All' , '1', '5' , '10', '25', '100') ) ,
-        server = TRUE ),
-      fillContainer = FALSE
-    )
-    )
+        autoWidth = TRUE ,
+        scrollY = "60vh"  ,
+        scrollX = TRUE ,
+        scrollCollapse = TRUE ,
+        paging = TRUE ,
+        searching = TRUE , 
+        info = TRUE ,
+        lengthMenu = list( c(  10, 25, 100, -1 ) , 
+                           list( '10', '25', '100', 'All' ) ) ,
+        pageLength = 10 ,
+        server = TRUE ,
+        dom = 'tirp' ) ,
+      fillContainer = TRUE
+    ))
+  
+    
   
   selected_elements = reactive({
     # req( input$dataElementDictionaryTable_rows_selected  )
@@ -231,13 +251,17 @@ formula_widget_server <- function( id ,
       rownames = FALSE, 
       # filter = 'top' ,
       options = list(
-        # bPaginate = FALSE, 
-        scrollY = "50vh"  ,
+        autoWidth = TRUE ,
+        scrollY = "60vh"  ,
+        scrollX = TRUE ,
+        scrollCollapse = TRUE ,
+        paging = FALSE ,
+        searching = TRUE , 
         info = TRUE ,
-        lengthMenu = list( c( -1, 1, 5, 10, 25, 100 ), 
-                           list( 'All' , '1', '5' , '10', '25', '100') ) ,
-        server = TRUE ),
-      fillContainer = TRUE)
+        server = TRUE ,
+        dom = 'tir'),
+      fillContainer = TRUE
+)
       # options = DToptions_no_buttons()
     )
   

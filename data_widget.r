@@ -39,16 +39,19 @@ tagList(
         # textInput( ns("file.keywords"), "key words for searching data files" ,
         #            # value = '_formulaData|Seasonal|dts|rds' 
         #            value = 'Seasonal|dts|rds' ) ,
-        #   
+        #
+       div(
         selectInput( ns("dataset") , 
-                     label = "Data previously downloaded from DHIS2:" , 
+                     label = div( "Data previously downloaded from DHIS2:" ,
+                                  style = "font-size: 150%"  ) ,
               width = '95%',
               choices = NULL , 
               selected = FALSE,
               multiple = FALSE ,
               selectize = FALSE, 
-              size = 4  ##needed for `selected = FALSE` to work ) 
+              size = 8  ##needed for `selected = FALSE` to work ) 
              ) ,
+        style = "font-size: 66%; width: 100%" ) ,
       
       actionButton( ns("refresh"), "Refresh")
 

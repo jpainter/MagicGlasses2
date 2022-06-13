@@ -105,7 +105,7 @@ data_request_widget_server <- function( id ,
               oulvls = c( 'All-levels' , oulvls )
               updateSelectInput( session, 'level' ,
                                choices = oulvls,
-                               selected = 1 )
+                               selected = 'All-levels'  )
             }
           } )
       
