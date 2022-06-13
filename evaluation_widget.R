@@ -94,8 +94,11 @@ evaluation_widget_ui = function ( id ){
     inputPanel(
       
       selectInput( ns( "model" ), label = "Time-series model:" , 
-              choices = c( 'TSLM',  'TSLM (trend)' , 'TSLM (trend+season)' , 
-                           'ETS' , 'ARIMA', 'BSTS' , 
+              choices = c( 
+                          # 'TSLM',
+                           'TSLM (trend)' , 'TSLM (trend+season)' , 
+                           'ETS' , 'ARIMA', 
+                           # 'BSTS' , 
                           'Prophet'
                           
                           # , 'TSLM (trend)'
