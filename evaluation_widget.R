@@ -112,6 +112,9 @@ evaluation_widget_ui = function ( id ){
       textInput( ns( 'covariates' ), 'Model covariates' ,
           value =  NULL ) ,
       
+      checkboxInput( ns( "transform" ) , label ='Transform: box_cox(lambda = .5  )',
+                   value = FALSE  ) ,
+      
     checkboxInput( ns( "smooth" ) , label ='Show smoothed trend line (loess)',
                    value = FALSE  ) ,
     
@@ -551,8 +554,11 @@ evaluation_widget_server <- function( id ,
       if (input$model %in% 'ARIMA' ){
         cat("\n - input$model = ARIMA")
         
-        formula.string = paste( 'fabletools::box_cox( total , lambda = .5  ) ~ ',
-                                ' pdq() ' ) 
+        # formula.string = paste( 'fabletools::box_cox( total , lambda = .5  ) ~ ',
+        #                         ' pdq() ' ) 
+        
+        formula.string = ' total ~  pdq() '
+        if ( input$transform ) formula.string = 'fabletools::box_cox( total , lambda = .5  ) ~  pdq() '
         
         if ( period() %in% "Month" ) formula.string = paste0( formula.string ,
                                                            '+ PDQ( period = "1 year" )'   )
@@ -563,27 +569,33 @@ evaluation_widget_server <- function( id ,
          if ( nchar( input$covariates ) > 0 ) formula.string = 
              paste( formula.string , '+ xreg(' , input$covariates , ' ) ' )
          
+         cat( '\n - ARIMA formula string:', formula.string )
          f = as.formula( formula.string )
       }
       
       if (input$model %in% 'BSTS' ){
         cat("\n - input$model = BSTS")
         
-         f = as.formula( paste( 'total ~ season("year")' 
-                           )
-         )
+         f = as.formula( paste( 'total ~ season("year")' ) )
+                         
+        if ( input$transform ) formula.string = 'fabletools::box_cox( total , lambda = .5  ) ~ season("year")' 
+        
       }
 
                          
-       if ( any(input$model %in% c( 'TSLM', 'TSLM (trend+season)' ,'TSLM (trend)',
+      if ( any(input$model %in% c( 'TSLM', 'TSLM (trend+season)' ,'TSLM (trend)',
                                     'ETS',  'Prophet' ) ) ){
-        cat("\n - input$model not ARIMA' )")
+        cat("\n - input$model not ARIMA or BSTS' )")
          
         f = as.formula(  input$model.formula )
+        
+        formula.string = paste( 'fabletools::box_cox( total , lambda = .5  )' ) 
+        
+        # f = as.formula(  formula.string )
     
         }
     
-      cat( '\n - end model_formula:', input$model.formula  )
+      cat( '\n - end model_formula:', formula.string )
       return( f )
       
     })
@@ -624,12 +636,18 @@ evaluation_widget_server <- function( id ,
       
       if (input$model %in% 'TSLM (trend)' ){
         fit = fit.data %>% model( l = TSLM( total ~ trend()  ) )
+        
+        if ( input$transform ) fit = fit.data %>% model( l = TSLM( fabletools::box_cox( total , lambda = .5  )  ~ trend()  ) )
+        
         print( 'end tsModel():' )
         return( fit )
       } 
-      
+
       if (input$model %in% 'TSLM (trend+season)' ){
         fit = fit.data %>% model( l = TSLM( total ~ trend() + season() ) )
+        
+        if ( input$transform ) fit = fit.data %>% model( l = TSLM( fabletools::box_cox( total , lambda = .5  )  ~ trend() + season() ) )
+        
         print( 'end tsModel():' )
         return( fit )
       } 
@@ -659,12 +677,25 @@ evaluation_widget_server <- function( id ,
             bsts = BSTS( total ~  ar() + seasonal("1 year"))
             )
         
+        if ( input$transform ) fit = fit.data %>% model( bsts = BSTS( fabletools::box_cox( total , lambda = .5  )  ~ ar() + seasonal("1 year") ) )
+        
+        
         print( 'end tsModel():' )
         return( fit )
       } 
       
       if (input$model %in% 'ETS' ){
-        fit = fit.data %>% model( a = ETS( total )  ) 
+        
+        # if ( input$transform ){
+        #   fit = fit.data %>% model( a = ETS( fabletools::box_cox( total , lambda = .5  ) )  ) 
+        # } else {
+          fit = fit.data %>% model( a = ETS( total )  ) 
+          
+          if ( input$transform ) fit = fit.data %>% model( a = ETS( fabletools::box_cox( total , lambda = .5  )  ) )
+        
+          
+        # }
+        
         
         print('ETS model') ; #print( fit )
         
@@ -693,6 +724,21 @@ evaluation_widget_server <- function( id ,
             )
         
  
+        if ( input$transform ) fit =  fit.data %>% model( 
+                prophet = prophet( fabletools::box_cox( total , lambda = .5  )  ~
+    
+                                        growth( type = 'linear',
+                                                changepoint_range = 1 ,
+                                                changepoint_prior_scale = 1 ,
+                                                # capacity = 1e5 ,
+                                                # floor = 0 
+                                                ) +
+                                        season(period = 12, 
+                                               order = 4 ,
+                                               type='multiplicative'),
+                                   seed = TRUE )
+            )
+                    
         print( 'end tsModel():' )
         return( fit )
       } 
@@ -722,21 +768,28 @@ evaluation_widget_server <- function( id ,
       # saveRDS( trendData() , 'trendData.rds' )
       saveRDS( fit.data , 'fit.data.rds' )
       
+
       if (input$model %in% 'TSLM' ){
         fit = fit.data %>% model( l = TSLM( model_formula() ) ) 
-        cat( '\n - end tsPreModel():' )
+        print( 'end tsPreModel() TSLM:' )
         return( fit )
         } 
       
       if (input$model %in% 'TSLM (trend)' ){
         fit = fit.data %>% model( l = TSLM( total ~ trend()  ) )
-        cat( 'end tsPreModel():' )
+        
+        if ( input$transform ) fit = fit.data %>% model( l = TSLM( fabletools::box_cox( total , lambda = .5  )  ~ trend()  ) )
+        
+        print( 'end tsPreModel() TSLM(trend):' )
         return( fit )
       } 
-      
+
       if (input$model %in% 'TSLM (trend+season)' ){
         fit = fit.data %>% model( l = TSLM( total ~ trend() + season() ) )
-        cat( '\n - end tsPreModel():' )
+        
+        if ( input$transform ) fit = fit.data %>% model( l = TSLM( fabletools::box_cox( total , lambda = .5  )  ~ trend() + season() ) )
+        
+        print( 'end tsPreModel() TSLM (trend+season):' )
         return( fit )
       } 
       
@@ -744,26 +797,47 @@ evaluation_widget_server <- function( id ,
         fit = fit.data %>% model( 
           arima = ARIMA( model_formula()  )
           )    
+      # if ( input$reconcile ) fit = fit %>% 
+      #       reconcile( 
+      #         mint = min_trace(a, method = "mint_shrink") 
+      #         )
+        
         cat( '\n - end tsPreModel(): arima fit' )
+        # glimpse( fit )
+        # testing model fit for forecasts
+        
+        # if ( input$covariates %in% c('ipti', 'doses') ) saveRDS( fit , 'arima.rds' )
+        
         return( fit )
       } 
       
       if (input$model %in% 'BSTS' ){
-        fit = fit.data %>% model( b = BSTS( model_formula() ) )
-        cat( '\n - end tsPreModel():' )
+        fit = fit.data %>% 
+          model( 
+            # b = BSTS( model_formula() ) 
+            bsts = BSTS( total ~  ar() + seasonal("1 year"))
+            )
+        
+        if ( input$transform ) fit = fit.data %>% model( bsts = BSTS( fabletools::box_cox( total , lambda = .5  )  ~ ar() + seasonal("1 year") ) )
+        
+        
+        print( 'end tsPreModel() BSTS:' )
         return( fit )
       } 
       
       if (input$model %in% 'ETS' ){
-        fit = fit.data %>% model( a = ETS( total )  ) 
         
-        cat('\n - ETS model') ; #print( fit )
+
+          fit = fit.data %>% model( a = ETS( total )  ) 
+          
+          if ( input$transform ) fit = fit.data %>% model( a = ETS( fabletools::box_cox( total , lambda = .5  )  ) )
+        
         
       # if ( input$reconcile ) fit = fit %>% 
       #       reconcile( 
       #         mint = min_trace(a, method = "mint_shrink") 
       #         )
-        cat( '\n - end tsPreModel():' )
+        print( 'end tsPreModel() ETS :' )
         return( fit )
       } 
       
@@ -777,16 +851,33 @@ evaluation_widget_server <- function( id ,
                                                 # capacity = 1e5 ,
                                                 # floor = 0 
                                                 ) +
-                                        season(period=12, 
+                                        season(period = 12, 
                                                order = 4 ,
                                                type='multiplicative'),
-                                   seed = TRUE  )
+                                   seed = TRUE )
             )
-       
-        cat( '\n - end tsPreModel():' )
+        
+ 
+        if ( input$transform ) fit =  fit.data %>% model( 
+                prophet = prophet( fabletools::box_cox( total , lambda = .5  )  ~
+    
+                                        growth( type = 'linear',
+                                                changepoint_range = 1 ,
+                                                changepoint_prior_scale = 1 ,
+                                                # capacity = 1e5 ,
+                                                # floor = 0 
+                                                ) +
+                                        season(period = 12, 
+                                               order = 4 ,
+                                               type='multiplicative'),
+                                   seed = TRUE )
+            )
+                    
+        print( 'end tsPreModel():' )
         return( fit )
       } 
-      
+       
+
     })
     
     tsForecast = reactive({ 
@@ -953,11 +1044,16 @@ evaluation_widget_server <- function( id ,
   
   data.hts = reactive({
     req( data.total() )
+    req( hts() )
   
     cat('\n* data.hts():' );   tic()
-    saveRDS( data.total(), 'data.total.hts.rds' )
+    
+    # Testing
+    # saveRDS( data.total(), 'data.total.hts.rds' )
     
     .d = data.total()
+    
+     # if ( input$transform ) .d = .d %>% mutate( .total = fabletools::box_cox( total , lambda = .5  ) )
     
     # testing exogenous vaiables
     # if ( input$covariates %in% c('ipti' , 'doses' ) ){
@@ -1006,6 +1102,7 @@ evaluation_widget_server <- function( id ,
             Week >=  yearweek( startingMonth() )   ,
             Week <= yearweek( endingMonth() )  )
         }
+        
   } 
     
       cat( "\n- input$agg_level:", input$agg_level )
@@ -1102,7 +1199,7 @@ evaluation_widget_server <- function( id ,
 })
     
 # Plot #### 
-    plotTrends = reactive({
+  plotTrends = reactive({
           
           req( trendData() )
           req( period() )
@@ -1318,7 +1415,7 @@ evaluation_widget_server <- function( id ,
           return( g )
         })
     
-    plotComponents = reactive({
+  plotComponents = reactive({
   
       req( tsModel() )
       req( input$evaluation_month )
@@ -1331,7 +1428,7 @@ evaluation_widget_server <- function( id ,
       return( g )
 })
     
-    plotOutput = reactive({
+  plotOutput = reactive({
         # req( input$components )
         cat('\n* plotTrendOutput')
         cat('\n - input$components:' , input$components)

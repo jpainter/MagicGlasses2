@@ -74,19 +74,29 @@ tagList(
                                 
                              
         
-                        tabPanel( "Outlier Summary",  
+                        tabPanel( "Outlier Table",  
                                   textOutput( ns("outlierSummaryText")) ,
                                   tableOutput( ns("outlier.summary.table") )  
                         ) ,
                         
+                        tabPanel( "Outlier Chart",  style = "height:60vh;" ,
+                                fluidPage( 
+                                  fluidRow( style = "height:50vh;",
+                                    # h5( 'Select orgUnit having error')  
+                                  # textOutput( ns("outlierSummaryText")) ,
+                                  plotlyOutput( ns("outlier.summary.chart") )
+                                  )
+                                )
+                        ) ,
+                        
                          tabPanel( "Mean Absolute Scaled Error",  
-                                    fluidRow( style = "height:60vh;",
+                                    fluidRow( style = "height:50vh;",
                                     plotOutput( ns("mase.summary") )
                                   )
                                   
                         ) ,
                        
-                        tabPanel( "Inspect",  style = "height:70vh;" ,
+                        tabPanel( "Inspect",  style = "height:60vh;" ,
                                 fluidPage( 
                                   fluidRow( style = "height:10vh;",
                                     # h5( 'Select orgUnit having error')     ,   
@@ -103,7 +113,7 @@ tagList(
                                     checkboxInput( ns('showAllData') , 'Show all data elements')
                                   ) ,
                                   
-                                  fluidRow( style = "height:50vh;",
+                                  fluidRow( style = "height:40vh;",
                                     plotlyOutput( ns("inspect") 
                                                 # , hover = ns("plot_hover") , 
                                                 # click = ns("plot_click") ) 
@@ -718,6 +728,44 @@ cleaning_widget_server <- function( id ,
                bootstrap.css = FALSE)
       out
     })
+    
+    outlier.summary = reactive({
+      req( outlier.dataset() )
+      
+      data1 = outlier.dataset()
+      
+      d = data1 %>% 
+        as_tibble() %>%
+        group_by( Month , seasonal3 ) %>%
+        summarise( original = sum( original , na.rm = T )  
+                 ) %>%
+        mutate( clean = seasonal3 %in% TRUE ) %>%
+        group_by( Month , clean ) %>%
+        summarise( original = sum( original , na.rm = T )  ) %>%
+        pivot_wider( names_from = clean , values_from = original ) %>%
+        mutate( Raw = `TRUE` + `FALSE` ) %>%
+        rename( Clean = `TRUE` ) %>%
+        select( - `FALSE`) %>%
+        pivot_longer( cols = c(Clean, Raw) )
+      
+        
+    })
+    
+    output$outlier.summary.chart <- renderPlotly({
+      req( outlier.dataset()) 
+      
+      d = outlier.summary()
+
+      cat('\n * outlier.summary.chart')
+        
+      g = d %>% 
+          ggplot( aes( x = Month , y = value , group = name , color = name )) +
+          geom_line() +
+          theme_minimal() 
+        
+        ggplotly( g )
+          
+    })
   
   # Inspect Outliers #####
     observeEvent( afterSeasonal() ,{
@@ -730,6 +778,8 @@ cleaning_widget_server <- function( id ,
       cat( '\n* outlier.dataset')
       req( outlierData$df_data )
       req( data1() )
+      req( input$startingMonth )
+      req( input$endingMonth )
 
       # if ( is.null( outlierData$df_data ) ){
       #   cat( '\n - is.null( outlierData$df_data )' )
@@ -737,6 +787,15 @@ cleaning_widget_server <- function( id ,
       # }
 
       d = outlierData$df_data
+      
+      # filter date
+      d = d %>% 
+        filter( 
+          Month >= yearmonth( input$startingMonth ) , 
+          Month <= yearmonth(input$endingMonth )
+          )
+      
+
 
       if ( 'mad10' %in% names(d) ) cat('\n - data has mad10' )
       if ( 'seasonal3' %in% names(d) ) cat('\n - data has seasonal3' )
@@ -786,6 +845,7 @@ cleaning_widget_server <- function( id ,
         d = d %>%  as_tibble() %>%
           filter( data %in% input$dataElement )
       }
+      
 
 
       cat( '\n - done')
@@ -956,7 +1016,8 @@ cleaning_widget_server <- function( id ,
         geom_point( aes( color = !! rlang::sym( input$Error ) 
                          # , shape = seasonal3 
                          )) +
-        labs( title = paste( unique( inspectOrgUnitData$orgUnitName ), collapse = ",") )
+        labs( title = paste( unique( inspectOrgUnitData$orgUnitName ), collapse = ",") +
+        theme_minimal()  )
     
     cat('\n -done' )
     return( g )
