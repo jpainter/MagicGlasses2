@@ -789,13 +789,16 @@ cleaning_widget_server <- function( id ,
       d = outlierData$df_data
       
       # filter date
-      d = d %>% 
-        filter( 
-          Month >= yearmonth( input$startingMonth ) , 
-          Month <= yearmonth(input$endingMonth )
-          )
+      # d = d %>% 
+      #   filter( 
+      #     Month >= yearmonth( input$startingMonth ) , 
+      #     Month <= yearmonth(input$endingMonth )
+      #     )
+      d. = as.data.table( d )
+      d = d.[ which( 
+        Month >= yearmonth( input$startingMonth ) & Month <= yearmonth(input$endingMonth ) ) ,] %>%
+        as_tibble
       
-
 
       if ( 'mad10' %in% names(d) ) cat('\n - data has mad10' )
       if ( 'seasonal3' %in% names(d) ) cat('\n - data has seasonal3' )
