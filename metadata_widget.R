@@ -600,7 +600,22 @@ metadata_widget_server <- function( id ,
     
     rownames = FALSE, 
     filter = 'top' ,
-    options = DToptions_no_buttons()
+    # options = DToptions_no_buttons()
+    options = list(
+        # bPaginate = FALSE, 
+        autoWidth = TRUE ,
+        scrollY = "60vh"  ,
+        scrollX = TRUE ,
+        scrollCollapse = TRUE ,
+        paging = TRUE ,
+        searching = TRUE , 
+        info = TRUE ,
+        lengthMenu = list( c(  10, 25, 100, -1 ) , 
+                           list( '10', '25', '100', 'All' ) ) ,
+        pageLength = 10 ,
+        server = TRUE ,
+        dom = 'tirp' ) ,
+      fillContainer = TRUE
   ))
   
   output$dataElementGroups = 
@@ -1279,7 +1294,7 @@ metadata_widget_server <- function( id ,
     #   filter( !is.na( level ) ) %>%
     #   arrange(level) %>% pull(levelName)
     
-    levels = ouLevels %>% pull( levelName )
+    # levels = ouLevels %>% pull( levelName )
     
     # reorder levels
     split_geofeatures = split_geofeatures[ levels ]
@@ -1535,7 +1550,7 @@ metadata_widget_server <- function( id ,
           mutate( href = paste0( href , '?fields=:all&paging=false' ) ) %>%
           arrange( Attribute )
           
-          # cat( '*metadata_widget found', nrow(resources),'resources' )
+          cat( '*metadata_widget found', nrow(resources),'resources' )
         
           return( resources )
         } else {}

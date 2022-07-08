@@ -522,7 +522,7 @@ reporting_widget_server <- function( id ,
     
     cat( '\n-' , 'end d():', nrow(data), 'rows' )
     # testing
-    saveRDS( data, 'reporting_widget_d.rds')
+    # saveRDS( data, 'reporting_widget_d.rds')
     
     return( data )
 })
@@ -1117,7 +1117,7 @@ reporting_widget_server <- function( id ,
     
     cat( '\n- end  plotData()')  ; # #print( names( data )) 
     # TESTING
-    saveRDS( data , "plotData.rds" )
+    # saveRDS( data , "plotData.rds" )
     
   return( data )
 })
@@ -1264,7 +1264,7 @@ reporting_widget_server <- function( id ,
     
   
     # test:
-    saveRDS( data.total, 'data.total.rds')
+    # saveRDS( data.total, 'data.total.rds')
     
     cat('\n- end data.total()')
     return( data.total )
@@ -1448,7 +1448,8 @@ reporting_widget_server <- function( id ,
     
     # Split data
     if ( !input$split %in% 'None' ){
-      g = g + guides(color=guide_legend(title= input$split ))
+      g = g + 
+        guides(color=guide_legend(title= input$split )) 
     }
   
     
@@ -1470,7 +1471,10 @@ reporting_widget_server <- function( id ,
             subtitle = str_wrap( data.text , 200 ) 
             , caption =  str_wrap( caption.text() , 200 )
             ) +
-      theme_minimal()  
+      theme_minimal( )  + 
+      theme( legend.position = "bottom" ) +
+      guides( color = guide_legend( ncol=1 ,
+                                    title="Dataset" ) )
       
     #print( ' end plotAgregateValue()' )
     cat('\n - done' )
@@ -1478,6 +1482,7 @@ reporting_widget_server <- function( id ,
   })
   
   output$plot_values <- renderPlot({  plotAgregateValue()  })
+  outputOptions( output, "plot_values", suspendWhenHidden = TRUE )
 
 # Return ####
   split = reactive({ input$split })

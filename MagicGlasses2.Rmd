@@ -64,6 +64,7 @@ library(RColorBrewer)
 library(plotly)
 library( cowplot )
 library( ggrepel )
+library( ragg )
 library(scales)
 library( miniUI )
 library( lemon ) # for reposition_legend() 
@@ -135,7 +136,7 @@ options(shiny.trace=FALSE)
 options(shiny.reactlog=FALSE)
 knitr::opts_chunk$set(echo = FALSE)
 
-add_busy_spinner(spin = "fading-circle", position = "bottom-right")
+# add_busy_spinner(spin = "fading-circle", position = "bottom-right")
 
 # Avoid naming conflicts for functions found in more than 1 package...
 conflict_prefer("filter", "dplyr")

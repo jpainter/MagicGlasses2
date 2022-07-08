@@ -252,14 +252,14 @@ formula_widget_server <- function( id ,
       # filter = 'top' ,
       options = list(
         autoWidth = TRUE ,
-        scrollY = "55vh"  ,
+        scrollY = "65vh"  ,
         scrollX = TRUE ,
-        scrollCollapse = TRUE ,
+        scrollCollapse = FALSE ,
         paging = FALSE ,
         searching = TRUE , 
         info = TRUE ,
         server = TRUE ,
-        dom = 'tir'),
+        dom = 'tirp'),
       fillContainer = TRUE
 )
       # options = DToptions_no_buttons()

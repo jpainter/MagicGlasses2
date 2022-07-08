@@ -59,8 +59,22 @@ This page is used to define the data for analysis (dataElements, categoryOptionC
 
 - ### Data dictionary (formulas)
 
-- Create and update formulas (data dictionary).  Before downloading any data, you must define which elements and categories will be included.  This data dictionary (formerly called formulas) will be stored in an excel file with the name 'formulas_*date*'
+- Create and update formulas (data dictionary).  Before downloading any data, you must define which elements and categories will be included.  This data dictionary (also called formulas) will be stored in an excel file with the name 'formulas_*date*'.  
 
+ -- The data page is divided into two columns.  
+ 
+ -- On the left side, select an existing formula file ("formula.file").  If none, just continue.  
+ 
+ -- Start by typing name of formula in the select box on left side ("Select Formula:"). If a starting with a file of formulas, this name will be added to the file (once it is saved--see below--not right away).  Be sure to hit enter after typing the name.
+ 
+ -- On the right side, there are two tabs, ‘formula elements’ and ‘data elements’. 
+ 
+ -- On the 'data elements' page, select elements from the data elements tab; they will turn blue and  get added to the formula elements.  Re-clicking on data element deselects it. Use the search fields at the top of each column to find the desired elements.  For example, when searching for monthly confirmed cases, you may want to put 'monthly' in the period column; 'confirmed' in the data element column; and 'malaria' in the data element group column.
+
+  -- Switch to the 'formula elements' tab to see results.  Note that for each data element there is a row for each category-combination (e.g. age disaggregations) 
+  
+  -- Save once formula selected -- there is a save button on top-middle of screen.  Save the file in the same folder you used on the setup page. Unfortunately the new formula will not show up in the app until you close and restart the app.( Still trying to figure that out…). Once you have a formula file you can add more formulas to it.  
+  
 - ### Request data
 
 - To update data, click on the file to load it, then request data.  When a data file is already loaded, the app will check the previous national level values in file against the ones on the server.  If the values are the same for a given period (e.g. Month), then the app skips to the next period. This prevents re-requesting data that is unchanged and may save a lot of time.  
