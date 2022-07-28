@@ -131,7 +131,7 @@ evaluation_widget_ui = function ( id ){
     checkboxInput( ns( 'components' ), label = 'Visualize trend' ,
                 value = FALSE ) ,
     
-    checkboxInput( ns( "forecast_ci" ) , label ='Confidence interval',
+    checkboxInput( ns( "forecast_ci" ) , label ='Prediction interval',
                    value = FALSE  ) ,
     
     checkboxInput( ns( "bootstrap" ) , label ='Bootstrap estimate',
@@ -531,7 +531,9 @@ evaluation_widget_server <- function( id ,
         return( e )
       })
       
-      ci_levels = reactive({
+      pi_levels = reactive({
+        # req( input$forecast_ci )
+        cat( '/n * pi_levels:' , input$forecast_ci )
         if ( ! input$forecast_ci ) return( NULL )
         return( 90 )
       })
@@ -606,8 +608,8 @@ evaluation_widget_server <- function( id ,
       req( input$evaluation_month )
       
       if ( !input$evaluation ) return( NULL )
-      print( 'tsModel():' )
-      print( paste('available vars:', 
+      cat( '\n - tsModel():' )
+      cat( '\n - ' , paste('available vars:', 
                    paste( names(trendData()), collapse = ',') 
                    )
       )
@@ -746,6 +748,7 @@ evaluation_widget_server <- function( id ,
     })
     
     tsPreModel = reactive({
+      cat( '/n* tsPreModel:' )
       req( trendData() )
       req( input$evaluation_month )
       req( model_formula() )
@@ -920,7 +923,7 @@ evaluation_widget_server <- function( id ,
       
       # Ensure result is tstiblle
       fcast = fcast %>%
-             as_tsibble( key = keyVars , index = indexVar  ) %>%
+             as_tsibble( key = all_of(keyVars) , index = indexVar  ) %>%
              fill_gaps( .full = TRUE  )
       
       # Reconcile
@@ -951,7 +954,7 @@ evaluation_widget_server <- function( id ,
       req( input$horizon )
       
       cat( '\n* tsPreForecast' )
-      if ( period() %in% 'Month' ) fcast = tsPreModel() %>% forecast( h = 12  )
+      if ( period() %in% 'Month' ) fcast = tsPreModel() %>% forecast( h = 12 , level = pi_levels() )
       if ( period() %in% 'Week' ) fcast = tsPreModel() %>% forecast( h = 25  )
       
       # preserve tsibble key and index,
@@ -979,7 +982,7 @@ evaluation_widget_server <- function( id ,
       
       # Ensure result is tsibble  
       fcast = fcast %>%
-             as_tsibble( key = keyVars , index = indexVar  ) %>%
+             as_tsibble( key = all_of(keyVars) , index = indexVar  ) %>%
              fill_gaps( .full = TRUE  )
         
       cat( '\n - tsPreForecast done.' )
@@ -1135,7 +1138,7 @@ evaluation_widget_server <- function( id ,
            mutate( 
              grouping_var = 'Total' ) %>%
              # ensure tsibble before using fill_gaps
-             as_tsibble( key = keyVars , index = indexVar  ) %>%
+             as_tsibble( key = all_of(keyVars) , index = indexVar  ) %>%
              fill_gaps( .full = TRUE  )
     
          
@@ -1190,7 +1193,7 @@ evaluation_widget_server <- function( id ,
       
       
       # ensure tsibble before using fill_gaps
-      .d = .d %>% as_tsibble( key = keyVars , index = indexVar  ) 
+      .d = .d %>% as_tsibble( key = all_of(keyVars) , index = indexVar  ) 
       
       cat( '\n- end trend data():'); # print( glimpse( .d ) ); # print(.d)
       saveRDS( .d , 'trendData.rds' )
@@ -1230,14 +1233,14 @@ evaluation_widget_server <- function( id ,
       ## Main plot ####
           g = .d %>%
             filter( !is.na( total ) ) %>%
-          # autoplot( total ) +
-          ggplot( aes( x = !! rlang::sym( .period ), y = total
-                       
-                     # , group =  !! rlang::sym( input$agg_level  )
-                     
-                     , color =  grouping_var
-                    ) )  +
-          geom_line() +
+          autoplot( total ) +
+          # ggplot( aes( x = !! rlang::sym( .period ), y = total
+          #              
+          #            # , group =  !! rlang::sym( input$agg_level  )
+          #            
+          #            , color =  grouping_var
+          #           ) )  +
+          # geom_line() +
           theme_minimal() 
           
           # Testing
@@ -1316,6 +1319,8 @@ evaluation_widget_server <- function( id ,
           
       ## Pre-Evaluation trend line #####
           if ( input$pre_evaluation ){
+          cat( '\n- pre-evaluation line.  ' )
+          cat( '\n- pi_levels:' , pi_levels() )
 
           cat( '\n - pre-evaluation date'  )
           if ( .period %in% 'Month' ) pre_eval_date =   yearmonth( input$evaluation_month  ) -12
@@ -1323,16 +1328,17 @@ evaluation_widget_server <- function( id ,
           cat( '\n - pre_eval_date:' , pre_eval_date )
    
           g = g + 
-            # autolayer( tsPreForecast()
-            #            , level = ci_levels()
-            #            , color = 'black' 
-            #            , linetype = 'dotted'  , size = 1
-            #            ,  alpha = .5 ) +
-            geom_line( data = tsPreForecast(), aes(  y = .mean )
-              # ,   color = 'light blue'
-              , alpha = .75 
-              , linetype = 'dotted'  , size = 2
-            ) +
+             forecast::autolayer( tsPreForecast() 
+                       # , level = c(80,90) # ci_levels()
+                       , PI = TRUE 
+                       , color = 'black'
+                       , linetype = 'dotted'  , size = 2
+                       ,  alpha = .75 ) +
+            # geom_line( data = tsPreForecast(), aes(  y = .mean )
+            #   # ,   color = 'light blue'
+            #   , alpha = .75 
+            #   , linetype = 'dotted'  , size = 2
+            # ) +
             # geom_vline( xintercept = as.Date( pre_eval_date ) ,
             #             color = 'brown' ,
             #             alpha = .25 ) +
@@ -1355,19 +1361,20 @@ evaluation_widget_server <- function( id ,
           
       ## Evaluation Trend Line ####
           if ( input$evaluation ){
-            cat( '\n- evaluation line ' )
+            cat( '\n- evaluation line.  ')
+            cat( '\n- evaluation line.  ' , 'pi_levels:' , pi_levels() )
             
            g = g + 
-            # autolayer( tsForecast()
-            #            , level = ci_levels()
-            #            , color = 'black'
-            #            , linetype = 'dashed', size = 1
-            #            ,  alpha = .5 ) +
-            geom_line( data = tsForecast() , aes( y = .mean )
-              # ,   color = 'light blue'
-              , alpha = .75 
-              , linetype = 'dotted'  , size = 2
-            ) +         
+            forecast::autolayer( tsForecast()
+                       , level = pi_levels()
+                       , color = 'black'
+                       , linetype = 'dashed', size = 1
+                       ,  alpha = .5 ) +
+            # geom_line( data = tsForecast() , aes( y = .mean )
+            #   # ,   color = 'light blue'
+            #   , alpha = .75 
+            #   , linetype = 'dotted'  , size = 2
+            # ) +         
              
             geom_vline( xintercept = as.Date( eval_date ) ,
                         color = 'blue', alpha = 1 ) 
