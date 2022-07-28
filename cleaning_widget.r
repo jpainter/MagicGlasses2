@@ -760,6 +760,7 @@ cleaning_widget_server <- function( id ,
         
       g = d %>% 
           ggplot( aes( x = Month , y = value , group = name , color = name )) +
+          scale_color_brewer() + 
           geom_line() +
           theme_minimal() 
         
@@ -780,6 +781,7 @@ cleaning_widget_server <- function( id ,
       req( data1() )
       req( input$startingMonth )
       req( input$endingMonth )
+      req( period() )
 
       # if ( is.null( outlierData$df_data ) ){
       #   cat( '\n - is.null( outlierData$df_data )' )
@@ -795,9 +797,22 @@ cleaning_widget_server <- function( id ,
       #     Month <= yearmonth(input$endingMonth )
       #     )
       d. = as.data.table( d )
-      d = d.[ which( 
-        Month >= yearmonth( input$startingMonth ) & Month <= yearmonth(input$endingMonth ) ) ,] %>%
-        as_tibble
+   
+      if ( period() %in% 'Month' ){
+        
+          d = d.[ which( 
+            Month >= yearmonth( input$startingMonth ) & Month <= yearmonth(input$endingMonth ) ) ,] %>%
+            as_tibble
+   
+      }
+      
+      if ( period() %in% 'Week' ){
+        
+          d = d.[ which( 
+            Week >= yearweek( input$startingMonth ) & Week <= yearweek(input$endingMonth ) ) ,] %>%
+            as_tibble
+   
+      }
       
 
       if ( 'mad10' %in% names(d) ) cat('\n - data has mad10' )
