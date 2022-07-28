@@ -14,11 +14,11 @@
 
 # Functions ####
 # Login ####
-loginDHIS2<-function( baseurl, username, password) {
+loginDHIS2<-function( baseurl, username, password, timeout = 30 ) {
   
   url<-paste0( baseurl, "api/me" )
   
-  r <-  GET( url, authenticate( username, password) ) 
+  r <-  GET( url, authenticate( username, password) , config = httr::config(connecttimeout = timeout ) ) 
   
   assert_that( r$status_code == 200L ) 
 }
@@ -29,18 +29,19 @@ loginDHIS2<-function( baseurl, username, password) {
 # library(futile.logger)
 # library(utils)
 retry <- function( expr, isError=function(x) "try-error" %in% class(x), 
-                  maxErrors = 3, sleep = 1) {
-  attempts = 0
+                  maxErrors = 5, sleep = 1) {
+  attempts = 1
+  
+  # cat( 'attempt: ' ,   attempts )
+  
   retval = try( eval(expr) )
   
-  while ( isError(retval) ) {
+  while ( isError( retval ) ) {
     
-    print( eval(expr)  )
+    cat( '\n - request error, attempt:' ,   attempts )
     
-    attempts = attempts + 1
-    
-    if (attempts >= maxErrors) {
-      msg = sprintf("retry: too many retries [[%s]]", capture.output(str(retval)))
+    if (attempts > maxErrors) {
+      msg = sprintf( "retry: too many retries [[%s]]", capture.output(str(retval)))
       flog.fatal(msg)
       stop(msg)
       
@@ -53,6 +54,8 @@ retry <- function( expr, isError=function(x) "try-error" %in% class(x),
     
     if (sleep > 0) Sys.sleep(sleep)
     
+    attempts = attempts + 1
+
     retval = try( eval(expr) )
   }
   
@@ -72,11 +75,11 @@ get = function( source_url , .print = TRUE , json = TRUE , ...){
   httr::set_config(httr::config(ssl_verifypeer=0L))
   
   if ( .print ){
-    cat( paste( "\n downloading from" , source_url , "...") ) 
+    cat( paste( "\n - downloading " ,  "...") ) 
     # print( Sys.time() )
   } 
   
-  from_url =  GET( source_url ) 
+  from_url =  GET( source_url , timeout = 30 ) 
   
   # print( 'GET completed')
   # print( from_url )
@@ -86,12 +89,10 @@ get = function( source_url , .print = TRUE , json = TRUE , ...){
   # print( 'get_content')
   
   if ( from_url$status_code != 200 ){
-    # showModal( modalDialog( get_content[[1]] ) )
-    # return( get_content[[1]] )
-    cat( paste( '\nStatus code' , from_url$status_code ) )
-    cat( paste( '\nget_content class' , class( get_content ) ) )
-    cat( get_content )
-    return( get_content )
+
+    cat('\n - Status code' , from_url$status_code  )
+
+    return( NULL )
   } 
   
   # test if return valid content
@@ -430,7 +431,7 @@ fetch_get <- function( baseurl. , de. , periods. , orgUnits. ,
                        aggregationType. ,
                        get.print = FALSE, username. = NULL , password. = NULL ){
   
-    cat( '\n* fetch_get:' ) 
+    # cat( '\n* fetch_get:' ) 
     url = api_url( baseurl. , de. , periods. , orgUnits. , aggregationType. )
     
     
