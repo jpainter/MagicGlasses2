@@ -89,6 +89,16 @@ tagList(
                                 )
                         ) ,
                         
+                        tabPanel( "Monthly Summary",  style = "height:60vh;" ,
+                                fluidPage( 
+                                  fluidRow( style = "height:50vh;",
+                                    # h5( 'Select orgUnit having error')  
+                                  # textOutput( ns("outlierSummaryText")) ,
+                                  plotOutput( ns("monthly_summary_chart") )
+                                  )
+                                )
+                        ) ,
+                        
                          tabPanel( "Mean Absolute Scaled Error",  
                                     fluidRow( style = "height:50vh;",
                                     plotOutput( ns("mase.summary") )
@@ -767,6 +777,21 @@ cleaning_widget_server <- function( id ,
         ggplotly( g )
           
     })
+    
+    output$monthly_summary_chart <- renderPlot({
+      req( outlier.dataset() ) 
+      
+      df.ts = data1() 
+
+      cat('\n * outlier.summary.chart')
+        
+      d =  monthly.outlier.summary( df.ts )
+      g  = outlier.summary.chart( d )
+      g 
+      # ggplotly( g )
+          
+    })
+    
   
   # Inspect Outliers #####
     observeEvent( afterSeasonal() ,{

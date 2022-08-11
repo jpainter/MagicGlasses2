@@ -171,6 +171,7 @@ source( 'api_data.r' )
 source( 'dqa.r' )
 source( 'Cleaning.R' )
 source( 'prepareDataset.R' )
+source( 'cleaning_functions.R' )
 
 # source( 'API.r' )
 
