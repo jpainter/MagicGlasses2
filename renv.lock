@@ -799,6 +799,27 @@
         "tsibble"
       ]
     },
+    "fable.bsts": {
+      "Package": "fable.bsts",
+      "Version": "0.1.0",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteRepo": "fable.bsts",
+      "RemoteUsername": "davidtedfordholt",
+      "RemoteRef": "HEAD",
+      "RemoteSha": "4488a125849b0d7fecf539b806153184bd262bc4",
+      "Hash": "18957357c853f0a2db5362679267c1ff",
+      "Requirements": [
+        "Rcpp",
+        "bsts",
+        "dplyr",
+        "fabletools",
+        "lubridate",
+        "rlang",
+        "tsibble"
+      ]
+    },
     "fable.prophet": {
       "Package": "fable.prophet",
       "Version": "0.1.0",
@@ -1856,10 +1877,10 @@
     },
     "nlme": {
       "Package": "nlme",
-      "Version": "3.1-157",
+      "Version": "3.1-158",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "dbca60742be0c9eddc5205e5c7ca1f44",
+      "Hash": "9469aeaeddf4f48a7ac70877d0b7ba36",
       "Requirements": [
         "lattice"
       ]
@@ -2196,6 +2217,17 @@
         "curl",
         "xts",
         "zoo"
+      ]
+    },
+    "ragg": {
+      "Package": "ragg",
+      "Version": "1.2.2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "14932bb6f2739c771ca4ceaba6b4248e",
+      "Requirements": [
+        "systemfonts",
+        "textshaping"
       ]
     },
     "rapidjsonr": {
@@ -2741,10 +2773,10 @@
     },
     "sp": {
       "Package": "sp",
-      "Version": "1.4-7",
+      "Version": "1.5-0",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "c5dad1d43440f0c426a6d29b30b333fa",
+      "Hash": "2a118bdd2db0a301711e0a9e3e3206d5",
       "Requirements": [
         "lattice"
       ]
@@ -2847,6 +2879,17 @@
       "Hash": "a713f0d9f9a2b68af112a991adbfe5d5",
       "Requirements": [
         "Rcpp"
+      ]
+    },
+    "textshaping": {
+      "Package": "textshaping",
+      "Version": "0.3.6",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "1ab6223d3670fac7143202cb6a2d43d5",
+      "Requirements": [
+        "cpp11",
+        "systemfonts"
       ]
     },
     "tibble": {

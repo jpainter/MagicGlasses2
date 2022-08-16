@@ -319,12 +319,13 @@ data_widget_server <- function( id ,
             
           
           d = readRDS( file ) 
-          
-          removeModal()
             
           cat('\n - dataset has' , nrow(d),  'rows')
-            
-            return( d )
+        
+          removeModal()
+          
+          return( d )
+          
           } else {
             cat('\n - dataset.file() not selected or not found')
           }

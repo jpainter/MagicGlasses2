@@ -829,6 +829,7 @@ cleaning_widget_server <- function( id ,
             Month >= yearmonth( input$startingMonth ) & Month <= yearmonth(input$endingMonth ) ) ,] %>%
             as_tibble
    
+          cat('\n - data month' )
       }
       
       if ( period() %in% 'Week' ){
@@ -837,6 +838,7 @@ cleaning_widget_server <- function( id ,
             Week >= yearweek( input$startingMonth ) & Week <= yearweek(input$endingMonth ) ) ,] %>%
             as_tibble
    
+          cat('\n - data week' )
       }
       
 
@@ -844,11 +846,17 @@ cleaning_widget_server <- function( id ,
       if ( 'seasonal3' %in% names(d) ) cat('\n - data has seasonal3' )
 
       if ( 'effectiveLeaf' %in% names( d ) && input$selectOrgType %in% 'Facilities only'){
+        
         cat('\n - data has effectiveLeaf; facilities only' )
-        d = d %>% filter( effectiveLeaf )
+        
+        d = setDT( d )[ effectiveLeaf == TRUE , ]
+        # d = d %>% filter( effectiveLeaf )
+        
+        
       } else if ( input$selectOrgType %in% 'Admin only' ){
         cat('\n - Admin only' )
-        d = d %>% filter( !effectiveLeaf )
+        d = setDT( d )[ effectiveLeaf != TRUE , ]
+        # d = d %>% filter( effectiveLeaf )
       }
 
       # Filter by region/level
@@ -885,8 +893,8 @@ cleaning_widget_server <- function( id ,
       if ( input$dataElement %in% 'All'){
         d = d %>% as_tibble()
       } else {
-        d = d %>%  as_tibble() %>%
-          filter( data %in% input$dataElement )
+        d = setDT( d )[ data %in% input$dataElement , ] %>%  as_tibble()
+        # %>%  filter( data %in% input$dataElement )
       }
       
 

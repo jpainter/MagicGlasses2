@@ -1232,15 +1232,15 @@ evaluation_widget_server <- function( id ,
           
       ## Main plot ####
           g = .d %>%
-            filter( !is.na( total ) ) %>%
-          autoplot( total ) +
-          # ggplot( aes( x = !! rlang::sym( .period ), y = total
-          #              
-          #            # , group =  !! rlang::sym( input$agg_level  )
-          #            
-          #            , color =  grouping_var
-          #           ) )  +
-          # geom_line() +
+          filter( !is.na( total ) ) %>%
+          # autoplot( total ) +
+          ggplot( aes( x = !! rlang::sym( .period ), y = total
+
+                     , group =  grouping_var # as.character( !! rlang::sym( input$agg_level  ) )
+
+                     , color =  grouping_var
+                    ) )  +
+          geom_line() +
           theme_minimal() 
           
           # Testing
@@ -1259,7 +1259,8 @@ evaluation_widget_server <- function( id ,
                            !! rlang::sym( .period ) == max( .d %>% pull( .period ) , 
                                                             na.rm = T )
                            ) ,
-                       aes( label = grouping_var , group = grouping_var )
+                       aes( label = grouping_var , 
+                            group = grouping_var )
                        )
           }
           
@@ -1278,19 +1279,20 @@ evaluation_widget_server <- function( id ,
               cat( '\n-  facet admin - split' )
               
                 g = g +
-                    facet_grid( vars(!! rlang::sym( input$agg_level )) ~ grouping_var   ,
+                    facet_grid( rows = vars( as.character( !! rlang::sym( input$agg_level ) ) ) ,
+                                cols = grouping_var   ,
                                    scales = "free_y" )
           } else {
             
             g = g +
-            facet_wrap( vars(!! rlang::sym( input$agg_level ) ) ,
+            facet_wrap( vars( as.character( !! rlang::sym( input$agg_level ) ) ) ,
                            scales = "free_y" )
           }} else { 
             
            if ( input$facet_split ){
             cat( '\n- facet_split' )
             g = g +
-            facet_wrap( ~grouping_var   ,
+            facet_wrap( ~ grouping_var   ,
                            scales = "free_y" )
           }
             }

@@ -376,8 +376,11 @@ reporting_widget_server <- function( id ,
       return()
     }
     
-    x = data1() %>% filter( !is.na( dataSet ) ) %>%
-              pull( dataSet ) %>% unique
+    x = setDT( data1() )[ !is.na( dataSet ) , dataSet , ] %>%
+              unique
+    
+    # x = data1() %>% filter( !is.na( dataSet ) ) %>%
+    #   pull( dataSet ) %>% unique
     
     cat('\n - there are' , length( x ) , 'dataSets')
     return( x )
@@ -448,35 +451,51 @@ reporting_widget_server <- function( id ,
       
       if ( !is_empty( input$level2 ) ){
         cat(  '\n - filtering data by' , levelNames()[2] , "=" , input$level2 ) 
-        data = data %>% 
-          filter( !! rlang::sym( levelNames()[2])  %in%   input$level2  )
+        
+        # data = data %>% 
+        #   filter( !! rlang::sym( levelNames()[2])  %in%   input$level2  )
+        
+        cat(  '\n - data was' , class(data) ) 
+        
+        data = setDT( data )[ base::get( levelNames()[2] )  %in%   input$level2 ,, ]
+        
+        cat(  '\n - and now is' , class(data) ) 
         
         #print( paste( 'data filtered by level2 has' , nrow( data ), 'rows' ))
         # glimpse( data )
       }
   
       if ( !is_empty( input$level3 ) ){
-      cat(  '\n - filtering data by' , levelNames()[3] , "=" , input$level2 ) 
-      data = data %>% 
-        filter( !! rlang::sym( levelNames()[3])  %in%   input$level3  )
+      cat(  '\n - filtering data by' , levelNames()[3] , "=" , input$level3 ) 
+        
+      data = setDT( data )[ base::get( levelNames()[3] )  %in%   input$level3 ,, ]
+      
+      # data = data %>% 
+      #   filter( !! rlang::sym( levelNames()[3])  %in%   input$level3  )
       
       #print( paste( 'data filtered by level3 has' , nrow( data ), 'rows' ))
       # glimpse( data )
       }
   
       if ( !is_empty( input$level4 ) ){
-          cat(  '\n - filtering data by' , levelNames()[4] , "=" , input$level2 ) 
-          data = data %>% 
-            filter( !! rlang::sym( levelNames()[4])  %in%   input$level4  )
+          cat(  '\n - filtering data by' , levelNames()[4] , "=" , input$level4 )
+        
+          data = setDT( data )[ base::get( levelNames()[4] )  %in%   input$level4 ,, ]
+          
+          # data = data %>% 
+          #   filter( !! rlang::sym( levelNames()[4])  %in%   input$level4  )
           
           #print( paste( 'data filtered by level4 has' , nrow( data ), 'rows' ))
           # glimpse( data )
       }
         
       if ( !is_empty( input$level5 ) ){
-          cat(  '\n - filtering data by' , levelNames()[5] , "=" , input$level2 ) 
-          data = data %>% 
-            filter( !! rlang::sym( levelNames()[5])  %in%   input$level5  )
+          cat(  '\n - filtering data by' , levelNames()[5] , "=" , input$level5 ) 
+        
+          data = setDT( data )[ base::get( levelNames()[5] )  %in%   input$level5  ,, ]
+        
+          # data = data %>% 
+          #   filter( !! rlang::sym( levelNames()[5])  %in%   input$level5  )
           
           #print( paste( 'data filtered by level4 has' , nrow( data ), 'rows' ))
           # glimpse( data )
@@ -485,9 +504,14 @@ reporting_widget_server <- function( id ,
       cat( '\n-nrow( d ):' , nrow( data ))
     
       if ( input$level %in% 'leaf'){  
-        data = data %>% filter( effectiveLeaf == TRUE )
+        
+        # data = data %>% filter( effectiveLeaf == TRUE )
+        data = setDT( data )[ effectiveLeaf == TRUE , , ]
+        
       } else {
-        data = data %>% filter( levelName  %in% input$level  )
+        
+        # data = data %>% filter( levelName  %in% input$level  )
+        data = setDT( data )[ levelName  %in% input$level , , ] 
       }
   
   # if ( input$exclude_recent_month ) data = data %>% 
@@ -495,20 +519,44 @@ reporting_widget_server <- function( id ,
   
     if ( input$source %in% 'Original' ){
       cat('\n- d() source is original')
-      data = data %>% mutate( dataCol = original )
+      
+      # data = data %>% mutate( dataCol = original )
+      data = setDT( data )[ , dataCol := original , ] 
     }  
     
     if ( input$source %in% 'Cleaned' & 'seasonal3' %in% names(data) ){
       cat( '\n-' , paste('cleaning removes', sum( data$value , na.rm = T ) - sum( data$seasonal3 , na.rm = T )  , 'data points' ) )
-      data = data %>% 
-        mutate( dataCol = ifelse( seasonal3, original, NA  ) )
+      
+      # data = data %>% 
+      #   mutate( dataCol = ifelse( seasonal3, original, NA  ) )
+      
+      data = setDT( data )[ , dataCol := fifelse( seasonal3, original, NA_real_  ) , ]
       
       # Modify variables used for cleaning data so that FALSE when NA -- meaning it failed prior cleaning step, and TRUE means data is ok
-      if ('mad15' %in% names( data )) data = data %>% mutate( mad15 = ifelse( value & is.na( mad15)|!mad15, FALSE, TRUE ) )
-      if ('mad10' %in% names( data )) data = data %>% mutate( mad10 = ifelse( value & is.na( mad10)|!mad10, FALSE, TRUE ) )
-      if ('mad5' %in% names( data )) data = data %>% mutate( mad5 = ifelse( value & is.na( mad5)|!mad5, FALSE, TRUE ) )
-      if ('seasonal5' %in% names( data )) data = data %>% mutate( seasonal5 = ifelse( value & is.na( seasonal5)|!seasonal5, FALSE, TRUE ) )
-      if ('seasonal3' %in% names( data )) data = data %>% mutate( seasonal3 = ifelse( value & is.na( seasonal3)|!seasonal3, FALSE, TRUE ) )
+      if ('mad15' %in% names( data )){
+        data = data %>% mutate( mad15 = ifelse( value & is.na( mad15)|!mad15, FALSE, TRUE ) )
+        
+      }
+      
+      if ('mad10' %in% names( data )){ 
+        data = data %>% mutate( mad10 = ifelse( value & is.na( mad10)|!mad10, FALSE, TRUE ) )
+        
+      }
+      
+      if ('mad5' %in% names( data )){ 
+        data = data %>% mutate( mad5 = ifelse( value & is.na( mad5)|!mad5, FALSE, TRUE ) )
+        
+      }
+      
+      if ('seasonal5' %in% names( data )){ 
+        data = data %>% mutate( seasonal5 = ifelse( value & is.na( seasonal5)|!seasonal5, FALSE, TRUE ) )
+        
+      }
+      
+      if ('seasonal3' %in% names( data )){ 
+        data = data %>% mutate( seasonal3 = ifelse( value & is.na( seasonal3)|!seasonal3, FALSE, TRUE ) )
+        
+      }
       
       cat( '\n-' , paste('cleaning changes total by', sum( data$original , na.rm = T ) - sum( data$dataCol , na.rm = T )) )
     }  
@@ -520,7 +568,8 @@ reporting_widget_server <- function( id ,
     # #print( max( data$Month , na.rm = TRUE ))
     
     
-    cat( '\n-' , 'end d():', nrow(data), 'rows' )
+    cat( '\n- end d():', nrow(data), 'rows' )
+    
     # testing
     # saveRDS( data, 'reporting_widget_d.rds')
     
@@ -546,8 +595,11 @@ reporting_widget_server <- function( id ,
       #Testing
       # saveRDS( data, 'orgunits.reports.data.rds')
       
-      if ( !input$count.any & !input$all_categories )  data = 
-        data %>% filter( data %in% input$data_categories )
+      if ( !input$count.any & !input$all_categories ){
+        # data =  data %>% filter( data %in% input$data_categories )
+        data = setDT( data )[ data %in% input$data_categories , , ]
+        
+      }  
        
       cat('\n-orgunit.reports--period') 
       .period = period()
@@ -556,18 +608,19 @@ reporting_widget_server <- function( id ,
       # saveRDS( .period, '.period.rds')
     
       cat('\n-orgunit.reports--o.r.')
-      o.r. = 
-        data %>% as_tibble() %>% ungroup %>%
-        
-        mutate(
-    
-        calendar_year = year( !! rlang::sym( .period )  )
-         
-      ) %>%
+      # o.r. =
+      #   data %>% as_tibble() %>% ungroup %>%
+      # 
+      #   mutate(
+      # 
+      #   calendar_year = year( !! rlang::sym( .period )  )
+      
+      o.r. = setDT( data %>% as_tibble() %>% ungroup )[ , 
+                                                        calendar_year := year( base::get( .period ) ) , ] %>%
       rename( year =  {{ year_var }} ) 
       
       cat('\n-orgunit.reports--o.r.(DT)')  
-      o.r. = setDT(o.r.)[, .( n_periods = uniqueN( base::get( .period ) )), 
+      o.r. = setDT( o.r. )[,  n_periods := uniqueN( base::get( .period ) )  , 
                        by = c( 'year' , 'orgUnit' ) ] %>%
         as_tibble() %>%
       # group_by( year , orgUnit ) %>%
@@ -589,12 +642,13 @@ reporting_widget_server <- function( id ,
       or = orgunit.reports() 
       # #print( 'annual reports() or:' ); #print( names(or))
       
-      ar = setDT(or)[, .( n = .N ), 
+      ar = setDT(or)[, .( n = uniqueN( orgUnit )  ), 
                        by = c( 'year' , 'n_periods' ) ] %>%
-        as_tibble()
+        as_tibble() 
+      # %>%
+      #   group_by( year ,  n_periods ) %>%
+      #   summarise( n = n() )
       
-      # group_by( year ,  n_periods ) %>%
-      # summarise( n = n() )
       #print( 'end annual reports' )
       return( ar )
     })
@@ -660,7 +714,7 @@ reporting_widget_server <- function( id ,
       f = orgunit.reports() %>%
       ungroup() 
       
-      f = setDT(f)[, .( Total = uniqueN( orgUnit ))] %>%
+      f = setDT(f)[, .( Total = uniqueN( orgUnit )), ] %>%
         as_tibble() %>%
         # summarise( Total = n_distinct( orgUnit ) ) %>%
         pull( Total)
@@ -699,15 +753,27 @@ reporting_widget_server <- function( id ,
     req( input$level2 )
     if( nrow( data1() ) > 0 && 'level' %in% names( data1() )){
               cat( '\n* updating level3' )
+      
+              ls = setDT( data1() )[ base::get( levelNames()[2] ) %in% input$level2 , 
+                                     base::get( levelNames()[3]  ), 
+              ] %>%
+                unique %>% str_sort()
+              
+              cat( "\n - level3 update to:" , paste( ls , collapse = "" ) )
+              
               updateSelectInput( session, 'level3' ,
-                                choices =
-                                  data1() %>%
-                                    filter(
-                                    !! rlang::sym( levelNames()[2] ) %in% input$level2 ) %>%
-                                    pull( !! rlang::sym( levelNames()[3]  ) ) %>%
-                                    unique %>% str_sort() ,
-                                selected = NULL
-                                )
+                                 
+                                choices = ls
+                                
+                                  # data1() %>%
+                                  #   filter(
+                                  #   !! rlang::sym( levelNames()[2] ) %in% input$level2 ) %>%
+                                  #   pull( !! rlang::sym( levelNames()[3]  ) ) %>%
+                                  #   unique %>% str_sort() ,
+                                
+                                , selected = NULL
+              )
+
     }
     } )
 
@@ -716,13 +782,19 @@ reporting_widget_server <- function( id ,
     req( input$level3 )          
     if( nrow( data1() ) > 0 && 'level' %in% names( data1() ) ){
               cat( '\n* updating level4' )
+      
+              ls = setDT( data1() )[ base::get( levelNames()[3] ) %in% input$level3 , 
+                                     base::get( levelNames()[4]  ), 
+              ] %>%
+                unique %>% str_sort()
+      
               updateSelectInput( session, 'level4' ,
-                                choices =
-                                  data1() %>%
-                                    filter(
-                                    !! rlang::sym( levelNames()[3] ) %in% input$level3 ) %>%
-                                    pull( !! rlang::sym( levelNames()[4]  ) ) %>%
-                                            unique %>% str_sort(),
+                                choices = ls ,
+                                  # data1() %>%
+                                  #   filter(
+                                  #   !! rlang::sym( levelNames()[3] ) %in% input$level3 ) %>%
+                                  #   pull( !! rlang::sym( levelNames()[4]  ) ) %>%
+                                  #           unique %>% str_sort(),
                                 selected = NULL
                                 )
     }
@@ -737,13 +809,19 @@ reporting_widget_server <- function( id ,
       
       if( is_empty( data1() ) ) return( NA )
       if( is.na( levelNames()[5] ) ) return( NA ) 
+      
+      ls = setDT( data1() )[ base::get( levelNames()[4] ) %in% input$level4 , 
+                             base::get( levelNames()[5]  ), 
+      ] %>%
+        unique %>% str_sort()
   
-      data1() %>% 
-          filter(
-              !! rlang::sym( levelNames()[4] ) %in% 
-                         input$level4 ) %>% 
-          pull( !! rlang::sym( levelNames()[5]  ) ) %>% 
-          unique %>% str_sort()  
+      return( ls )
+      # data1() %>% 
+      #     filter(
+      #         !! rlang::sym( levelNames()[4] ) %in% 
+      #                    input$level4 ) %>% 
+      #     pull( !! rlang::sym( levelNames()[5]  ) ) %>% 
+      #     unique %>% str_sort()  
   })
   
   observe({  
@@ -988,8 +1066,8 @@ reporting_widget_server <- function( id ,
         geom_line( data = x.months() %>% mutate( facilities = 'Selected' ) )
       }
     
-    return( shift_legend3(g) )
-    # return( g )
+    # return( shift_legend3(g) )
+    return( g )
     }
     
     #print('end plot2')
@@ -1095,25 +1173,35 @@ reporting_widget_server <- function( id ,
    req( input$data_categories )
    cat("\n* plotData():")
   
-    data = d() %>%
-      mutate( Selected = 'All' ) 
+    data = setDT( d() )[ , Selected := 'All', ]
+    # data = d() %>% mutate( Selected = 'All' ) 
     
     
     # filter to selected category
     cat( '\n - plotData filtered by' , input$data_categories )
 
     if ( !input$all_categories )  
-      data = data %>% filter( data %in% input$data_categories )
+      
+      # data = data %>% filter( data %in% input$data_categories )
+      
+      data = setDT( data )[ data %in% input$data_categories ,, ]
     
     # Add var for selected ous
     cat( '\n - plotData length( selectedOUs()): ' , length( selectedOUs())  )
     
-   if ( length( selectedOUs()) > 0 ) data  = data %>%
-      mutate( Selected = ifelse( 
-        orgUnit %in% selectedOUs() , 
-        'Reporting Each Period', 
-        'Inconsistent Reporting' )
-      )
+   if ( length( selectedOUs()) > 0 ){
+     
+     data = setDT( data )[ , Selected := fifelse( orgUnit %in% selectedOUs() , 
+                                                      'Reporting Each Period',
+                                                      'Inconsistent Reporting') ]
+     # data  = data %>%
+     #   mutate( Selected = ifelse( 
+     #     orgUnit %in% selectedOUs() , 
+     #     'Reporting Each Period', 
+     #     'Inconsistent Reporting' )
+     #   )
+   } 
+    
     
     cat( '\n- end  plotData()')  ; # #print( names( data )) 
     # TESTING
@@ -1206,10 +1294,10 @@ reporting_widget_server <- function( id ,
           # data.table sum/mean 
         mean.merge = input$dataset_merge_average 
         
-        if ( mean.merge ) {
+      if ( mean.merge ) {
             cat( '\n** merge data.table MEAN') 
             
-            dataMerge = combineSelectDatasets %>%
+          dataMerge = combineSelectDatasets %>%
                 mutate( dataSet = 'Merged') %>%
                 setDT() %>%
                 # Mean of dataSets within orgUnit
@@ -1229,12 +1317,44 @@ reporting_widget_server <- function( id ,
     key.cols = setdiff( group_by_cols() , .period ) 
     cat('\n - key.cols:' ,  key.cols )
     
-    data.total = 
-        dataMerge %>% 
-        # fill_gaps( .full = TRUE  ) %>%
-        mutate( 
-                total = replace_na( dataCol , 0) 
-                )  %>% # for plotting, replace missing with zero 
+    if ( .period %in% 'Month' ){
+      cat( '\n -  .period %in% Month' )
+      
+      # data.total = data.total %>% 
+      #   filter( 
+      #     Month >=  yearmonth( input$startDisplayMonth )  ,
+      #     Month <=  yearmonth( input$endDisplayMonth )  
+      #   )
+      
+      data.total = setDT( dataMerge )[  which( Month >=  yearmonth( input$startDisplayMonth ) &
+                                        Month <=  yearmonth( input$endDisplayMonth ) ) , ] 
+      
+    } 
+    
+    if ( .period %in% 'Week' ){
+      cat( '\n -  .period %in% weeks' )
+      
+      # data.total = data.total %>% 
+      #   filter( 
+      #     Week >=  yearweek( input$startDisplayMonth )  ,
+      #     Week <=  yearweek( input$endDisplayMonth )  
+      #   )
+      
+      data.total = setDT( dataMerge )[ which( Week >=  yearweek( input$startDisplayMonth ) &
+                                        Week <=  yearweek( input$endDisplayMonth ) ) , ] 
+    } 
+    
+    
+    cat( "\n - data.total cols:" , names( data.total ) )
+    
+    data.total = data.total[ , total := replace_na( dataCol , 0)  ,] %>%
+      
+        # dataMerge %>% 
+        # # fill_gaps( .full = TRUE  ) %>%
+        # mutate( 
+        #         total = replace_na( dataCol , 0) 
+        #         )  %>% # for plotting, replace missing with zero 
+      
         as_tsibble( index = !! rlang::sym( .period )  , 
                     key =  all_of(  {{ key.cols }} ) ) 
 
@@ -1244,25 +1364,7 @@ reporting_widget_server <- function( id ,
     # Filter display dates
     # cat( '/n - data.total cols:', names( data.total ) )
     
-    if ( .period %in% 'Month' ){
-      cat( '\n -  .period %in% Month' )
-      data.total = data.total %>% 
-        filter( 
-          Month >=  yearmonth( input$startDisplayMonth )  ,
-          Month <=  yearmonth( input$endDisplayMonth )  
-        )
-    } 
-    
-    if ( .period %in% 'Week' ){
-      cat( '\n -  .period %in% weeks' )
-      data.total = data.total %>% 
-        filter( 
-          Week >=  yearweek( input$startDisplayMonth )  ,
-          Week <=  yearweek( input$endDisplayMonth )  
-        )
-    } 
-    
-  
+
     # test:
     # saveRDS( data.total, 'data.total.rds')
     
