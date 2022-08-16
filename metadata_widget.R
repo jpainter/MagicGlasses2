@@ -1299,6 +1299,7 @@ metadata_widget_server <- function( id ,
     # reorder levels
     split_geofeatures = split_geofeatures[ levels ]
 
+
     # match( levels, orgUnitLevels() , )]
 
     # test for empty geometry
@@ -1327,10 +1328,39 @@ metadata_widget_server <- function( id ,
     
     # Testing 
     
+    # library( leafdown )
+    # cat( '\n - LEAFDOWN new' )
+    # adm = gf %>% filter( st_geometry_type(.) %in% c('POLYGON', 'MULTIPOLYGON') )
+    # save( gf, adm , file = 'gf.rda' )
+    # 
+    # levels = unique(adm$level)
+    # split_adm = split( adm , f = adm[['levelName']]  )[ order( levels )]
+    # split_adm = map( split_adm , ~ as( .x , "Spatial" ) ) 
+    # levelNames = names( split_adm )
+    # joinCols = rep( "'name' = 'parentName'" , length( levels) - 1) 
+    # names( joinCols ) = levelNames[ 1:length( levels) - 1 ]
+    # 
+    # my_leafdown = Leafdown$new( split_adm  ,
+    #                             join_map_levels_by =  joinCols ,
+    #                             map_output_id = "geoFeatures_map" , 
+    #                             input = input )
+    # 
+    # cat( '\n - LEAFDOWN add_data')
+    # my_leafdown$add_data( gf )
+    # 
+    # cat( '\n - LEAFDOWN map')
+    # gf.map = my_leafdown$draw_leafdown(
+    #   fillColor = ~ colors[ levels ] ) 
+    # 
+    # cat( '\n - LEAFDOWN add_legend')
+    # gf.map = gf.map %>%
+    #   addLegend( pal = colors[ levels ] )
+    # 
+    # cat( '\n - LEAFDOWN save')
+    # saveRDS( gf.map , 'gf.map.rds')
     
     cat('\n**geoFeatures Map prepared for output-\n')
-    #test
-    # saveRDS( gf.map , 'gf.map.rds')
+
     return( gf.map@map )  # return leaflet slot of mapview object https://github.com/r-spatial/mapview/issues/58
     
     # mapview not working, try tmap
