@@ -863,29 +863,33 @@ cleaning_widget_server <- function( id ,
       # level2
       if ( !is_empty( input$level2 ) ){
         cat(  '\n - filtering outlier data by' , levelNames()[2] , "=" , input$level2 )
-        d = d %>%
-          filter( !! rlang::sym( levelNames()[2])  %in%   input$level2  )
+        # d = d %>%
+        #   filter( !! rlang::sym( levelNames()[2])  %in%   input$level2  )
+        d = setDT( d )[ base::get( levelNames()[2])  %in%   input$level2  ,, ]
       }
 
       # level3
       if ( !is_empty( input$level3 ) ){
         cat(  '\n - filtering outlier data by' , levelNames()[3] , "=" , input$level3 )
-        d = d %>%
-          filter( !! rlang::sym( levelNames()[3])  %in%   input$level3  )
+        # d = d %>%
+        #   filter( !! rlang::sym( levelNames()[3])  %in%   input$level3  )
+        d = setDT( d )[ base::get( levelNames()[3])  %in%   input$level3  ,, ]
       }
 
       # level4
       if ( !is_empty( input$level4 ) ){
         cat(  '\n - filtering outlier data by' , levelNames()[4] , "=" , input$level4 )
-        d = d %>%
-          filter( !! rlang::sym( levelNames()[4])  %in%   input$level4  )
+        # d = d %>%
+        #   filter( !! rlang::sym( levelNames()[4])  %in%   input$level4  )
+        d = setDT( d )[ base::get( levelNames()[4])  %in%   input$level4  ,, ]
       }
 
       # level5
       if ( !is_empty( input$level5 ) ){
         cat(  '\n - filtering outlier data by' , levelNames()[5] , "=" , input$level5 )
-        d = d %>%
-          filter( !! rlang::sym( levelNames()[5])  %in%   input$level5  )
+        # d = d %>%
+        #   filter( !! rlang::sym( levelNames()[5])  %in%   input$level5  )
+        d = setDT( d )[ base::get( levelNames()[5])  %in%   input$level5  ,, ]
       }
 
 

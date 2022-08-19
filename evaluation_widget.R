@@ -15,6 +15,7 @@ evaluation_widget_ui = function ( id ){
   tabPanel( 'Impact' ,
         sidebarLayout(
           sidebarPanel(
+            # width = "25%" ,
             
             selectizeInput( ns("evaluation_month") , label = "Intervention Start", 
                     choices = NULL ,
@@ -63,7 +64,7 @@ evaluation_widget_ui = function ( id ){
           ),
           
           mainPanel( 
-              
+               # width = "75%" ,
                 # conditionalPanel( "input.plotly == 1" , ns = ns ,
                 #     plotlyOutput( ns("plotlyOutput") , height = "100%" )
                 #       ) ,
@@ -239,9 +240,13 @@ evaluation_widget_server <- function( id ,
       req( data1() )
       updateSelectInput( session, 'level2' ,
                                   choices = 
-                                    data1() %>% 
-                                      pull( !! rlang::sym( levelNames()[2]  ) ) %>% 
-                                      unique %>% str_sort(),
+                                    setDT( data1() )[ , base::get(levelNames()[2] )] %>% 
+                                      unique %>% str_sort() ,
+                         
+                                    # data1() %>% 
+                                    #   pull( !! rlang::sym( levelNames()[2]  ) ) %>% 
+                                    #   unique %>% str_sort(),
+                         
                                   selected = NULL 
                                   ) 
       } )
@@ -250,11 +255,16 @@ evaluation_widget_server <- function( id ,
       req( data1() )
       updateSelectInput( session, 'level3' ,
                                   choices = 
-                                    data1() %>% 
-                                      filter(
-                                      !! rlang::sym( levelNames()[2] ) %in% input$level2 ) %>% 
-                                      pull( !! rlang::sym( levelNames()[3]  ) ) %>% 
-                                      unique %>% str_sort() ,
+                                    setDT( data1() )[ base::get(levelNames()[2] ) %in% input$level2 , 
+                                                      base::get( levelNames()[3] )] %>% 
+                                      unique %>% str_sort() , 
+                           
+                                    # data1() %>% 
+                                    #   filter(
+                                    #   !! rlang::sym( levelNames()[2] ) %in% input$level2 ) %>% 
+                                    #   pull( !! rlang::sym( levelNames()[3]  ) ) %>% 
+                                    #   unique %>% str_sort() ,
+                         
                                   selected = NULL 
                                   ) 
       } )
@@ -264,11 +274,15 @@ evaluation_widget_server <- function( id ,
       req( data1() )
       updateSelectInput( session, 'level4' ,
                                   choices = 
-                                    data1() %>% 
-                                      filter(
-                                      !! rlang::sym( levelNames()[3] ) %in% input$level3 ) %>% 
-                                      pull( !! rlang::sym( levelNames()[4]  ) ) %>% 
-                                              unique %>% str_sort(),
+                                    setDT( data1() )[ base::get(levelNames()[3] ) %in% input$level2 , 
+                                                      base::get( levelNames()[4] )] %>% 
+                                      unique %>% str_sort() , 
+                         
+                                    # data1() %>% 
+                                    #   filter(
+                                    #   !! rlang::sym( levelNames()[3] ) %in% input$level3 ) %>% 
+                                    #   pull( !! rlang::sym( levelNames()[4]  ) ) %>% 
+                                    #           unique %>% str_sort(),
                                   selected = NULL 
                                   ) 
       } )
@@ -278,13 +292,17 @@ evaluation_widget_server <- function( id ,
         req( levelNames() )
         
         if( is.na( levelNames()[5] ) ) return( NA ) 
+        
+        setDT( data1() )[ base::get(levelNames()[4] ) %in% input$level2 , 
+                                                      base::get( levelNames()[5] )] %>% 
+                                      unique %>% str_sort() 
     
-        data1() %>% 
-            filter(
-                !! rlang::sym( levelNames()[4] ) %in% 
-                           input$level4 ) %>% 
-            pull( !! rlang::sym( levelNames()[5]  ) ) %>% 
-            unique %>% str_sort()  
+        # data1() %>% 
+        #     filter(
+        #         !! rlang::sym( levelNames()[4] ) %in% 
+        #                    input$level4 ) %>% 
+        #     pull( !! rlang::sym( levelNames()[5]  ) ) %>% 
+        #     unique %>% str_sort()  
     })
     
     observe({  updateSelectInput( session, 'level5' ,
@@ -388,6 +406,7 @@ evaluation_widget_server <- function( id ,
                              mean( total , na.rm = T ) ,
                              NA ) 
                          ) 
+        
         print( "MAPE"); print( e$mape)
         return( scales::percent( e$mape )  )
         
@@ -564,12 +583,13 @@ evaluation_widget_server <- function( id ,
         
         if ( period() %in% "Month" ) formula.string = paste0( formula.string ,
                                                            '+ PDQ( period = "1 year" )'   )
+        
         if ( period() %in% "Week" ) formula.string = paste0( formula.string ,
                                                            '+ PDQ( period = 52 )'   )
                                    
 
          if ( nchar( input$covariates ) > 0 ) formula.string = 
-             paste( formula.string , '+ xreg(' , input$covariates , ' ) ' )
+             paste( formula.string , '+ xreg(' , input$covariates , ' ) '  )
          
          cat( '\n - ARIMA formula string:', formula.string )
          f = as.formula( formula.string )
@@ -591,7 +611,9 @@ evaluation_widget_server <- function( id ,
          
         f = as.formula(  input$model.formula )
         
-        formula.string = paste( 'fabletools::box_cox( total , lambda = .5  )' ) 
+        formula.string = paste( 'total' ) 
+        
+        if ( input$transform ) formula.string = 'fabletools::box_cox( total , lambda = .5  )'
         
         # f = as.formula(  formula.string )
     
@@ -748,7 +770,7 @@ evaluation_widget_server <- function( id ,
     })
     
     tsPreModel = reactive({
-      cat( '/n* tsPreModel:' )
+
       req( trendData() )
       req( input$evaluation_month )
       req( model_formula() )
@@ -758,7 +780,7 @@ evaluation_widget_server <- function( id ,
     
       eval_month = input$evaluation_month 
       if ( period() %in% "Month" ) time_period = yearmonth( eval_month  ) - 12
-      if ( period() %in% "Week" ) time_period = yearweek( eval_month  ) - 25
+      if ( period() %in% "Week" ) time_period = yearweek( eval_month  ) - 52
       
       cat("\n - time_period:" , time_period )
       
@@ -952,11 +974,31 @@ evaluation_widget_server <- function( id ,
       
       req( tsPreModel() ) 
       req( input$horizon )
+      req( input$evaluation_month )
+      
+      eval_month = input$evaluation_month  
+      time_period = yearmonth( eval_month  ) - 12
       
       cat( '\n* tsPreForecast' )
-      if ( period() %in% 'Month' ) fcast = tsPreModel() %>% forecast( h = 12 , level = pi_levels() )
-      if ( period() %in% 'Week' ) fcast = tsPreModel() %>% forecast( h = 25  )
+      if ( input$covariates %in% "avg_mm"){
+        
+        test.data  = trendData() %>%
+          filter_index( as.character( time_period ) ~ as.character( time_period + as.integer( input$horizon ) ) ,  
+                      .preserve = TRUE )
+        
+        fcast= getForecast( test_data = test.data , model = tsPreModel() ,
+                 bootstrap = FALSE , Reps = 1000 )
+        
+        # if ( period() %in% 'Month' ) fcast = tsPreModel() %>% forecast( h = 12 , level = pi_levels() )
+        # if ( period() %in% 'Week' ) fcast = tsPreModel() %>% forecast( h = 52  )
       
+      } else {
+      
+        if ( period() %in% 'Month' ) fcast = tsPreModel() %>% forecast( h = 12 , level = pi_levels() )
+        if ( period() %in% 'Week' ) fcast = tsPreModel() %>% forecast( h = 52  )
+      
+      }
+
       # preserve tsibble key and index,
       indexVar = index_var( fcast )
       keyVars = key_vars( fcast )
@@ -1048,8 +1090,10 @@ evaluation_widget_server <- function( id ,
   data.hts = reactive({
     req( data.total() )
     req( hts() )
-  
-    cat('\n* data.hts():' );   tic()
+    tic()
+    
+    cat('\n* data.hts():' )  
+    cat( "\n - data.total cols:" , print( names( data.total() ) , collapse = "," ) )
     
     # Testing
     # saveRDS( data.total(), 'data.total.hts.rds' )
@@ -1058,20 +1102,23 @@ evaluation_widget_server <- function( id ,
     
      # if ( input$transform ) .d = .d %>% mutate( .total = fabletools::box_cox( total , lambda = .5  ) )
     
+    if ( grepl( "avg_mm" , input$covariates ) & "avg_mm" %in% names( .d ) ){
+      cat( "\n - grepl( 'avg_mm' , input$covariates ) & 'avg_mm' %in% names( .d )")
     # testing exogenous vaiables
     # if ( input$covariates %in% c('ipti' , 'doses' ) ){
-    #   .d = .d %>%
-    #   aggregate_key(  .spec = !!rlang::parse_expr( hts() ) ,
-    #                   total = sum( total , na.rm = T ) ,
-    #                   ipti = sum( !!rlang::parse_expr( 'ipti' ) , na.rm = T ) ,
-    #                   doses = sum( !!rlang::parse_expr( 'doses' ) , na.rm = T )
-    #                   ) 
-    # } else {
+      .d = .d %>%
+      aggregate_key(  .spec = !!rlang::parse_expr( hts() ) ,
+                      total = sum( total , na.rm = T ) ,
+                      avg_mm = mean( !!rlang::parse_expr( 'avg_mm' ) , na.rm = T ) 
+                      # ipti = sum( !!rlang::parse_expr( 'ipti' ) , na.rm = T ) ,
+                      # doses = sum( !!rlang::parse_expr( 'doses' ) , na.rm = T ) 
+                      )
+    } else {
     .d = .d %>%
       aggregate_key(  .spec = !!rlang::parse_expr( hts() ) ,
                       total = sum( total , na.rm = T )
                       ) 
-    # }
+    }
     
     cat('\n- end data.hts():' ) ; toc()
     # saveRDS( .d, 'data.hts.rds' )
@@ -1452,17 +1499,17 @@ evaluation_widget_server <- function( id ,
       return( g )
 })
     
-    output$plotlyOutput <- renderPlotly({
+  output$plotlyOutput <- renderPlotly({
       plotly::ggplotly( plotOutput() )  })
 
-    output$plotOutput <-  renderPlot({ plotOutput()  })
+  output$plotOutput <-  renderPlot({ plotOutput()  })
         
-    output$dynamic <- renderUI({
+  output$dynamic <- renderUI({
       req(input$plot_hover) 
       verbatimTextOutput("vals")
   })
 
-    output$vals <- renderPrint({
+  output$vals <- renderPrint({
         hover <- input$plot_hover 
         # print(str(hover)) # list
         y <- nearPoints( trendData() , input$plot_hover)[input$var_y]

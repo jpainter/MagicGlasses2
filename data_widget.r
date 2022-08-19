@@ -154,8 +154,10 @@ data_widget_server <- function( id ,
             formulas = read_excel( file , sheet = 'Formula') %>% 
               filter( !is.na(Formula.Name)) %>%
               arrange( desc( Formula.Name ) ) 
-          } else {
-            cat( '\n - read rds file', file )
+          
+            } else {
+            
+            cat( '\n - reading formula rds file', file )
             formulas = readRDS( file )
           }
           
@@ -184,7 +186,7 @@ data_widget_server <- function( id ,
           
             } else{
               
-            cat( '\n - read rds file', file )
+            cat( '\n - reading formula elements from fromula rds file', file )
             formulas = readRDS( file ) 
             }
         
@@ -317,10 +319,10 @@ data_widget_server <- function( id ,
                            )
               )
             
-          
+          cat( '\n - reading selected rds file', file )
           d = readRDS( file ) 
             
-          cat('\n - dataset has' , nrow(d),  'rows')
+          cat('\n - done: dataset has' , nrow(d),  'rows')
         
           removeModal()
           
@@ -399,11 +401,13 @@ data_widget_server <- function( id ,
           
           # Add value column if missing (now added in data_1 function)
           if ( ! 'value' %in% names( data1 ) ){
-            data1 = data1 %>% mutate( value = !is.na( SUM ) )
+            # data1 = data1 %>% mutate( value = !is.na( SUM ) )
+            data1 = setDT( data1 )[ , value := !is.na( SUM ) ]
           }
           
           removeModal()
           
+          cat( "\n - end data1.  cols:" , names( data1) )
           return( data1 )
       })
       
