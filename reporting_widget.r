@@ -90,6 +90,21 @@ reporting_widget_ui = function ( id ){
       
        tabPanel( "Choose dataElements, categories, and dataSets ",  
         # inputPanel(
+        
+              checkboxInput( ns("dataset_merge"), 
+                             label ='Merge all datasets', value = FALSE ) ,
+              
+              checkboxInput( ns("dataset_merge_average") , 
+                             label ='Average values when reported to mutliple datasets', value = FALSE ) ,
+              
+              selectInput( ns("merge") , 
+                           label ='Merge selected datasets with selected dataElements/Categories', 
+                           choices = NULL  ,
+                           selected = 1 ,
+                           width = "100%" ,
+                           multiple = TRUE ,
+                           selectize = TRUE ) ,
+              
                checkboxInput( ns("all_categories") , 
                                       label = 'Select all dataElement/Categories',
                                       value = TRUE )  ,
@@ -101,21 +116,9 @@ reporting_widget_ui = function ( id ){
                           width = "100%" ,
                           multiple = TRUE ,
                           selectize = TRUE
-                          ) ,
+                          ) 
       
-              checkboxInput( ns("dataset_merge"), 
-                             label ='Merge all datasets', value = FALSE ) ,
-               
-              checkboxInput( ns("dataset_merge_average") , 
-                             label ='Average values when reported to mutliple datasets', value = FALSE ) ,
-         
-              selectInput( ns("merge") , 
-                            label ='Merge selected datasets with selected dataElements/Categories', 
-                      choices = NULL  ,
-                      selected = 1 ,
-                      width = "100%" ,
-                      multiple = TRUE ,
-                      selectize = TRUE ) 
+
                # ) # end inputPanel 
         ) # end tabPanel
       ) # end tabset panel
@@ -207,43 +210,6 @@ reporting_widget_server <- function( id ,
       
           reposition_legend( p, "center", panel=names(pnls) )
           }
-
-  # dataset/data  ####
-    # dataset = reactive({
-    #   req( dataset.file() )
-    #   req( data.folder() )
-    #   req( formula_elements() )
-    #   cat('\n* Reading dataset file')
-    #   
-    #   file = paste0( data.folder() , dataset.file() )
-    #   if ( !file.exists( file ) ) return()
-    #   
-    #   cat('\n - ' , file )
-    #   
-    #   
-    #   dataset = readRDS( file ) 
-    #   cat( '\n - dataset read:' , dataset.file() , 'has' , nrow(dataset) , 'rows' )
-    #   
-    #   # Stop if not prepared as tibble time dataset
-    #   if ( !any( "tbl_ts"  %in%  class( dataset ) ) ){
-    #     cat('\n - dataset is not a tbl_ts ')
-    #     return( tibble() )
-    #   } 
-    #         
-    #   # Get dataSet for each dataElement (if available_) 
-    #   if ( 'dataElement.id' %in% names( dataset ) && ! 'dataSet' %in% names( dataset ) ){
-    #     
-    #     dataset = dataset %>%
-    #     as_tibble() %>%
-    #     left_join( formula_elements() %>% 
-    #                  select( dataElement.id  , dataSet ) %>%
-    #                  distinct ,  
-    #                by = 'dataElement.id' )
-    #   }
-    # 
-    #   cat( '\n - dataset has' , nrow(dataset) , 'rows' )
-    #   return( dataset )
-    # })
 
     dates = reactive({
         req( data1() )
@@ -418,17 +384,6 @@ reporting_widget_server <- function( id ,
       cat( '\n- mrp:' , mrp )
       return( mrp )
     })
-
-  # datasetPrepared = reactive({
-  #   req( data1() )
-  #   cat('\n* datasetPrepared:')
-  #   
-  #   x = FALSE
-  #   if ( any( "tbl_ts"  %in%  class( data1() ) ) )  x = TRUE
-  #   cat('\n -  ', x )
-  #   return( x )
-  #   
-  # })
   
   d = reactive({
 
@@ -438,6 +393,7 @@ reporting_widget_server <- function( id ,
     
       # Testing 
       # saveRDS( data1() , 'dataset.rds' )
+      cat( "\ - data1() cols:" , names( data1() ))
       
       if ( nrow( data1() ) == 0 ){
         cat('\n - data1() has zero rows')
@@ -447,7 +403,8 @@ reporting_widget_server <- function( id ,
       .period = period()
       cat('\n - period is', .period )
       
-      data = data1()  %>% mutate( period = !!rlang::sym( .period ))
+      data = setDT( data1()  )[ , period := base::get( .period )  , ]
+      # data = data1()  %>% mutate( period = !!rlang::sym( .period ))
       
       if ( !is_empty( input$level2 ) ){
         cat(  '\n - filtering data by' , levelNames()[2] , "=" , input$level2 ) 
@@ -534,27 +491,31 @@ reporting_widget_server <- function( id ,
       
       # Modify variables used for cleaning data so that FALSE when NA -- meaning it failed prior cleaning step, and TRUE means data is ok
       if ('mad15' %in% names( data )){
-        data = data %>% mutate( mad15 = ifelse( value & is.na( mad15)|!mad15, FALSE, TRUE ) )
+        # data = data %>% mutate( mad15 = ifelse( value & is.na( mad15)|!mad15, FALSE, TRUE ) )
+        data = setDT( data )[, mad15 := fifelse( value & is.na( mad15)|!mad15, FALSE, TRUE ) , ] 
         
       }
       
       if ('mad10' %in% names( data )){ 
-        data = data %>% mutate( mad10 = ifelse( value & is.na( mad10)|!mad10, FALSE, TRUE ) )
+        # data = data %>% mutate( mad10 = ifelse( value & is.na( mad10)|!mad10, FALSE, TRUE ) )
+        data = setDT( data )[, mad10 := fifelse( value & is.na( mad10)|!mad10, FALSE, TRUE ) , ] 
         
       }
       
       if ('mad5' %in% names( data )){ 
-        data = data %>% mutate( mad5 = ifelse( value & is.na( mad5)|!mad5, FALSE, TRUE ) )
+        # data = data %>% mutate( mad5 = ifelse( value & is.na( mad5)|!mad5, FALSE, TRUE ) )
+        data = setDT( data )[, mad5 := fifelse( value & is.na( mad5)|!mad5, FALSE, TRUE ) , ] 
         
       }
       
       if ('seasonal5' %in% names( data )){ 
-        data = data %>% mutate( seasonal5 = ifelse( value & is.na( seasonal5)|!seasonal5, FALSE, TRUE ) )
-        
+        # data = data %>% mutate( seasonal5 = ifelse( value & is.na( seasonal5)|!seasonal5, FALSE, TRUE ) )
+        data = setDT( data )[, seasonal5 := fifelse( value & is.na( seasonal5)|!seasonal5, FALSE, TRUE ) , ] 
       }
       
       if ('seasonal3' %in% names( data )){ 
-        data = data %>% mutate( seasonal3 = ifelse( value & is.na( seasonal3)|!seasonal3, FALSE, TRUE ) )
+        # data = data %>% mutate( seasonal3 = ifelse( value & is.na( seasonal3)|!seasonal3, FALSE, TRUE ) )
+        data = setDT( data )[, seasonal3 := fifelse( value & is.na( seasonal3)|!seasonal3, FALSE, TRUE ) , ] 
         
       }
       
@@ -619,16 +580,23 @@ reporting_widget_server <- function( id ,
                                                         calendar_year := year( base::get( .period ) ) , ] %>%
       rename( year =  {{ year_var }} ) 
       
-      cat('\n-orgunit.reports--o.r.(DT)')  
-      o.r. = setDT( o.r. )[,  n_periods := uniqueN( base::get( .period ) )  , 
+      cat('\n-orgunit.reports--o.r.(DT)')
+      
+      # Testing:
+      # saveRDS( o.r. , "o.r..rds")
+      
+      o.r. = setDT( o.r. )[ ,  .(n_periods = uniqueN( base::get( .period ) ) ) , 
                        by = c( 'year' , 'orgUnit' ) ] %>%
-        as_tibble() %>%
+        .[ , n_periods := factor( n_periods ) ] %>%
+        .[ , year := factor( year ) ] %>%
+        as_tibble() 
+      
       # group_by( year , orgUnit ) %>%
       # summarise( n_periods = n_distinct( !! rlang::sym( period() )  ) 
       #            # , max_month = max( Month ) 
       #            ) 
-      mutate( n_periods = factor( n_periods ) ,
-              year = factor( year ) )
+      # mutate( n_periods = factor( n_periods ) ,
+      #         year = factor( year ) )
       
       ##print( 'o.r:') ; # #print(head(o.r))
       #print( 'end orgunit.reports' )
@@ -973,16 +941,17 @@ reporting_widget_server <- function( id ,
       })
     
   x.annual = reactive({
-    #print( 'x.annual()' )
+    cat( '\n* x.annual()' )
     tic()
-    x.a = orgunit.reports() %>% 
-          filter( orgUnit %in% selectedOUs() )   # %>%  
+    # x.a = orgunit.reports() %>% 
+    #       filter( orgUnit %in% selectedOUs() )   # %>%  
           # group_by( year , n_periods ) %>%
           #   summarise( n =  n_distinct( orgUnit ) )
     
     # data.table speed up over dplyr
-    x.a = setDT(x.a)[, .( n = uniqueN( orgUnit )), 
-                     by = c( 'year' , 'n_periods' ) ]  %>%
+    x.a = setDT( orgunit.reports() )[ orgUnit %in% selectedOUs() , 
+                                      .( n = uniqueN( orgUnit ) ), 
+                                      by = c( 'year' , 'n_periods' ) ]  %>%
       as_tibble()
   
     #print('end x.annual:') ; toc();  # #print( x.a )
@@ -997,11 +966,12 @@ reporting_widget_server <- function( id ,
     
     .period = period()
     
-    x.m = orgunit.monthly.reports() %>% 
-          filter( orgUnit %in% selectedOUs() ) 
+    # x.m = orgunit.monthly.reports() %>% 
+    #       filter( orgUnit %in% selectedOUs() ) 
     
-    x.m = setDT(x.m)[, .( n = uniqueN( orgUnit )), 
-                     by = c( 'year' , .period )   ]  %>%
+    x.m = setDT( orgunit.monthly.reports() )[  orgUnit %in% selectedOUs(), 
+                                               .( n = uniqueN( orgUnit ) ) , 
+                                               by = c( 'year' , .period )   ]  %>%
       as_tibble()
     
     
@@ -1202,8 +1172,8 @@ reporting_widget_server <- function( id ,
      #   )
    } 
     
-    
-    cat( '\n- end  plotData()')  ; # #print( names( data )) 
+    cat( "\n - plotData cols:" ,  names( data ) ) 
+    cat( '\n- end  plotData()')  
     # TESTING
     # saveRDS( data , "plotData.rds" )
     
@@ -1242,62 +1212,107 @@ reporting_widget_server <- function( id ,
     req( input$startDisplayMonth )
     req( input$endDisplayMonth )
     
-    cat( '\n* data.total():' )
+    cat( '\n* data.total()' )
   
     
        .period = period()
-       cat( '\n.period:' , .period )
+       cat( '\n - .period:' , .period )
        # if ( input$merge & input$all_categories ){
       
       .group_by_cols =  group_by_cols()  
-      cat( '\n# data.total .group_by_cols:'  )
+      cat( '\n - data.total .group_by_cols:'  )
   
       # Total categories by facilities and datasets
       data = plotData() 
+      cat( "\n - starting with plotData().  cols:" , names( plotData() ) )
       
+      # Testing
+      # saveRDS( data , 'plotData.rds' )
       
-
       # Merge  datasets 
       # Set all dataSets to Combined and re-summaries taking mean
-      # #print( 'data.total datasets' );  #print( dataSets() )
-      cat( '\n- input$merge ', input$merge )
-      cat( '\n- data datsets ' , unique( data$dataSet) ) 
       
       mergeDatasets = input$merge %>% str_replace_all( fixed("\n"), "") 
-      cat( '\n# mergeDatasets:' , mergeDatasets )
+      
+      cat( '\n -  mergeDatasets:' , mergeDatasets , class( mergeDatasets ) )
       
       # Testing
       # saveRDS( input$merge , 'merge.rds' )
       
-      if ( !is.null( mergeDatasets )  ){
-  
-      combineSelectDatasets = data %>%
-                mutate( dataSet = dataSet %>% str_replace_all( fixed("\r\n"), "") 
-              ) %>%
-                mutate(
-                    dataSet = ifelse( 
-                        str_replace_all(dataSet, fixed("\n"), "") %in% 
-                          mergeDatasets , 'Combined' , dataSet) ,
-                    data = 'Total'
-                ) %>% 
-                setDT() %>%
-                .[ , .(dataCol = sum( dataCol , na.rm = TRUE  )) , by =  .group_by_cols ] 
+      # cat( "\n - testing if nchar( mergeDatasets ) > 0", 
+      #      any(!is.na( mergeDatasets )) & any(nchar( mergeDatasets ) > 0 ) 
+      #      )
       
-      cat('\n - Combining dataSets %in% input$merge:' , mergeDatasets )
-      
+      if ( any(!is.na( mergeDatasets )) & any(nchar( mergeDatasets ) > 0 )  ){
+        
+        cat( "\n - combineSelectDatasets ")
+        tic()
+        
+        # cat( "\n - datasets are:" , unique( data$dataSet ) )
+        # cat( "\n - mergeDatasets are:" , mergeDatasets )
+        
+        data = 
+                setDT( data )[ , dataSet := dataSet %>% str_replace_all( fixed("\r\n"), "")  ] %>%
+                # mutate( dataSet = dataSet %>% str_replace_all( fixed("\r\n"), "") ) %>%
+          
+                .[ ,  dataSet := dataSet %>% str_replace_all( fixed("\n"), "")   ] %>%
+                # mutate( dataSet = dataSet %>% str_replace_all( fixed("\n"), "") ) %>%
+          
+                .[ any( dataSet %in% mergeDatasets ) ,  dataSet :=  'Combined'  ] %>%
+          
+                as_tibble
+                # mutate(
+                #     dataSet = ifelse( any( dataSet %in% mergeDatasets ) ,
+                #                       'Combined' ,
+                #                       dataSet) ,
+                #     # dataSet = 'Combined' ,
+                #     data = 'Total'
+                # )
+        
+        # Testing
+        # saveRDS( data, "data.rds")
+        toc()
+        # data = setDT( data )[ , dataSet := dataSet %>% str_replace_all( fixed("\r\n"), "") , ]
+        # 
+        # data = setDT( data )[ , .(dataSet = fifelse( 
+        #                             any( str_replace_all( dataSet, fixed("\n"), "") %in% mergeDatasets ) , 
+        #                             'Combined' , 
+        #                             dataSet ) ,
+        #                           data = 'Total' ) , ]
 
-      } else { combineSelectDatasets = data }
+        
+      # if include, summarise precipitation
+      tic()
+      cat('\n -  summarising data by:' , .group_by_cols )
+      
+      if ( any( grepl( "avg_mm" , names( data ) ) ) ){
+          
+          cat( '\n - with avg_mm' )
+          data = setDT( data ) %>%
+                .[ , .( dataCol = sum( dataCol , na.rm = TRUE  ) ,
+                        avg_mm = mean( avg_mm , na.rm = TRUE  ) ) , 
+                   by =  .group_by_cols ] 
+          
+        } else {
+          
+          data = setDT( data ) %>%
+                .[ , .( dataCol = sum( dataCol , na.rm = TRUE  )) , by =  .group_by_cols ] 
+        }
+        
+      toc()
+      
+      }
       
       # Testing
       # saveRDS( combineSelectDatasets , 'combineSelectDatasets.rds' )
       
-          # data.table sum/mean 
-        mean.merge = input$dataset_merge_average 
+      # data.table sum/mean 
+      mean.merge = input$dataset_merge_average 
         
       if ( mean.merge ) {
             cat( '\n** merge data.table MEAN') 
             
-          dataMerge = combineSelectDatasets %>%
+          data = data %>%
                 mutate( dataSet = 'Merged') %>%
                 setDT() %>%
                 # Mean of dataSets within orgUnit
@@ -1305,20 +1320,17 @@ reporting_widget_server <- function( id ,
   
             cat( '\ndataMerge done' );  # glimpse( dataMerge )
         
-      } else {
-          dataMerge = combineSelectDatasets
-          # cat('\n glimpse( dataMerge )\n' ); #print(glimpse( dataMerge ))
-      }
+      } 
       
       # Testing
       # saveRDS( dataMerge, 'dataMerge.rds' )
       # #print( dataMerge %>% duplicates %>% glimpse )
   
-    key.cols = setdiff( group_by_cols() , .period ) 
-    cat('\n - key.cols:' ,  key.cols )
-    
-    if ( .period %in% 'Month' ){
-      cat( '\n -  .period %in% Month' )
+      key.cols = setdiff( group_by_cols() , .period ) 
+      cat('\n - key.cols:' ,  key.cols )
+      
+      if ( .period %in% 'Month' ){
+        cat( '\n -  .period %in% Month' )
       
       # data.total = data.total %>% 
       #   filter( 
@@ -1326,7 +1338,7 @@ reporting_widget_server <- function( id ,
       #     Month <=  yearmonth( input$endDisplayMonth )  
       #   )
       
-      data.total = setDT( dataMerge )[  which( Month >=  yearmonth( input$startDisplayMonth ) &
+      data.total = setDT( data )[  which( Month >=  yearmonth( input$startDisplayMonth ) &
                                         Month <=  yearmonth( input$endDisplayMonth ) ) , ] 
       
     } 
@@ -1340,7 +1352,7 @@ reporting_widget_server <- function( id ,
       #     Week <=  yearweek( input$endDisplayMonth )  
       #   )
       
-      data.total = setDT( dataMerge )[ which( Week >=  yearweek( input$startDisplayMonth ) &
+      data.total = setDT( data )[ which( Week >=  yearweek( input$startDisplayMonth ) &
                                         Week <=  yearweek( input$endDisplayMonth ) ) , ] 
     } 
     
