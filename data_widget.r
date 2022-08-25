@@ -123,7 +123,7 @@ data_widget_server <- function( id ,
         })
         
         observeEvent( completedRequest() , { 
-            cat('\n- data_widget completedRequest():' )
+            cat('\n* data_widget completedRequest():' )
             a = formula.files()
         })
         
@@ -140,7 +140,7 @@ data_widget_server <- function( id ,
                                       selected = 1  ) 
         })
         
-      formulas =  reactive({
+        formulas =  reactive({
           req( input$formula.file )
           cat( '\n* formulas:' )
           
@@ -288,7 +288,7 @@ data_widget_server <- function( id ,
             
           })
         
-      dataset.file = reactive({
+        dataset.file = reactive({
           req( input$dataset )
           req( data.folder() )
           
@@ -301,116 +301,134 @@ data_widget_server <- function( id ,
           
       })
         
-      dataset = reactive({ 
+        dataset = reactive({ 
           # req( input$dataset ) # file name from data_widget (on Dictionary tab)
           cat('\n* data_widget  dataset():')
           
-        req( dataset.file() )
+          req( dataset.file() )
   
-        file  = dataset.file()
+          file  = dataset.file()
 
-        if ( file_test("-f",  file) ){
+          if ( file_test("-f",  file) ){
             
-          showModal(
-              modalDialog( title = "Reading data", 
-                           easyClose = TRUE ,
-                           size = 's' ,
-                           footer=NULL
-                           )
-              )
-            
-          cat( '\n - reading selected rds file', file )
-          d = readRDS( file ) 
-            
-          cat('\n - done: dataset has' , nrow(d),  'rows')
-        
-          removeModal()
+            showModal(
+                modalDialog( title = "Reading data", 
+                             easyClose = TRUE ,
+                             size = 's' ,
+                             footer=NULL
+                             )
+                )
+              
+            cat( '\n - reading selected rds file', file )
+            d = readRDS( file ) 
+              
+            cat('\n - done: dataset has' , nrow(d),  'rows')
           
-          return( d )
+            removeModal()
+          
+        return( d )
           
           } else {
             cat('\n - dataset.file() not selected or not found')
           }
       })
       
-      data1 = reactive({
-          req( dataset.file() )
-          req( dataset() )
-          req( formula_elements() )
-          req( ousTree() )
-          cat( '\n* data_widget data1')
+        data1 = reactive({
+            req( dataset.file() )
+            req( dataset() )
+            req( formula_elements() )
+            req( ousTree() )
+            cat( '\n* data_widget data1')
+            
+            # Testing 
+              # saveRDS( dataset() , 'dataset.rds' )
+              # saveRDS( formula_elements() , 'formula_elements.rds' )
+              # saveRDS( ousTree() , 'ousTree.rds' )
+            cat( '\n -  data_widget data1() class( dataset() )', class( dataset() ))
           
-          # Testing 
-            # saveRDS( dataset() , 'dataset.rds' )
-            # saveRDS( formula_elements() , 'formula_elements.rds' )
-            # saveRDS( ousTree() , 'ousTree.rds' )
-          
+            if ( ! 'COUNT' %in% names( dataset() )){
+              
+              showModal(
+                modalDialog( title = "Data is the wrong type and will not be used", 
+                             easyClose = TRUE ,
+                             size = 's' ,
+                             footer= '(click anywhere to continue)'
+                             )
+                )
+              return()
+            } 
+  
+              
+            if ( !'effectiveLeaf' %in% names( dataset() ) ){
+              
+              showModal(
+                modalDialog( title = "Preparing raw data for analysis.  Just a moment...", 
+                             easyClose = TRUE ,
+                             size = 's' ,
+                             footer= '(click anywhere to continue)'
+                             )
+                )
+              
+              cat( '\n -- preparing data1')
+              d1 = data_1( dataset() , formula_elements() , ousTree()  )
+              cat( '\n - data1 names:', names( d1 ))
+              cat( '\n - data1 rows:', nrow( d1 ))
+              
+              removeModal()
+              
+              
+              showModal(
+                modalDialog( title = 'Saving prepared data....', 
+                             easyClose = TRUE ,
+                             size = 's' ,
+                             footer= '(click anywhere to continue)'
+                             )
+                )
+              
+              
+              # Save prepared file
+              cat('\n - saving prepared file'  )
+              saveRDS( d1, file = dataset.file() )
+              removeModal()
+            
+            } else {
+              cat( '\n -- data1 already prepared') 
+              d1 = dataset()
+            }
+            
+          # Testing
+            # saveRDS( data1 , 'data1.rds' )
+            cat( '\n - d1 class:', class( d1 ))
+            
+            # Add value column if missing (now added in data_1 function)
+            if ( ! 'value' %in% names( d1 ) ){
+              
+              cat('\n - data_widget adding value column')
+              d1 = d1 %>% mutate( value = !is.na( SUM ) )
+              # data1 = setDT( data1 )[ , value := !is.na( SUM ) ] 
+            }
+            
+            removeModal()
+            
+            # keyvars = key_vars( dataset() )
+            # indexvars = index2_var( dataset() )
+            # cat( '\n - dataset() index and keyvars:\n  -- ' , indexvars , "\n  -- " , keyvars )
+            # 
+            # d1 = as_tsibble( d1, index = {{ indexvars }} , key = {{ keyvars }} )
         
-          if ( ! 'COUNT' %in% names( dataset() )){
+            cat( "\n - end d1  class/cols:\n -- " , class( d1 ) , "\n -- " ,  names( d1)  , "\n  " )
             
-            showModal(
-              modalDialog( title = "Data is the wrong type and will not be used", 
-                           easyClose = TRUE ,
-                           size = 's' ,
-                           footer= '(click anywhere to continue)'
-                           )
-              )
-            return()
-          } 
-
-            
-          if ( !'effectiveLeaf' %in% names( dataset() ) ){
-            
-            showModal(
-              modalDialog( title = "Preparing raw data for analysis.  Just a moment...", 
-                           easyClose = TRUE ,
-                           size = 's' ,
-                           footer= '(click anywhere to continue)'
-                           )
-              )
-            
-            cat( '\n* preparing data1')
-            data1 = data_1( dataset() , formula_elements() , ousTree()  )
-            cat( '\n - data1 names:', names( data1 ))
-            cat( '\n - data1 rows:', nrow( data1 ))
-            
-            removeModal()
-            
-            
-            showModal(
-              modalDialog( title = 'Saving prepared data....', 
-                           easyClose = TRUE ,
-                           size = 's' ,
-                           footer= '(click anywhere to continue)'
-                           )
-              )
-            
-            
-            # Save prepared file
-            cat('\n - saving prepared file'  )
-            saveRDS( data1, file = dataset.file() )
-            removeModal()
-          
-          } else {
-            cat( '\n* data1 already prepared') 
-            data1 = dataset()
-          }
-          
-        # Testing
-          # saveRDS( data1 , 'data1.rds' )
-          
-          # Add value column if missing (now added in data_1 function)
-          if ( ! 'value' %in% names( data1 ) ){
-            # data1 = data1 %>% mutate( value = !is.na( SUM ) )
-            data1 = setDT( data1 )[ , value := !is.na( SUM ) ]
-          }
-          
-          removeModal()
-          
-          cat( "\n - end data1.  cols:" , names( data1) )
-          return( data1 )
+            return( d1 )
       })
       
+        dt1 = reactive({
+          req( data1() )
+          cat( "\n* dt1 " )
+          cat( "\n - data1() class:" , class( data1()  ) )
+          d1 = data1()
+          cat( "\n - dt1 class:" , class( d1 ) )
+          return( d1 )
+        })
       
             
 
@@ -423,7 +441,8 @@ data_widget_server <- function( id ,
           formula_elements = formula_elements ,
           dataset.file = reactive({ input$dataset }) ,
           dataset =  dataset ,
-          data1 = data1
+          data1 = data1 ,
+          dt1 = dt1
             )
             )
         })
