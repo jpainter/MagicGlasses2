@@ -1975,6 +1975,17 @@
       "Hash": "115faaa1a50897c3e2339d1cb7d3d493",
       "Requirements": []
     },
+    "patchwork": {
+      "Package": "patchwork",
+      "Version": "1.1.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "c446b30cb33ec125ff02588b60660ccb",
+      "Requirements": [
+        "ggplot2",
+        "gtable"
+      ]
+    },
     "pillar": {
       "Package": "pillar",
       "Version": "1.7.0",
@@ -2817,10 +2828,10 @@
     },
     "survival": {
       "Package": "survival",
-      "Version": "3.3-1",
+      "Version": "3.4-0",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "f6189c70451d3d68e0d571235576e833",
+      "Hash": "04411ae66ab4659230c067c32966fc20",
       "Requirements": [
         "Matrix"
       ]
@@ -2873,10 +2884,10 @@
     },
     "terra": {
       "Package": "terra",
-      "Version": "1.5-21",
+      "Version": "1.6-7",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "a713f0d9f9a2b68af112a991adbfe5d5",
+      "Hash": "5d0f75086235149ccfa42c3f3596a079",
       "Requirements": [
         "Rcpp"
       ]
