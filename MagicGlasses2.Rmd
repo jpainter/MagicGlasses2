@@ -516,7 +516,7 @@ formula1_Widget_output =
 Reporting
 ========================
 
-```{r  }
+```{r  , eval= TRUE }
 source( 'reporting_widget.r' )
 reporting_widget_ui( "reporting1" )
 
@@ -532,7 +532,7 @@ Outliers
 ========================
 
 
-```{r  eval= TRUE }
+```{r  , eval= TRUE }
 source( 'cleaning_widget.r' )
 
 cleaning_widget_ui( "cleaning1" )

@@ -181,7 +181,7 @@ cleaning_widget_server <- function( id ,
     indicator = reactive({ data_widget_output$indicator() })
     formulas = reactive({ data_widget_output$formulas() })
     dataset.file = reactive({ data_widget_output$dataset.file() })
-    dataset = reactive({ data_widget_output$dataset() })
+    # dataset = reactive({ data_widget_output$dataset() })
     data1 = reactive({ data_widget_output$data1() })
     formula_elements = reactive({ data_widget_output$formula_elements() })
     dataElements = reactive({ metadata_widget_output$dataElements() })  
@@ -189,6 +189,7 @@ cleaning_widget_server <- function( id ,
     orgUnits = reactive({ metadata_widget_output$orgUnits() })  
     ousTree = reactive({ metadata_widget_output$ousTree() })  
     orgUnitLevels = reactive({ metadata_widget_output$orgUnitLevels() })
+    
     dates = reactive({ reporting_widget_output$dates() })
     data.hts = reactive({ reporting_widget_output$data.hts() })
     levelNames = reactive({ reporting_widget_output$levelNames() })
@@ -200,6 +201,7 @@ cleaning_widget_server <- function( id ,
     num_facilities = reactive({ reporting_widget_output$num_facilities() })
     plotData = reactive({ reporting_widget_output$plotData() })
     caption.text = reactive({ reporting_widget_output$caption.text() })
+    
     # data = reactive({ reporting_widget_output$d() })
     # data.total = reactive({ reporting_widget_output$data.total() })
     
@@ -216,7 +218,7 @@ cleaning_widget_server <- function( id ,
             pull( !! rlang::sym(levelNames()[2]) ) %>% 
             unique 
         
-        cat( '\n* updating outliers level2' )
+        cat( '\n* updating cleaning_widget level2' )
         updateSelectizeInput( session, 'level2' ,
                              choices = l2[!is.na(l2)]
                              , selected = NULL ,
@@ -285,12 +287,19 @@ cleaning_widget_server <- function( id ,
     } )
     
   # data names  ####
-    observe({
-      req( data1() )
-      cat('\n* observe data1()')
-      outlierData$df_data = data1()
+    observeEvent( data1() , {
+      # req( data1() )
+      cat('\n* cleaning_widget observe data1() class:' , class( data1() ) )
+      
+      # outlierData$df_data = data1()
+      x = data1()
+      
+      # cat('\n - cleaning_widget observe outlierData$df_data class:' , class( outlierData$df_data ) )
+      cat('\n - cleaning_widget observe outlierData$df_data class:' , class( x ) )
+      
       updateRadioButtons( session , "dataElement" , 
-                       choices = c( 'All' , outlierData$df_data$data %>% unique ) ) 
+                       # choices = c( 'All' , outlierData$df_data$data %>% unique ) ) 
+                        choices = c( 'All' , x$data %>% unique ) ) 
      
     })
   
@@ -306,14 +315,14 @@ cleaning_widget_server <- function( id ,
       )
       
       
-      cat('\n- observeEvent dates() update endingMonth-' ) 
+      cat('\n- cleaning_widget observeEvent dates() update endingMonth-' ) 
       updateSelectizeInput( session, 'endingMonth' ,
               choices =  dates  %>% as.character() ,
               selected = max( dates , na.rm = TRUE ) %>% as.character() ,
               server = TRUE
       )
       
-      cat('-done\n')
+      cat('\n  -done')
       } )
       
   # scan for MAD outliers  ####
@@ -348,12 +357,16 @@ cleaning_widget_server <- function( id ,
 })
       
     observeEvent( input$determineExtremeValues  , {
-      req( outlierData$df_data )
+      # req( outlierData$df_data )
+      req( data1() )
       cat('\n* observeEvent determineExtremeValues.  searchForMAD():' , searchForMAD() )
       
       #1. Scan for extreme values (MAD)
-      cat( "\n - determineExtremeValues.  mad15 %in% names( outlierData$df_data ):" , 'mad15' %in% names( outlierData$df_data ))
-      if ( 'mad15' %in% names( outlierData$df_data ) ){
+      x = data1()
+      # cat( "\n - determineExtremeValues.  mad15 %in% names( outlierData$df_data ):" , 'mad15' %in% names( outlierData$df_data ))
+      cat( "\n - determineExtremeValues.  mad15 %in% names( outlierData$df_data ):" , 'mad15' %in% names( x ))
+      # if ( 'mad15' %in% names( outlierData$df_data ) ){
+      if ( 'mad15' %in% names( x ) ){
 
         showModal( rerunMadModal() )
         cat('\n - reRun extreme values button:' , searchForMAD() )
@@ -376,10 +389,16 @@ cleaning_widget_server <- function( id ,
      
      if ( searchForMAD() ){
        scanForMAD( TRUE ) 
-       outlierData$df_data = data1.mad_seasonal()
+       
+       # cat('\n - cleaning_widget outlierData$df_data class:' , class( outlierData$df_data ) )
+       cat('\n - cleaning_widget data1():' , class( data1() ) )
+       
+       # outlierData$df_data 
+       x = data1.mad_seasonal()
+       cat( "\n - cleaning_widget searchForMAD class(x):" , class(x) )
      }
 
-     cat( '\n - searchForMAD names(outlierData$df_data) ' , names(outlierData$df_data) )
+     # cat( '\n - searchForMAD names(outlierData$df_data) ' , names(outlierData$df_data) )
      
       scanForMAD( FALSE )
       afterMAD( FALSE )
@@ -390,162 +409,172 @@ cleaning_widget_server <- function( id ,
     
     data1.mad_seasonal = reactive({
       
-        req( outlierData$df_data )
-        cat('\n* data1.mad' )
-        cat('\n - scanForMAD:' , scanForMAD() )
+          # req( outlierData$df_data )
+          req( data1() )
         
-        if ( scanForMAD() ){
-          cat('\n - data1.mad search')
-        
-          d = outlierData$df_data
-          nrow1 = nrow( d )
-          if ( nrow1 == 0 ){
-            cat('\n - nrow1 = 0')
-            return()
-          } else { cat('\n - outlierData has' , nrow1 , 'rows')}
+          cat('\n* cleaning_widget data1.mad_seasonal' )
+          cat('\n - scanForMAD:' , scanForMAD() )
           
-          # remove duplicate rows because downloads may create duplicates
-          u = d %>% as.data.table() %>% unique 
-          nrow2 = nrow( u )
-          cat('\n - There were', nrow1-nrow2, 'duplicates' )
-        
-         cat( '\n - Scanning for repetive key entry errors')
-         key_entry_errors =
-           count( as_tibble( d %>% 
-                           filter( nchar(original)>3 , 
-                                  effectiveLeaf ) ) , 
-                 original ) %>% 
-           arrange(-n) 
-       
-        # Default: values where the number happens at least 3 > than 
-         # medianof the top 10 rows 
-         key_entry_errors = key_entry_errors %>% 
-           filter(  n > 3 * median( 
-             key_entry_errors %>% filter( row_number()<11 )  %>%
-               pull( n ) )
-             ) %>% pull( original )
-      
-         # print( head( key_entry_errors ) )
-         if ( is_empty( key_entry_errors )  ) key_entry_errors = NA
-           
+          cat( '\n - class(outlierData$df_data):' , class( outlierData$df_data ))
+          cat('\n - cleaning_widget data1():' , class( data1() ) )
+          
+          if ( scanForMAD() ){
+            cat('\n - data1.mad search')
+          
+            # d = outlierData$df_data
+            d = data1()
+            cat( '\n - cleaning_widget data1.mad_seasonal class(d):' , class( d ))
+            
+            nrow1 = nrow( d )
+            if ( nrow1 == 0 ){
+              cat('\n - nrow1 = 0')
+              return()
+            } else { cat('\n - outlierData has' , nrow1 , 'rows')}
+            
+            # remove duplicate rows because downloads may create duplicates
+            u = d %>% as.data.table() %>% unique 
+            nrow2 = nrow( u )
+            cat('\n - There were', nrow1-nrow2, 'duplicates' )
+          
+           cat( '\n - Scanning for repetive key entry errors')
+           key_entry_errors =
+             count( as_tibble( d %>% 
+                             filter( nchar(original)>3 , 
+                                    effectiveLeaf ) ) , 
+                   original ) %>% 
+             arrange(-n) 
          
-        cat( '\n - scanning for MAD outliers')
-        .total = length( key_size( d ) )
-      
-        .threshold = 50
-    
-        withProgress(     message = "Searchng",
-                            detail = "starting ...",
-                            value = 0, {
-          
-
-              data.mad = mad_outliers( d , .total = .total , 
-                              .threshold = 50,
-                              key_entry_errors = key_entry_errors  )
-        })
+          # Default: values where the number happens at least 3 > than 
+           # medianof the top 10 rows 
+           key_entry_errors = key_entry_errors %>% 
+             filter(  n > 3 * median( 
+               key_entry_errors %>% filter( row_number()<11 )  %>%
+                 pull( n ) )
+               ) %>% pull( original )
         
-       cat( '\n - scanning for Seasonal outliers')
-       d = data.mad
-      .total = length( key_size( d ) )
-       cat( '\n - .total' , .total )
+           # print( head( key_entry_errors ) )
+           if ( is_empty( key_entry_errors )  ) key_entry_errors = NA
+             
+           
+          cat( '\n - scanning for MAD outliers')
+          .total = length( key_size( d ) )
+        
+          .threshold = 50
+      
+          withProgress(     message = "Searchng",
+                              detail = "starting ...",
+                              value = 0, {
+            
   
-      withProgress(  message = "Seasonal Outliers",
-                        detail = "starting ...",
-                        value = 0, {
+                data.mad = mad_outliers( d , .total = .total , 
+                                .threshold = 50,
+                                key_entry_errors = key_entry_errors  )
+          })
+          
+         cat( '\n - scanning for Seasonal outliers')
+         d = data.mad
+        .total = length( key_size( d ) )
+         cat( '\n - .total' , .total )
+    
+        withProgress(  message = "Seasonal Outliers",
+                          detail = "starting ...",
+                          value = 0, {
+        
+                data1.seasonal = seasonal_outliers( d , .total = .total , .threshold = 50)
+          })  
+          
+          showModal(
+                modalDialog( title = "Finished scanning for seasonal values; saving data", 
+                             easyClose = TRUE ,
+                             size = 'm' ,
+                             footer = "(click anywhere to close dialog box)"
+                             )
+                )
+          
+      cat('\n - saving data1.seasonal to replace dataset')
+      cat('\n - names(data1.seasonal):', names(data1.seasonal) )
       
-              data1.seasonal = seasonal_outliers( d , .total = .total , .threshold = 50)
-        })  
-        
-        showModal(
-              modalDialog( title = "Finished scanning for seasonal values; saving data", 
-                           easyClose = TRUE ,
-                           size = 'm' ,
-                           footer = "(click anywhere to close dialog box)"
-                           )
-              )
-        
-    cat('\n - saving data1.seasonal to replace dataset')
-    cat('\n - names(data1.seasonal):', names(data1.seasonal) )
-    
-    
-    saveRDS( data1.seasonal , paste0( data.folder(), dataset.file() ) )
-    removeModal()
+      
+      saveRDS( data1.seasonal , paste0( data.folder(), dataset.file() ) )
+      removeModal()
         
         } # end if scan for mad
-        
+      return( data1.seasonal  ) 
     })
 
     data1.mad = reactive({
         req( outlierData$df_data )
         cat('\n* data1.mad' )
         cat('\n - scanForMAD:' , scanForMAD() )
-        
+
         if ( scanForMAD() ){
           cat('\n - data1.mad search')
-        
+
           d = outlierData$df_data
+          cat( '\n - class(d)' , class(d) )
+
           nrow1 = nrow( d )
           if ( nrow1 == 0 ){
             cat('\n - nrow1 = 0')
             return()
           } else { cat('\n - outlierData has' , nrow1 , 'rows')}
-          
+
           # remove duplicate rows because downloads may create duplicates
-          u = d %>% as.data.table() %>% unique 
+          u = d %>% as.data.table() %>% unique
           nrow2 = nrow( u )
           cat('\n - There were', nrow1-nrow2, 'duplicates' )
-        
+
          cat( '\n - Scanning for repetive key entry errors')
          key_entry_errors =
-           count( as_tibble( d %>% 
-                           filter( nchar(original)>3 , 
-                                  effectiveLeaf ) ) , 
-                 original ) %>% 
-           arrange(-n) 
-       
-        # Default: values where the number happens at least 3 > than 
-         # medianof the top 10 rows 
-         key_entry_errors = key_entry_errors %>% 
-           filter(  n > 3 * median( 
+           count( as_tibble( d %>%
+                           filter( nchar(original)>3 ,
+                                  effectiveLeaf ) ) ,
+                 original ) %>%
+           arrange(-n)
+
+        # Default: values where the number happens at least 3 > than
+         # medianof the top 10 rows
+         key_entry_errors = key_entry_errors %>%
+           filter(  n > 3 * median(
              key_entry_errors %>% filter( row_number()<11 )  %>%
                pull( n ) )
              ) %>% pull( original )
-      
+
          # print( head( key_entry_errors ) )
          if ( is_empty( key_entry_errors )  ) key_entry_errors = NA
-           
-         
+
+
         cat( '\n - scanning for MAD outliers')
         .total = length( key_size( d ) )
-      
+
         .threshold = 50
-    
+
         withProgress(     message = "Searchng",
                             detail = "starting ...",
                             value = 0, {
-          
+
 
            data.mad = mad_outliers( d )
         })
-        
-        outlierData$df_data = data1.mad  
-        
+
+        outlierData$df_data = data1.mad
+
         # showModal(
-        #       modalDialog( title = "Finished scanning for extreme values", 
+        #       modalDialog( title = "Finished scanning for extreme values",
         #                    easyClose = TRUE ,
         #                    size = 'm' ,
         #                    footer = "(click anywhere to close dialog box)"
         #                    )
-        #       )  
-        
+        #       )
+
         # Save data for next time...
         cat('\n - saving data1.mad to replace dataset')
         saveRDS( data1.mad , paste0( data.folder(), dataset.file() ) )
         # removeModal()
-        
-        } 
-       
-        
+
+        }
+
+
         return( data1.mad )
     })
     
@@ -612,6 +641,7 @@ cleaning_widget_server <- function( id ,
       #   return( outlierData$df_data )
       # } 
       
+      
       if ( scanForSeasonal()  ){
       cat('\n* data1.seasonal search')
       
@@ -663,28 +693,32 @@ cleaning_widget_server <- function( id ,
     saveRDS( data1.seasonal , paste0( data.folder(), dataset.file() ) )
     removeModal()
     
-    outlierData$df_data = data1.seasonal 
+    # outlierData$df_data = data1.seasonal 
     
     searchForSeasonalOutliers( FALSE )
     afterSeasonal( TRUE )
       }
       
-    return( outlierData$df_data )
+    # return( outlierData$df_data )
+    return( data1.seasonal )
     })
    
   # Summary ####
     
     # d.mase
     data1.summary = reactive({
-        req( outlierData$df_data )
-        cat( '\n* data1.summary')
+        # req( outlierData$df_data )
+        req( data1() )
+        cat( '\n* cleaning_widget data1.summary')
         
-        d = outlierData$df_data
+        # d = outlierData$df_data
+        d = data1()
         if (! 'expected' %in% names( d ) ){
           cat( '\n - "expected" column not found')
           return()
           }
-          
+        
+        # data.table?  
         d.mase =  d %>%  as_tibble() %>%
             group_by( orgUnit, data.id ) %>%
             summarise( 
@@ -744,6 +778,7 @@ cleaning_widget_server <- function( id ,
       
       data1 = outlier.dataset()
       
+      # data.table? 
       d = data1 %>% 
         as_tibble() %>%
         group_by( Month , seasonal3 ) %>%
@@ -794,26 +829,27 @@ cleaning_widget_server <- function( id ,
     
   
   # Inspect Outliers #####
-    observeEvent( afterSeasonal() ,{
-      req( outlierData$df_data )
-      cat( '\n* observeEvent afterSeasonal')
-      x = outlier.dataset()
-    })
+    # observeEvent( afterSeasonal() ,{
+    #   req( outlierData$df_data )
+    #   cat( '\n* observeEvent afterSeasonal')
+    #   x = outlier.dataset()
+    # })
     
     outlier.dataset = reactive({
-      cat( '\n* outlier.dataset')
-      req( outlierData$df_data )
+
+      # req( outlierData$df_data )
       req( data1() )
       req( input$startingMonth )
       req( input$endingMonth )
       req( period() )
 
+      cat( '\n* cleaning_widget outlier.dataset():')
       # if ( is.null( outlierData$df_data ) ){
       #   cat( '\n - is.null( outlierData$df_data )' )
       #   outlierData$df_data  = data1()
       # }
 
-      d = outlierData$df_data
+      # d = outlierData$df_data
       
       # filter date
       # d = d %>% 
@@ -821,15 +857,25 @@ cleaning_widget_server <- function( id ,
       #     Month >= yearmonth( input$startingMonth ) , 
       #     Month <= yearmonth(input$endingMonth )
       #     )
-      d. = as.data.table( d )
+      # d. = as.data.table( outlierData$df_data )
+      d. = as.data.table( data1() )
    
+      cat( '\n - period():' , period()) 
+      cat( "\n - d. class/cols: \n -- ", class( d. ) , "\n -- ", names( d. ))
+      
+      # testing
+      # saveRDS( d. , "d..rds" )
+      
       if ( period() %in% 'Month' ){
         
-          d = d.[ which( 
-            Month >= yearmonth( input$startingMonth ) & Month <= yearmonth(input$endingMonth ) ) ,] %>%
+          # d = d.[ which( 
+          #   Month >= yearmonth( input$startingMonth ) & Month <= yearmonth(input$endingMonth ) ) ,] %>%
+          #   as_tibble
+          
+          d = d. %>% filter( Month >= yearmonth( input$startingMonth ) & Month <= yearmonth(input$endingMonth ) ) %>%
             as_tibble
    
-          cat('\n - data month' )
+          cat('\n - period is month' )
       }
       
       if ( period() %in% 'Week' ){
@@ -838,7 +884,7 @@ cleaning_widget_server <- function( id ,
             Week >= yearweek( input$startingMonth ) & Week <= yearweek(input$endingMonth ) ) ,] %>%
             as_tibble
    
-          cat('\n - data week' )
+          cat('\n - period is week' )
       }
       
 
@@ -942,6 +988,7 @@ cleaning_widget_server <- function( id ,
   
         cat('\n - totals' )
         
+        # data.table? 
         total = d %>%
           summarise( Total = sum( original , na.rm = T ) ,
                      # monthlyN = n() ,
@@ -949,6 +996,8 @@ cleaning_widget_server <- function( id ,
   
         
         cat('\n - summary' )
+        
+        # data.table? 
         os = d %>% 
           filter(  !is.na( mad15 ) ) %>%
           group_by_at( cols ) %>%
@@ -987,6 +1036,7 @@ cleaning_widget_server <- function( id ,
     # testing
     # saveRDS( d , 'data1.rds')
     # MAD Error
+    cat( "\n - input$Error:" , input$Error )
     if ( input$Error %in% names( d ) ){
       
             if ( ! 'All' %in% input$dataElement ) d = d %>% filter( data %in% input$dataElement )
