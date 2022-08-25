@@ -196,10 +196,11 @@ reporting_widget_server <- function( id ,
     dataset.file = reactive({ data_widget_output$dataset.file() })
     dataset = reactive({ data_widget_output$dataset() })
     data1 = reactive({ data_widget_output$data1() })
+    dt1 = reactive({ data_widget_output$dt1() })
     formula_elements = reactive({ data_widget_output$formula_elements() })
     orgUnits = reactive({ metadata_widget_output$orgUnits() })  
     orgUnitLevels = reactive({ metadata_widget_output$orgUnitLevels() })
-    data2 = reactive({ cleaning_widget_output$data })
+    data2 = reactive({ cleaning_widget_output$data2() })
     
     # see https://stackoverflow.com/questions/54438495/shift-legend-into-empty-facets-of-a-faceted-plot-in-ggplot2
     shift_legend3 <- function(p) {
@@ -214,15 +215,18 @@ reporting_widget_server <- function( id ,
     dates = reactive({
         req( data1() )
         req( period() )
-        cat('\n* dates:') 
+        cat('\n* reporting_widget dates:') 
         
+         cat('\n -data1 class:' , class( data1()) ) 
         .period = period()
         
         if ( ! .period %in% names( data1() ) ){
         cat('\n -- dataset does not contain column:' , .period )
         cat( '\n - dataset columns are:' , names( data1() ) )
         return()
-      }
+        }
+        
+        # data.table?
         dates = data1() %>% 
           ungroup %>%
           distinct( !! rlang::sym( .period ) ) %>%
@@ -238,8 +242,7 @@ reporting_widget_server <- function( id ,
 
     # reporting_month selection
     observeEvent(  dates() , {
-      cat('\n-observeEve
-          nt dates() update startingMonth-')
+      cat('\n - reporting_widget observeEvent dates() update startingMonth-')
       dates = dates()
       updateSelectizeInput( session, 'startingMonth' ,
               choices =  dates  %>% as.character()  ,
@@ -253,7 +256,7 @@ reporting_widget_server <- function( id ,
                             server = TRUE
       )
       
-      cat('\n- observeEvent dates() update endingMonth-' ) 
+      cat('\n - reporting_widget observeEvent dates() update endingMonth-' ) 
       updateSelectizeInput( session, 'endingMonth' ,
               choices =  dates  %>% as.character() ,
               selected = ( max( dates , na.rm = TRUE ) - 1 ) %>% as.character() ,
@@ -269,12 +272,17 @@ reporting_widget_server <- function( id ,
       cat('-done\n')
       } )
 
+    observeEvent( dt1() , {
+      cat( "\n* observeEvent dt1. class:" , class( dt1() ))
+    })
 
   # Update data
   observe({
-    cat( '\n* updating merge dataSets input' )
+    
     req( dataSets() )
-    cat( '\n- updating merge dataSets input' )
+    cat( '\n* updating merge dataSets input' )
+    cat( '\n - dataSets()', dataSets() )
+    
     if ( any( nchar( dataSets() > 0 ) ) ){
       updateSelectInput( session, 'merge' ,
                          choices =  dataSets()
@@ -285,7 +293,8 @@ reporting_widget_server <- function( id ,
   observeEvent( input$dataset_merge , {
     cat( '\n* updating merge dataSets to all' )
     req( dataSets() )
-    cat( '\n- updating merge dataSets to all' )
+    cat( '\n - dataSets:'  , dataSets() )
+    
     if( input$dataset_merge == TRUE ){
     if ( any( nchar( dataSets() > 0 ) ) ){ 
       updateSelectInput( session, 'merge' , 
@@ -330,7 +339,9 @@ reporting_widget_server <- function( id ,
   
   dataSets = reactive({
     req( data1() )
-    cat('\n* dataSets:')
+    cat('\n* reporting_widget dataSets:')
+    cat('\n - data1 class:' , class( data1()) ) 
+    
     if ( is_empty( data1() ) ){
       cat('\n - data1() is empty')
       return()
@@ -342,20 +353,24 @@ reporting_widget_server <- function( id ,
       return()
     }
     
-    x = setDT( data1() )[ !is.na( dataSet ) , dataSet , ] %>%
-              unique
+    # x = setDT( data1() )[ !is.na( dataSet ) , dataSet , ] %>%
+    # unique
     
-    # x = data1() %>% filter( !is.na( dataSet ) ) %>%
-    #   pull( dataSet ) %>% unique
+    #testing
+    # saveRDS( data1() , "data1.rds" )
+    
+    x = data1()[ !is.na( data1()$dataSet ) , ]$dataSet %>% unique
     
     cat('\n - there are' , length( x ) , 'dataSets')
+    cat('\n - \n, ' , x )
     return( x )
 })
 
   # Months and periods
   period = reactive({
       req( data1() )
-      cat('\n* period():')
+      cat('\n* reporting_widget period():')
+      cat('\n - data1 class:' , class( data1()) ) 
       
       weekly = any( map_lgl( data1() ,
                              ~any(class(.x) %in% 'yearweek'  )) )
@@ -368,7 +383,10 @@ reporting_widget_server <- function( id ,
   most_recent_period = reactive({
       req( data1() )
       req( period() )
-      cat( '\nLooking for most recent' , period() )
+      cat( '\n* reporting_widget Looking for most recent' , period() )
+      cat('\n - data1 class:' , class( data1()) ) 
+      
+      # data.table?
       mrp = max( data1() %>%
                    pull( !! rlang::sym( period() ) ), na.rm = TRUE )
       # mrp = max( data1()[ , 'Month'] , na.rm = TRUE )
@@ -389,11 +407,11 @@ reporting_widget_server <- function( id ,
 
       req( data1() )
       req( period() )
-      cat( '\n* d:')
+      cat( '\n* reporting_widget d:')
     
       # Testing 
       # saveRDS( data1() , 'dataset.rds' )
-      cat( "\ - data1() cols:" , names( data1() ))
+      cat( "\n - reporting_widget data1() class/cols:" , "\n --", class( data1() ) , "\n --", names( data1() ))
       
       if ( nrow( data1() ) == 0 ){
         cat('\n - data1() has zero rows')
@@ -458,7 +476,7 @@ reporting_widget_server <- function( id ,
           # glimpse( data )
         }
     
-      cat( '\n-nrow( d ):' , nrow( data ))
+      cat( '\n - nrow( d ):' , nrow( data ))
     
       if ( input$level %in% 'leaf'){  
         
@@ -475,14 +493,14 @@ reporting_widget_server <- function( id ,
   #   filter( !! rlang::sym( period() ) <= most_recent_period() )
   
     if ( input$source %in% 'Original' ){
-      cat('\n- d() source is original')
+      cat('\n - d() source is original')
       
       # data = data %>% mutate( dataCol = original )
       data = setDT( data )[ , dataCol := original , ] 
     }  
     
     if ( input$source %in% 'Cleaned' & 'seasonal3' %in% names(data) ){
-      cat( '\n-' , paste('cleaning removes', sum( data$value , na.rm = T ) - sum( data$seasonal3 , na.rm = T )  , 'data points' ) )
+      cat( '\n -' , paste('cleaning removes', sum( data$value , na.rm = T ) - sum( data$seasonal3 , na.rm = T )  , 'data points' ) )
       
       # data = data %>% 
       #   mutate( dataCol = ifelse( seasonal3, original, NA  ) )
@@ -524,12 +542,12 @@ reporting_widget_server <- function( id ,
     
     # #print( 'd: max period ' ); #print( max( d$period ))
     
-    cat( '\n-' , 'd: max period ' ); 
-    cat( '\n-' , max( data %>% pull( period  ) , na.rm = TRUE ) )
+    cat( '\n - d: max period: ' , max( data %>% pull( period  ) , na.rm = TRUE )  ); 
     # #print( max( data$Month , na.rm = TRUE ))
     
     
-    cat( '\n- end d():', nrow(data), 'rows' )
+    cat( '\n - end d():', nrow(data) , 'rows' )
+    cat( "\n - reporting_widget d() class/cols: \n -- " , class( data ) , "\n -- " , names( data ))
     
     # testing
     # saveRDS( data, 'reporting_widget_d.rds')
@@ -544,13 +562,13 @@ reporting_widget_server <- function( id ,
       req( most_recent_period() )
       req( period() )
       
-      cat( '\n* orgunit.reports()' )
+      cat( '\n* reporting_widget orgunit.reports()' )
       
       mrm = most_recent_period()
       
       year_var = 'calendar_year' # ifelse( input$calendar_year , 'calendar_year' , 'months12' )
       
-      cat('\n-orgunit.reports--data')
+      cat('\n - orgunit.reports--data')
       data = d()
       
       #Testing
@@ -562,7 +580,7 @@ reporting_widget_server <- function( id ,
         
       }  
        
-      cat('\n-orgunit.reports--period') 
+      cat('\n - orgunit.reports--period') 
       .period = period()
       
       #Testing
@@ -623,7 +641,7 @@ reporting_widget_server <- function( id ,
     
   orgunit.monthly.reports = reactive({ 
       req( input$data_categories )
-      cat( '\n* orgunit.monthly.reports():' )
+      cat( '\n* reporting_widget orgunit.monthly.reports():' )
       
       # mrp = most_recent_period()
       .period = period()
@@ -705,7 +723,7 @@ reporting_widget_server <- function( id ,
   # level 2
   observeEvent( data1()  , {  
     if( nrow( data1() ) > 0 && 'level' %in% names( data1() )){
-            cat( '\n* updating level2' )
+            cat( '\n* reporting_widget updating level2' )
             updateSelectInput( session, 'level2' ,
                                 choices =
                                   data1() %>%
@@ -720,7 +738,7 @@ reporting_widget_server <- function( id ,
   observe({ #Event( data1()  , {  
     req( input$level2 )
     if( nrow( data1() ) > 0 && 'level' %in% names( data1() )){
-              cat( '\n* updating level3' )
+              cat( '\n* reporting_widget updating level3' )
       
               ls = setDT( data1() )[ base::get( levelNames()[2] ) %in% input$level2 , 
                                      base::get( levelNames()[3]  ), 
@@ -749,7 +767,7 @@ reporting_widget_server <- function( id ,
   observe({ #Event( data1()  , {    
     req( input$level3 )          
     if( nrow( data1() ) > 0 && 'level' %in% names( data1() ) ){
-              cat( '\n* updating level4' )
+              cat( '\n* reporting_widget updating level4' )
       
               ls = setDT( data1() )[ base::get( levelNames()[3] ) %in% input$level3 , 
                                      base::get( levelNames()[4]  ), 
@@ -773,7 +791,8 @@ reporting_widget_server <- function( id ,
       req( input$level4 )
       req( levelNames() )
       req( data1() )
-      cat('\n* level5:')
+      cat('\n* reporting_widget level5:')
+      cat('\n - data1 class:' , class( data1()) ) 
       
       if( is_empty( data1() ) ) return( NA )
       if( is.na( levelNames()[5] ) ) return( NA ) 
@@ -805,7 +824,7 @@ reporting_widget_server <- function( id ,
   
   levelNames = reactive({ 
     req( orgUnits() )
-    cat( '\n* levelNames():' )
+    cat( '\n* reporting_widget levelNames():' )
     l = count( orgUnits() %>% as_tibble, level, levelName ) %>% 
       arrange( level ) %>% pull(levelName ) 
     l = l[ !is.na(l) ]
@@ -815,7 +834,7 @@ reporting_widget_server <- function( id ,
 
   levels = reactive({ 
     req( orgUnits() )
-    cat( '\n* levels():' )
+    cat( '\n* reporting_widget levels():' )
     levels = 
       count( orgUnits() %>% as_tibble, level, levelName ) %>% 
       arrange( level ) 
@@ -902,14 +921,14 @@ reporting_widget_server <- function( id ,
          filter( n == max( mr$n ) ) %>%
          pull( orgUnit ) %>% unique
        
-       cat( "\n***mostReports selectedOUs:", length(s), 'orgUnits' ); toc() 
+       cat( "\n*** mostReports selectedOUs:", length(s), 'orgUnits' ); toc() 
        return( s )
        }
     
     if( is.null( selected$x ) ) return( NULL )
     
     if ( selected$chart == 1 ){
-        cat('\n***chart1 selected$x:' , selected$x )
+        cat('\n*** chart1 selected$x:' , selected$x )
         select_month =  as.numeric( orgunit.reports()$n_periods ) %in% selected$x
         cat('\nchart1 select_month:' , sum(select_month) ) 
         cat('\nchart1 orgunit.reports()$year:' , orgunit.reports()$year ) 
@@ -920,7 +939,7 @@ reporting_widget_server <- function( id ,
         
   
       } else {
-        cat('\n***chart2 selected$x:' , selected$x )
+        cat('\n*** chart2 selected$x:' , selected$x )
         select_month = month( orgunit.monthly.reports() %>%
                                 pull( !! rlang::sym( period() ) ) ) %in% selected$x
         selectedRows = select_month &
@@ -932,16 +951,16 @@ reporting_widget_server <- function( id ,
         
       }
   
-        cat( "\n***end selectedOUs:", length(s), 'orgUnits' ); toc()  # #print( selectedOUs )
+        cat( "\n*** end selectedOUs:", length(s), 'orgUnits' ); toc()  # #print( selectedOUs )
         
         # Testing
-        saveRDS( s, 'selectedOUs.rds')
+        # saveRDS( s, 'selectedOUs.rds')
         
         return( s )
       })
     
   x.annual = reactive({
-    cat( '\n* x.annual()' )
+    cat( '\n* reporting_widget x.annual()' )
     tic()
     # x.a = orgunit.reports() %>% 
     #       filter( orgUnit %in% selectedOUs() )   # %>%  
@@ -990,7 +1009,7 @@ reporting_widget_server <- function( id ,
     req( monthly.reports() )
     req( period() )
     
-    cat('\n* plot2():')
+    cat('\n* reporting_widget plot2():')
     .period = period()
     cat('\n - period():', .period )
     
@@ -1141,7 +1160,7 @@ reporting_widget_server <- function( id ,
    #print( 'plotData():')
    req( d() )
    req( input$data_categories )
-   cat("\n* plotData():")
+   cat("\n* reporting_widget plotData():")
   
     data = setDT( d() )[ , Selected := 'All', ]
     # data = d() %>% mutate( Selected = 'All' ) 
@@ -1182,7 +1201,7 @@ reporting_widget_server <- function( id ,
 
   group_by_cols = reactive({
     # req( input$split )
-    cat("\n* group_by_cols():")
+    cat("\n* reporting_widget group_by_cols():")
     
     .period = period()
     group_by_cols =  c(.period , 'orgUnit', 'Selected',
@@ -1212,7 +1231,7 @@ reporting_widget_server <- function( id ,
     req( input$startDisplayMonth )
     req( input$endDisplayMonth )
     
-    cat( '\n* data.total()' )
+    cat( '\n* reporting_widget data.total()' )
   
     
        .period = period()
@@ -1224,7 +1243,7 @@ reporting_widget_server <- function( id ,
   
       # Total categories by facilities and datasets
       data = plotData() 
-      cat( "\n - starting with plotData().  cols:" , names( plotData() ) )
+      cat( "\n - starting with plotData().  class/cols:\n -- " , class( plotData() ) , "\n -- " , names( plotData() ) )
       
       # Testing
       # saveRDS( data , 'plotData.rds' )
@@ -1234,7 +1253,7 @@ reporting_widget_server <- function( id ,
       
       mergeDatasets = input$merge %>% str_replace_all( fixed("\n"), "") 
       
-      cat( '\n -  mergeDatasets:' , mergeDatasets , class( mergeDatasets ) )
+      cat( '\n -  mergeDatasets:' , mergeDatasets  )
       
       # Testing
       # saveRDS( input$merge , 'merge.rds' )
@@ -1310,7 +1329,7 @@ reporting_widget_server <- function( id ,
       mean.merge = input$dataset_merge_average 
         
       if ( mean.merge ) {
-            cat( '\n** merge data.table MEAN') 
+            cat( '\n -  merge data.table MEAN') 
             
           data = data %>%
                 mutate( dataSet = 'Merged') %>%
@@ -1318,7 +1337,7 @@ reporting_widget_server <- function( id ,
                 # Mean of dataSets within orgUnit
                 .[  , .(dataCol = mean( dataCol , na.rm = TRUE  )) , by =  .group_by_cols ] 
   
-            cat( '\ndataMerge done' );  # glimpse( dataMerge )
+            cat( '\n - Merge done' );  # glimpse( dataMerge )
         
       } 
       
@@ -1407,7 +1426,7 @@ reporting_widget_server <- function( id ,
   backtick <- function(x) paste0("`", x, "`")
   
   aggregateDataKey = reactive({
-    cat('\n* aggregateDataKey():' )
+    cat('\n* reporting_widget aggregateDataKey():' )
     
     adms = backtick( levelNames() )
     
@@ -1435,10 +1454,11 @@ reporting_widget_server <- function( id ,
   aggregatePlotData = reactive({
     # req( data.hts() )
     req( data.total() )
-    cat('\n* aggregatePlotData():' )
+    cat('\n* reporting_widget aggregatePlotData():' )
     
+    # testing
     # saveRDS( data.hts() , 'data.hts.rds' )
-    saveRDS( levelNames() , 'levelNames.rds')
+    # saveRDS( levelNames() , 'levelNames.rds')
     
     .d = data.total() %>% 
       aggregate_key(  .spec = !!rlang::parse_expr( aggregateDataKey() ) ,
@@ -1496,7 +1516,7 @@ reporting_widget_server <- function( id ,
     }
     
        
-       cat('\n- end aggregatePlotData()' )
+       cat('\n -  end aggregatePlotData()' )
        return( .d )
    
   })
@@ -1517,11 +1537,12 @@ reporting_widget_server <- function( id ,
     
     req( aggregatePlotData() )
     req( input$split )
-    cat('\n* plotAgregateValue():' )
+    cat('\n* reporting_widget plotAgregateValue():' )
   
     .d = aggregatePlotData()
     
-    saveRDS(.d, 'plot3_data.rds')
+    # testing
+    # saveRDS(.d, 'plot3_data.rds')
     
     data.text = paste( unique( plotData()$data ),
                        collapse = " + " ) 
