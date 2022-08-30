@@ -989,31 +989,54 @@ cleaning_widget_server <- function( id ,
         cat('\n - totals' )
         
         # data.table? 
-        total = d %>%
-          summarise( Total = sum( original , na.rm = T ) ,
-                     # monthlyN = n() ,
-                     N = sum( !is.na( original )))
+        # total = d %>%
+        #   summarise( Total = sum( original , na.rm = T ) ,
+        #              # monthlyN = n() ,
+        #              N = sum( !is.na( original )))
+        
+        #Testing
+        # saveRDS( d, 'outlier.summary.table.d.rds')
   
+        total = setDT( d )[ , .( Total = sum( original , na.rm = T ) ,
+                                 # monthlyN = n() ,
+                                 N = sum( !is.na( original )) ) ,  ]
         
         cat('\n - summary' )
         
         # data.table? 
-        os = d %>% 
-          filter(  !is.na( mad15 ) ) %>%
-          group_by_at( cols ) %>%
-          summarise( n = sum( !is.na( original )) , 
-                     total = sum( original , na.rm = T )  ,
-                     max = max( original , na.rm = T ) %>% comma()
-                     ) %>%
+        # os = d %>% 
+        #   filter(  !is.na( mad15 ) ) %>%
+        #   group_by_at( cols ) %>%
+        #   summarise( n = sum( !is.na( original )) , 
+        #              total = sum( original , na.rm = T )  ,
+        #              max = max( original , na.rm = T ) %>% comma()
+        #              ) %>%
+        #   
+        #   bind_cols( total  ) %>%
+        #   
+        #   mutate( 
+        #              `%N` = percent( n / N ) ,
+        #              `%Total` = percent( total / Total ) ,
+        #              n = comma( n ) ,
+        #              total = comma( total )
+        #              )   %>%
+        #   ungroup %>%
+        #   select( !! cols  , n ,  `%N` ,  max , total , `%Total`  ) 
+        
+        os = setDT( d )[ !is.na( mad15 ) , 
+                         .( n = sum( !is.na( original )) , 
+                            total = sum( original , na.rm = T )  ,
+                            max = max( original , na.rm = T ) %>% comma() ) , 
+                         cols] %>%
           
           bind_cols( total  ) %>%
           
-          mutate( 
-                     `%N` = percent( n / N ) ,
-                     `%Total` = percent( total / Total ) ,
-                     n = comma( n ) ,
-                     total = comma( total )
-                     )   %>%
+          .[ , `:=` (
+            `%N` = percent( n / N ) ,
+            `%Total` = percent( total / Total ) ,
+            n = comma( n ) ,
+            total = comma( total )
+          ) , cols  ]  %>%
           ungroup %>%
           select( !! cols  , n ,  `%N` ,  max , total , `%Total`  ) 
         

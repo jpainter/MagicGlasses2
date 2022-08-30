@@ -169,6 +169,22 @@ metadata_widget_server <- function( id ,
         z = systemInfo()
         zz = resources() 
         
+        # also save as RDS
+        meta = list( systemInfo = z ,
+                     meta_variables = meta_variables() ,
+                     orgUnitLevels = o ,
+                     orgUnits = p ,
+                     dataElementDictionary = x ,
+                     indicatorDictionary = y ,
+                     dataSets. = dataSets.() ,
+                     categories = categories() ,
+                     dataElementGroups =  dataElementGroups() ,
+                     ousTree = q ,
+                     geoFeatures = w 
+        ) 
+        
+        saveRDS( meta , paste0( dir() , "metadata.RDS" ) )
+        
         removeModal()
 
       } else {
@@ -502,10 +518,10 @@ metadata_widget_server <- function( id ,
     cat( '\n -creating dsde..' )
     
     # testing
-    saveRDS( ds , 'ds.rds')
-    saveRDS( de , 'de.rds')
-    saveRDS( cats ,  'cats.rds' )
-    saveRDS( deg ,  'deg.rds' )
+    # saveRDS( ds , 'ds.rds')
+    # saveRDS( de , 'de.rds')
+    # saveRDS( cats ,  'cats.rds' )
+    # saveRDS( deg ,  'deg.rds' )
     
     
     showModal(
@@ -1054,8 +1070,8 @@ metadata_widget_server <- function( id ,
         )
     
     #TESTING
-    saveRDS( ous , 'ous.rds');  
-    saveRDS( ouLevels, 'ouLevels.rds')
+    # saveRDS( ous , 'ous.rds');  
+    # saveRDS( ouLevels, 'ouLevels.rds')
     
     ous.tree = ous_tree( ous , ouLevels )
     
@@ -1095,7 +1111,7 @@ metadata_widget_server <- function( id ,
      cat( '\n - finished metadata_widget ous.tree \n')
      
      # testing
-     saveRDS( ous.tree , 'ousTree.rds' )
+     # saveRDS( ous.tree , 'ousTree.rds' )
      
      return( ous.tree )
   
@@ -1201,7 +1217,7 @@ metadata_widget_server <- function( id ,
       # print( 'geosf[[ l ]]') ; print(  glimpse( geosf[[ l ]] ) )
       
  
-      saveRDS( geosf, 'pre_bind_geosf.rds')
+      # saveRDS( geosf, 'pre_bind_geosf.rds')
       
       # before binding, find common col
       geo_nonzero_rows = map_dbl( geosf, ~ifelse( !is_empty(.x) , nrow(.x), 0  )) > 0
@@ -1228,7 +1244,7 @@ metadata_widget_server <- function( id ,
       cat( "rows with ous linked to orgUnits" , nrow( geosf. ) , '\n')
       
       # test
-      saveRDS( geosf. , 'geosf.rds')
+      # saveRDS( geosf. , 'geosf.rds')
       
       filename = paste0( dir() , "geoFeatures_", Sys.Date()  , ".rds"  )
       saveRDS( geosf. , filename )
@@ -1470,7 +1486,25 @@ metadata_widget_server <- function( id ,
       writeDataTable( wb, sheet10, ousTree() , rowNames = FALSE )
 
       openxlsx::saveWorkbook( wb , file , overwrite = TRUE )
-     }
+      
+      # also save as RDS
+      meta = list( systemInfo = systemInfo ,
+                   meta_variables =meta_variables() ,
+                   orgUnitLevels = orgUnitLevels() ,
+                   orgUnits = orgUnits() ,
+                   dataElementDictionary = dataElementDictionary() ,
+                   indicatorDictionary = indicatorDictionary() ,
+                   dataSets. = dataSets.() ,
+                   categories = categories() ,
+                   dataElementGroups =  dataElementGroups() ,
+                   ousTree = ousTree() ,
+                   geoFeatures = geoFeatures() 
+      ) 
+      
+      saveRDS( meta , "metadata.RDS" )
+      
+    }
+    
   )
 
 

@@ -617,7 +617,7 @@ reporting_widget_server <- function( id ,
       #         year = factor( year ) )
       
       ##print( 'o.r:') ; # #print(head(o.r))
-      #print( 'end orgunit.reports' )
+      cat( '\n - end orgunit.reports' )
       return(o.r.)
     })
     
