@@ -1004,42 +1004,41 @@ cleaning_widget_server <- function( id ,
         cat('\n - summary' )
         
         # data.table? 
-        # os = d %>% 
+        # os = d %>%
         #   filter(  !is.na( mad15 ) ) %>%
         #   group_by_at( cols ) %>%
-        #   summarise( n = sum( !is.na( original )) , 
+        #   summarise( n = sum( !is.na( original )) ,
         #              total = sum( original , na.rm = T )  ,
         #              max = max( original , na.rm = T ) %>% comma()
         #              ) %>%
-        #   
+        # 
         #   bind_cols( total  ) %>%
-        #   
-        #   mutate( 
+        # 
+        #   mutate(
         #              `%N` = percent( n / N ) ,
         #              `%Total` = percent( total / Total ) ,
         #              n = comma( n ) ,
         #              total = comma( total )
         #              )   %>%
         #   ungroup %>%
-        #   select( !! cols  , n ,  `%N` ,  max , total , `%Total`  ) 
+        #   select( !! cols  , n ,  `%N` ,  max , total , `%Total`  )
         
-        os = setDT( d )[ !is.na( mad15 ) , 
-                         .( n = sum( !is.na( original )) , 
+        os <- setDT( d )[ !is.na( mad15 ) , 
+                         .( n = sum( !is.na( original ) ) , 
                             total = sum( original , na.rm = T )  ,
                             max = max( original , na.rm = T ) %>% comma() ) , 
                          cols] %>%
-          
+          as_tibble %>% 
+          arrange_at( cols ) %>%
           bind_cols( total  ) %>%
-          
-          .[ , `:=` (
-            `%N` = percent( n / N ) ,
-            `%Total` = percent( total / Total ) ,
-            n = comma( n ) ,
-            total = comma( total )
-          ) , cols  ]  %>%
-          ungroup %>%
+          mutate(
+                     `%N` = percent( n / N ) ,
+                     `%Total` = percent( total / Total ) ,
+                     n = comma( n ) ,
+                     total = comma( total )
+                     )   %>%
           select( !! cols  , n ,  `%N` ,  max , total , `%Total`  ) 
-        
+          
         cat('\n - summary has' , nrow(os) , 'rows')
         return( os )
     })
