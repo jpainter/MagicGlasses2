@@ -1081,7 +1081,7 @@ evaluation_widget_server <- function( id ,
 
     } else {
 
-      cat( '\n - amds:',  adms )
+      cat( '\n - adms:',  adms )
       cat( '\n - input$agg_level:',  input$agg_level )
 
       hts_level = which( input$agg_level == levelNames()   )
@@ -1106,7 +1106,7 @@ evaluation_widget_server <- function( id ,
 
     # # Cross by split
     if ( !split() %in% 'None' ) hts =
-      paste( split() , '*' ,  hts )
+      paste( backtick( split() ) , '*' ,  hts )
     #
     # Cross by selected and split
     # if ( length( selectedOUs() ) > 0  & !input$split %in% 'None' ) hts =
@@ -1146,6 +1146,7 @@ evaluation_widget_server <- function( id ,
                       # doses = sum( !!rlang::parse_expr( 'doses' ) , na.rm = T )
                       )
     } else {
+      
     data.hts = data.hts %>%
       aggregate_key(  .spec = !!rlang::parse_expr( hts() ) ,
                       total = sum( total , na.rm = T )

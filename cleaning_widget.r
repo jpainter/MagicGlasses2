@@ -359,7 +359,7 @@ cleaning_widget_server <- function( id ,
     observeEvent( input$determineExtremeValues  , {
       # req( outlierData$df_data )
       req( data1() )
-      cat('\n* observeEvent determineExtremeValues.  searchForMAD():' , searchForMAD() )
+      cat('\n* cleaning_widget observeEvent determineExtremeValues.  searchForMAD():' , searchForMAD() )
       
       #1. Scan for extreme values (MAD)
       x = data1()

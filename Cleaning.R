@@ -105,7 +105,7 @@ unseasonal = function( x ,
 
 
 # MASE function borrowed from Metrics package, modified with sum na.rm = TRUE
-ae = function (actual, predicted){
+abs_ae = function (actual, predicted){
   return(abs(actual - predicted))
   
 }
@@ -114,8 +114,8 @@ mase = function (actual, predicted, step_size = 1 ){
     naive_start <- step_size + 1
     n <- as.numeric(length(actual))
     naive_end <- n - step_size
-    sum_errors <- sum( ae(actual, predicted), na.rm = TRUE )
-    naive_errors <- sum(ae(actual[naive_start:n], actual[1:naive_end]), na.rm = TRUE)
+    sum_errors <- sum( abs_ae(actual, predicted), na.rm = TRUE )
+    naive_errors <- sum(abs_ae(actual[naive_start:n], actual[1:naive_end]), na.rm = TRUE)
     
     # if ( (n * naive_errors/naive_end) > 0 |(n * naive_errors/naive_end) < 0 ){
       mase = sum_errors/(n * naive_errors/naive_end) 

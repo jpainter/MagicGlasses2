@@ -411,7 +411,7 @@ reporting_widget_server <- function( id ,
     
       # Testing 
       # saveRDS( data1() , 'dataset.rds' )
-      cat( "\n - reporting_widget data1() class/cols:" , "\n --", class( data1() ) , "\n --", names( data1() ))
+      cat( "\n - reporting_widget data1() class/cols:" , class( data1() ) )
       
       if ( nrow( data1() ) == 0 ){
         cat('\n - data1() has zero rows')
@@ -421,9 +421,15 @@ reporting_widget_server <- function( id ,
       .period = period()
       cat('\n - period is', .period )
       
-      data = setDT( data1()  )[ , period := base::get( .period )  , ]
+      # NB: setting data = setDT( data1()) has side effect of changing data1() to data.table. 
+      data = as.data.table( data1() )
+      
+      data = data[ , period := base::get( .period )  , ]
       # data = data1()  %>% mutate( period = !!rlang::sym( .period ))
       
+      cat( "\n - reporting_widget data class/cols:" ,class( data ) )
+      cat( "\n - reporting_widget data1() class/cols:" , class( data1() ) )
+           
       if ( !is_empty( input$level2 ) ){
         cat(  '\n - filtering data by' , levelNames()[2] , "=" , input$level2 ) 
         
@@ -586,7 +592,7 @@ reporting_widget_server <- function( id ,
       #Testing
       # saveRDS( .period, '.period.rds')
     
-      cat('\n-orgunit.reports--o.r.')
+      # cat('\n-orgunit.reports--o.r.')
       # o.r. =
       #   data %>% as_tibble() %>% ungroup %>%
       # 
@@ -1512,7 +1518,7 @@ reporting_widget_server <- function( id ,
     # ensure output is tbl_ts
     if ( ! 'tbl_ts' %in% class( .d )  ){
       cat( '\n - convert .d to tsibble ')
-      .d = .d  %>% as_tsibble( key = keyVars , index = indexVar  )
+      .d = .d  %>% as_tsibble( key = all_of( keyVars ) , index = indexVar  )
     }
     
        

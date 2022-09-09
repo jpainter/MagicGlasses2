@@ -81,7 +81,7 @@ metadata_widget_ui <- function( id ) {
                          DTOutput( ns( 'OrgUnit_duplicates' )  ) 
                          ) ,
 
-                tabPanel("geoFeatures", style = "height:90vh;" ,
+                tabPanel("Map", style = "height:90vh;" ,
                          
                          # DTOutput( ns( 'geoFeaturesTable' ) ) ,
                          # fluidPage(
@@ -1175,10 +1175,11 @@ metadata_widget_server <- function( id ,
   geoFeatures = reactive({
     
     req( orgUnits() , orgUnitLevels() )
-   
+    cat('\n * geoFeatures():'  )
+    
     if (  login() & loginFetch() ){
       
-      cat( 'geoFeatures...\n')
+      cat( '\n - geoFeatures...')
  
       showModal(
         modalDialog( title = "Downloading list of geoFeatures", 
@@ -1189,7 +1190,7 @@ metadata_widget_server <- function( id ,
         )
  
       levels = orgUnitLevels()$level %>% unique 
-      cat( '- geoFeatures has levels:' , length( levels ) , '\n')
+      cat( '\n - geoFeatures has levels:' , length( levels ) , '\n')
 
       geosf = list()
       
@@ -1203,13 +1204,13 @@ metadata_widget_server <- function( id ,
       
       for ( l in levels ){
         
-        cat( '-geoFeatures download level-' , l , '\n' )
+        cat( '\n -geoFeatures download level-' , l , '\n' )
         
         # xx= data.frame()
         xx =  geoFeatures_download( level = l  )
         # glimpse( x )
         if ( "sf" %in% class(xx) ){  
-          cat('\n this level is SF \n')
+          cat('\n - this level is SF \n')
           geosf[[ l ]] = xx  
         } else { next }
       }
@@ -1226,13 +1227,13 @@ metadata_widget_server <- function( id ,
       
       geosf. <- do.call( rbind , geosf.)
 
-      cat( '\n- names geosf: ' ,  names( geosf. ) )
+      cat( '\n - names geosf: ' ,  names( geosf. ) )
         # 
       # ous = ous %>% select( id, geometry ) 
       # ous = orgUnits()
-      cat( '\n- geoFeatures:' , nrow( geosf. ) , 'rows \n' )
+      cat( '\n - geoFeatures:' , nrow( geosf. ) , 'rows \n' )
       
-      cat( '\n- join ous with orgUnits()')
+      cat( '\n - join ous with orgUnits()')
    
       geosf. = geosf. %>%
         right_join( orgUnits() %>%
@@ -1241,7 +1242,7 @@ metadata_widget_server <- function( id ,
                       rename( parentName = parent ),
                    by = 'id' )
       
-      cat( "rows with ous linked to orgUnits" , nrow( geosf. ) , '\n')
+      cat( "\n - rows with ous linked to orgUnits" , nrow( geosf. ) , '\n')
       
       # test
       # saveRDS( geosf. , 'geosf.rds')
@@ -1252,7 +1253,7 @@ metadata_widget_server <- function( id ,
       # TODO: impute location of missing facilities/admin areas 
       
       # glimpse( ous )
-      cat( '\n- missing geometry for' , sum( is.na( geosf.$geometry )), '\n' )
+      cat( '\n - missing geometry for' , sum( is.na( geosf.$geometry )), '\n' )
       
       # test
       
@@ -1281,7 +1282,9 @@ metadata_widget_server <- function( id ,
   
   output$geoFeaturesTable = DT::renderDT(DT::datatable(
 
-    geoFeatures() %>% as_tibble() %>% select( -geometry ),
+    # shared_geofeatures %>% as_tibble() %>% select( -geometry ),
+    geoFeatures.ous() %>% as_tibble() %>% select( -geometry ),
+    
     rownames = FALSE, 
     filter = 'top' ,
     options = DToptions_no_buttons()
@@ -1289,21 +1292,40 @@ metadata_widget_server <- function( id ,
     ))
 
 ## Map ####
-  gf.map = reactive({
+  
+  geoFeatures.ous = reactive( {
     req( geoFeatures() )
     req( ousTree() )
-    # req( orgUnitLevels() )
-    cat( '\ngf.map():')
     
-    gf = geoFeatures() %>% semi_join( ousTree() , by = c('id' = 'orgUnit') )
-    ouLevels = orgUnitLevels() 
-
+    cat( '\n * geoFeatures.ous()' )
+    
+    gf.ous = geoFeatures() %>% 
+      semi_join( ousTree() , by = c('id' = 'orgUnit') )
+    
     # Remove slashes from levelNames
-    gf$levelName = str_replace_all( gf$levelName , fixed("/") , ";")
+    cat( '\n - remove slashes from levelName')
+    gf.ous$levelName = str_replace_all( gf.ous$levelName , fixed("/") , ";")
+    
+    return( gf.ous )
+  })
+  
+  # * CROSSTALK
+  shared_geofeatures <- SharedData$new(  geoFeatures.ous )
+  
+  gf.map = reactive({
+    req( geoFeatures.ous() )
 
-    split_geofeatures = split( gf , f = gf[['levelName']]  )
+    # req( orgUnitLevels() )
+    cat( '\n * gf.map():')
+    
+    gf = geoFeatures.ous()
+    gf. = shared_geofeatures
+    
+    
+    cat( '\n - split geofeatures')
+    split_geofeatures = split( geoFeatures.ous() , f = gf[['levelName']]  )
 
-    levels = names(split_geofeatures)
+    levels = names( split_geofeatures )
     cat( '\n geoFeatures map for:' , levels , '\n')
 
     # levels = gf %>% as_tibble %>% count( level, levelName ) %>% 
@@ -1335,7 +1357,9 @@ metadata_widget_server <- function( id ,
 
     split_gf = split_geofeatures[ not_all_empty_geo ]
     
-    gf.map = mapView( split_gf ,
+    gf.map = mapView( 
+            split_gf ,
+            # gf. , 
                  color = colors[ levels[ not_all_empty_geo]  ] ,
                  col.regions = colors[ levels[ not_all_empty_geo]  ] ,
                  alpha.regions = 0, cex = 1 ,

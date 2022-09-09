@@ -114,6 +114,7 @@ library( progress )
 library(sf)
 library(mapview)
 library( leaflet )
+library( crosstalk )
 # library(rmapshaper)
 
 library( tsibble  )
