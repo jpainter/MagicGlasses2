@@ -280,7 +280,7 @@ data_request_widget_server <- function( id ,
             modalDialog( title = "New file is saved", 
                          easyClose = TRUE ,
                          size = 's' ,
-                         footer= '(To refresh data in the app: choose another formula, then switch back.  Still working on getting the app to refresh "automagically")'
+                         footer= '(To refresh data in the app: use the refresh button (to left) and then re-select formula file and formula. '
                          )
           )  
           cat( '\n* finished downloading' , .formula.name , '\n') 

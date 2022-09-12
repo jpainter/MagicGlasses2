@@ -99,15 +99,27 @@ data_widget_server <- function( id ,
           })
         
         # trigger refresh after completed download
-        observeEvent(input$refresh, {
+        observeEvent(input$refresh , {
           cat( '\n* Update data widget text boxes')
           
           aa = data.folder()
-          a = formula.files()
+          
+          cat( '\n - looking for formula files in' ,aa  , '\n')
+          
+          ff = files( search = 'Formulas_' , dir = aa , type = 'xlsx|rds' )  
+          if ( is_empty( ff ) ){
+            cat( '\n - no forumula files in directory' )
+            return( )
+          } 
+          
+          # Arrange by modified date
+          formula_file.mdate = file.info( paste0( aa , ff  ) )$mtime
+          ff = ff[ rev(order( formula_file.mdate )) ]
+          # a = formula.files()
           
           cat( '\n - Update data formula files')
           updateSelectInput( session, 'formula.file' , 
-                                      choices = a , 
+                                      choices = ff , 
                                       selected = 1  ) 
         
          b =  formula.names()
