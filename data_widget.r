@@ -125,8 +125,8 @@ data_widget_server <- function( id ,
          b =  formula.names()
          cat( '\n - Update data formula.names')
          updateSelectInput( session, 'indicator' , 
-                            choices =  b  ,
-                            selected = 1 )  
+                            choices =  ""  ,
+                            selected = NULL )  
          
          cat( '\n - Update rds_data_file')
          updateSelectInput( session, 'dataset' ,
@@ -356,6 +356,7 @@ data_widget_server <- function( id ,
               # saveRDS( dataset() , 'dataset.rds' )
               # saveRDS( formula_elements() , 'formula_elements.rds' )
               # saveRDS( ousTree() , 'ousTree.rds' )
+              
             cat( '\n -  data_widget data1() class( dataset() )', class( dataset() ))
           
             if ( ! 'COUNT' %in% names( dataset() )){

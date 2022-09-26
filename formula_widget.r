@@ -16,7 +16,7 @@ formula_widget_ui <- function( id ) {
     tabsetPanel(type = "tabs",
 
 
-                tabPanel("Formula Elements", 
+                tabPanel("List of Selected Elements", 
                          
                       fluidRow(
                         # column( 5 , 
@@ -36,7 +36,7 @@ formula_widget_ui <- function( id ) {
                       )
                          ) ,
                 
-                tabPanel("All Elements", 
+                tabPanel("Select from all Elements/Indicators", 
                          # actionButton( ns("addSelected") , 
                          #                             "Add Selected Elements" , style='margin-top:25px' 
                          #                         ) ,
@@ -48,8 +48,13 @@ formula_widget_ui <- function( id ) {
                            
                            # DTOutput( ns('dataElementDictionaryTable') ) 
                          
+                          selectInput( ns('element_indicator_choice'), "" ,
+                                       choices = c( 'data elements' , 'indicators' ),
+                                       selected = 'data elements'
+                                       ) ,
+                         
                            div(DT::dataTableOutput(  ns('dataElementDictionaryTable') ), 
-                               style = "font-size: 75%; width: 100%"
+                               style = "font-size: 65%; width: 100%"
                                )
                          
                          # )
@@ -78,6 +83,7 @@ formula_widget_server <- function( id ,
       
   # reactives to toggle login status
   dataElementDictionary = reactive({ metadata_widget_output$dataElements() })
+  indicators = reactive({ metadata_widget_output$indicators() })
   categories = reactive({ metadata_widget_output$categories() })
   formulas = reactive({ data_Widget_output$formulas() })
   formulaElements = reactive({ data_Widget_output$formulaElements() })
@@ -85,34 +91,57 @@ formula_widget_server <- function( id ,
   formulaName = reactive({ data_Widget_output$formulaName() })
   dir = reactive({ directory_widget_output$directory() })
 
-## All data Elements ####
-  
+## Browse and Select Elements/Indicators Here ####
+  formulaChoices = reactive({
+    cat( '\n * formulaChoices ')
+    
+    if ( input$element_indicator_choice %in%  'data elements' ){ 
+      
+      return( dataElementDictionary() ) 
+      
+    } else {
+      # testing:
+      saveRDS( indicators()[1:5, ], "indicators.rds" )
+      saveRDS( dataElementDictionary()[0, ] , "dataElementDictionary.rds" )
+      
+      # indicators() %>% bind_cols( dataElementDictionary()[0,  c( "Categories" , "categoryOptionCombo.ids" ) ] )
+      
+      indicators() %>% 
+          mutate( dataElement.id = id , dataElement = name ) %>% 
+          full_join( dataElementDictionary()[0,  ] , by = c("dataElement.id", "dataElement" , "displayName") )
+      
+    }
+      
+  })
 
   output$dataElementDictionaryTable = 
-    DT::renderDT( DT::datatable(
-   
-      dataElementDictionary()   ,
+    
+        DT::renderDT( DT::datatable(
+       
+          formulaChoices()  ,
+          
+          selection = 'multiple' ,
+          rownames = FALSE, 
+          filter = 'top' ,
+          # options = DToptions_no_buttons()
+          options = list(
+            # bPaginate = FALSE, 
+            autoWidth = TRUE ,
+            scrollY = "55vh"  ,
+            scrollX = TRUE ,
+            scrollCollapse = TRUE ,
+            paging = TRUE ,
+            searching = TRUE , 
+            info = TRUE ,
+            lengthMenu = list( c(  10, 25, 100, -1 ) , 
+                               list( '10', '25', '100', 'All' ) ) ,
+            pageLength = 10 ,
+            server = TRUE ,
+            dom = 'tirp' ) ,
+          fillContainer = TRUE
+        ))
       
-      selection = 'multiple' ,
-      rownames = FALSE, 
-      filter = 'top' ,
-      # options = DToptions_no_buttons()
-      options = list(
-        # bPaginate = FALSE, 
-        autoWidth = TRUE ,
-        scrollY = "55vh"  ,
-        scrollX = TRUE ,
-        scrollCollapse = TRUE ,
-        paging = TRUE ,
-        searching = TRUE , 
-        info = TRUE ,
-        lengthMenu = list( c(  10, 25, 100, -1 ) , 
-                           list( '10', '25', '100', 'All' ) ) ,
-        pageLength = 10 ,
-        server = TRUE ,
-        dom = 'tirp' ) ,
-      fillContainer = TRUE
-    ))
+
   
     
   
@@ -124,7 +153,7 @@ formula_widget_server <- function( id ,
     # cat('\n - row number selected is' ,  row_selected )
     
     # if ( length(row_selected) ) {ÇÇ
-    selected = dataElementDictionary() %>% 
+    selected = formulaChoices() %>% 
                filter( row_number() %in% row_selected ) 
       
     
@@ -163,11 +192,12 @@ formula_widget_server <- function( id ,
   
   
   
-## Formula data Elements ####
+## Selected ELements ####
   hasFormula = reactiveValues( formulas = FALSE )
   
   observeEvent( formula_elements() , { 
     cat( '\n* update hasFormula' )
+    
     if ( nrow( formula_elements() ) > 0  ){
       cat('\n - nrow( formula_elements() )', nrow( formula_elements() ))
       hasFormula$formulas <- TRUE 
@@ -207,7 +237,8 @@ formula_widget_server <- function( id ,
     cat('\n - updated_formula_elements has' , nrow( ufe ) , 'rows')
     
     if ( nrow( selected_elements() ) > 0 ){
-
+      cat('\n - nrow( selected_elements() ):' ,  nrow( selected_elements() ) ) 
+      
       selected_categories = selected_elements() %>%
         separate_rows( Categories , categoryOptionCombo.ids, sep = ";" ) %>%
         mutate( Categories = Categories %>% str_trim  ,
@@ -223,13 +254,15 @@ formula_widget_server <- function( id ,
         cat( '\n- ufe == 0')
         ufe = selected_categories  %>%
         arrange( dataElement ) %>%
-        select( Formula.Name, everything() )
+        select( Formula.Name, everything() ) %>%
+        distinct()
                 
       } else {
         cat( '\n- ufe > 0')
         ufe = bind_rows( ufe , selected_categories ) %>%
         arrange( dataElement ) %>%
-        select( Formula.Name, everything() )
+        select( Formula.Name, everything() ) %>%
+        distinct()
       }
       
 

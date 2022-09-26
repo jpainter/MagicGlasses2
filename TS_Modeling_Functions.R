@@ -61,12 +61,12 @@ df_pre_ts = function( df , period = "Month" , missing.value = NA  ){
       if ( ! "data.table" %in% class( df ) ) df = data.table::as.data.table(df)
       df_pre_ts = df[ , ':=' ( Month = Month_Year( period ) ,
                        COUNT = as.integer( COUNT ) ,
-                       SUM = as.numeric( SUM ) ,
-                       Categories = ifelse( is.na( Categories ), "", Categories )
+                       SUM = as.numeric( SUM ) 
+                       # , Categories = ifelse( is.na( Categories ), "", Categories )
                        ) ] %>%
-       as_tibble()%>%
-       unite( "data" , dataElement, Categories , remove = FALSE ) %>%
-       unite( "data.id" , dataElement.id, categoryOptionCombo.ids, remove = FALSE  ) 
+       as_tibble() %>%
+       unite( "data" , dataElement, Categories , remove = FALSE , na.rm = TRUE ) %>%
+       unite( "data.id" , dataElement.id, categoryOptionCombo.ids, remove = FALSE  , na.rm = TRUE ) 
     
      # df = df %>% mutate( Month =  Month_Year( period ) )
      # df_pre_ts = df %>%

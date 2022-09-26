@@ -790,12 +790,13 @@ metadata_widget_server <- function( id ,
 
         denominator = map_chr( denominator.ids , ~indicator_formula_translator( .x , id_names ) )
 
-          ) %>%
-
-      select( name, 
-              # description,  # col not available in Guinea Fev 2022
-              numerator, denominator, annualized,
-              id, displayName, numerator.ids , denominator.ids )
+          ) 
+    # %>%
+    # 
+    #   select( name, 
+    #           # description,  # col not available in Guinea Fev 2022
+    #           numerator, denominator, annualized,
+    #           id, displayName, numerator.ids , denominator.ids )
     
       removeModal()
     } else {

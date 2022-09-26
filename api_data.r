@@ -709,6 +709,8 @@ api_data = function(      periods = NA ,
                                   get.print = print ) %>%
         mutate( current.count = as.integer( value )  )
       
+      
+      
       removeModal()
      showModal(
        modalDialog( title = "Checking for updated data values", 
@@ -742,9 +744,15 @@ api_data = function(      periods = NA ,
         return()
       }
       
+      # If request does not include categoryOptionCombo, do not use in joins
+      if ( 'categoryOptionCombo' %in% names( current.values ) ){
+        by_cols = c("dataElement", "period", "orgUnit", "categoryOptionCombo")
+      } else {
+        by_cols = c("dataElement", "period", "orgUnit")
+      }
       
       update_compare = inner_join( current.counts, current.values , 
-                                   by = c("dataElement", "period", "orgUnit", "categoryOptionCombo")
+                                   by = by_cols
                                    ) %>%
 
         left_join( prev %>% 
@@ -757,10 +765,7 @@ api_data = function(      periods = NA ,
                   #         'period' = 'period' , 
                   #         'orgUnit' = 'orgUnit' )
                   # rds version  
-                  by = c( 'dataElement' , 
-                          'categoryOptionCombo',
-                          'period' , 
-                          'orgUnit' )
+                  by = by_cols
                   
                   ) %>%
         mutate( same = ( current.count == prev.count ) & 
@@ -865,12 +870,14 @@ api_data = function(      periods = NA ,
                                     aggregationType. = "COUNT" ,
                                     get.print = print) 
               
-              #if elements have a period, then include categoryOptionCombo
-              if ( any(str_detect( elements$id  , fixed(".") )) ){
+              #if elements have a category , then include categoryOptionCombo
+              if ( any( str_detect( Var3  , fixed(".") )) ){
                 .by = c("dataElement", "period", "orgUnit", "categoryOptionCombo")
               } else {
                 .by = c("dataElement", "period", "orgUnit")
               }
+              
+              cat( "\n - joining sum and count downloads by" , .by )
               
               # Join d.sum and d.count
               d = d.count %>%
@@ -963,11 +970,14 @@ api_data = function(      periods = NA ,
               #   detail = sprintf("Combining SUM and COUNT for %d of %d", i , nrow( pmap.df ) ) 
               #   )
               #if elements have a period, then include categoryOptionCombo
-              if ( any(str_detect( elements$id  , fixed(".") )) ){
+              #if elements have a category , then include categoryOptionCombo
+              if ( any( str_detect( pmap.df[i, 3]  , fixed(".") )) ){
                 .by = c("dataElement", "period", "orgUnit", "categoryOptionCombo")
               } else {
                 .by = c("dataElement", "period", "orgUnit")
               }
+              
+              cat( "\n - joining sum and count downloads by" , .by )
               
               d[[i]] = d.count %>%
                     rename( COUNT = value ) %>%
@@ -1024,11 +1034,14 @@ api_data = function(      periods = NA ,
                                   get.print = print) 
             
             #if elements have a period, then include categoryOptionCombo
-            if ( any(str_detect( elements$id  , fixed(".") )) ){
-              .by = c("dataElement", "period", "orgUnit", "categoryOptionCombo")
-            } else {
-              .by = c("dataElement", "period", "orgUnit")
-            }
+              #if elements have a category , then include categoryOptionCombo
+              if ( any( str_detect( Var3  , fixed(".") )) ){
+                .by = c("dataElement", "period", "orgUnit", "categoryOptionCombo")
+              } else {
+                .by = c("dataElement", "period", "orgUnit")
+              }
+              
+              cat( "\n - joining sum and count downloads by" , .by )
             
             # Join d.sum and d.count
             d = d.count %>%

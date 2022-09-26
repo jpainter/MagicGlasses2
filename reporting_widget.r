@@ -416,13 +416,15 @@ reporting_widget_server <- function( id ,
       if ( nrow( data1() ) == 0 ){
         cat('\n - data1() has zero rows')
         return()
-      } 
-  
-      .period = period()
-      cat('\n - period is', .period )
+      }
       
       # NB: setting data = setDT( data1()) has side effect of changing data1() to data.table. 
       data = as.data.table( data1() )
+      
+      cat( '\n - data (d) converted to data.table' )
+      
+      .period = period()
+      cat('\n - period is', .period )
       
       data = data[ , period := base::get( .period )  , ]
       # data = data1()  %>% mutate( period = !!rlang::sym( .period ))
@@ -578,7 +580,7 @@ reporting_widget_server <- function( id ,
       data = d()
       
       #Testing
-      # saveRDS( data, 'orgunits.reports.data.rds')
+      saveRDS( data, 'orgunits.reports.data.rds')
       
       if ( !input$count.any & !input$all_categories ){
         # data =  data %>% filter( data %in% input$data_categories )
@@ -607,7 +609,7 @@ reporting_widget_server <- function( id ,
       cat('\n-orgunit.reports--o.r.(DT)')
       
       # Testing:
-      # saveRDS( o.r. , "o.r..rds")
+      saveRDS( o.r. , "o.r..rds")
       
       o.r. = setDT( o.r. )[ ,  .(n_periods = uniqueN( base::get( .period ) ) ) , 
                        by = c( 'year' , 'orgUnit' ) ] %>%
@@ -967,7 +969,7 @@ reporting_widget_server <- function( id ,
     
   x.annual = reactive({
     cat( '\n* reporting_widget x.annual()' )
-    tic()
+   
     # x.a = orgunit.reports() %>% 
     #       filter( orgUnit %in% selectedOUs() )   # %>%  
           # group_by( year , n_periods ) %>%
@@ -986,7 +988,7 @@ reporting_widget_server <- function( id ,
   
   x.months = reactive({
     # req( keeprows() )
-    tic()
+    # tic()
     #print( 'x.months()' )
     
     .period = period()
@@ -1021,7 +1023,7 @@ reporting_widget_server <- function( id ,
     
     # save data for testing ggplot options
     # cat('\n- saving plot2_data.rds')
-    # saveRDS( monthly.reports(), 'plot2_data.rds' )
+    saveRDS( monthly.reports(), 'monthly.reports.rds' )
     
     if ( length( monthly.reports()$year) > 0  ) {
     
@@ -1200,7 +1202,7 @@ reporting_widget_server <- function( id ,
     cat( "\n - plotData cols:" ,  names( data ) ) 
     cat( '\n- end  plotData()')  
     # TESTING
-    # saveRDS( data , "plotData.rds" )
+    saveRDS( data , "plotData.rds" )
     
   return( data )
 })
@@ -1246,13 +1248,15 @@ reporting_widget_server <- function( id ,
       
       .group_by_cols =  group_by_cols()  
       cat( '\n - data.total .group_by_cols:'  )
+      # Testing
+      saveRDS( .group_by_cols , 'group_by_cols.rds' )
   
       # Total categories by facilities and datasets
       data = plotData() 
       cat( "\n - starting with plotData().  class/cols:\n -- " , class( plotData() ) , "\n -- " , names( plotData() ) )
       
       # Testing
-      # saveRDS( data , 'plotData.rds' )
+      saveRDS( data , 'plotData.rds' )
       
       # Merge  datasets 
       # Set all dataSets to Combined and re-summaries taking mean
@@ -1403,7 +1407,7 @@ reporting_widget_server <- function( id ,
     
 
     # test:
-    # saveRDS( data.total, 'data.total.rds')
+    saveRDS( data.total, 'data.total.rds')
     
     cat('\n- end data.total()')
     return( data.total )

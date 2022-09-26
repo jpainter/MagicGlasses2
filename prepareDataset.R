@@ -162,6 +162,8 @@ data_1 = function( data , formula_elements , ousTree   ){
   cat( '\n - periodType is' , p )
   
   cat('\n - translate_dataset:')
+  
+  if (! 'categoryOptionCombo' %in% names( data )) data = data %>% mutate( categoryOptionCombo = NA )
   dd = translate_dataset( data , formula_elements )
   
   cat('\n - df_pre_ts:')
