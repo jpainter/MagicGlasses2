@@ -790,13 +790,12 @@ metadata_widget_server <- function( id ,
 
         denominator = map_chr( denominator.ids , ~indicator_formula_translator( .x , id_names ) )
 
-          ) 
-    # %>%
-    # 
-    #   select( name, 
-    #           # description,  # col not available in Guinea Fev 2022
-    #           numerator, denominator, annualized,
-    #           id, displayName, numerator.ids , denominator.ids )
+          ) %>%
+
+      select( name, 
+              # description,  # col not available in Guinea Fev 2022
+              numerator, denominator, annualized,
+              id, displayName, numerator.ids , denominator.ids )
     
       removeModal()
     } else {
@@ -1318,10 +1317,6 @@ metadata_widget_server <- function( id ,
 
     # req( orgUnitLevels() )
     cat( '\n * gf.map():')
-    
-    cat( '\n - library(mapview) - ')
-    library( mapview )
-    cat( '- loaded \n ')
     
     gf = geoFeatures.ous()
     gf. = shared_geofeatures

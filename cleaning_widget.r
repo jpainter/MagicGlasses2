@@ -682,7 +682,7 @@ cleaning_widget_server <- function( id ,
               modalDialog( title = "Finished scanning for seasonal values; saving data", 
                            easyClose = TRUE ,
                            size = 'm' ,
-                           footer = "Click anywhere to close dialog box.  To see results, go to Data page and refresh data selection."
+                           footer = "(click anywhere to close dialog box)"
                            )
               )
         
@@ -719,37 +719,13 @@ cleaning_widget_server <- function( id ,
           }
         
         # data.table?  
-        d.mase = setDT( d )[ 
-          # year( Month ) == 2020
-          ,
-          .(   mase = mase( actual = original, predicted = expected  ) ,
-               n = sum( !is.na( original ) ) ,
-               expected = sum( expected, na.rm = TRUE )
-          ) ,
-          by = c(  'orgUnit', 'orgUnitName' , 'data.id' , 'data' ) ] %>%
-          
-          as_tibble() %>%
-          group_by( orgUnit, orgUnitName , data.id , data )
-        
-        maxN = max( d.mase.ou$n.max )
-        
-        data1.summary = d.mase %>%
-          mutate( 
-            catMASE = case_when( 
-              MASE == 0  ~ "0" ,
-              MASE <= 50 ~ "0_50" ,
-              MASE <= 100 ~ "50_100" ,
-              MASE > 100 ~ "100+" ,
-              is.nan( MASE ) ~ 'NaN'
-            ) 
-            , catN = case_when(
-              n == maxN ~ "All" ,
-              n < 50 ~ "0_50" ,
-              n < 75 ~ "50_75" ,
-              n < 100 ~ "75_100" ,
-              is.na( n ) ~ 'None'
+        d.mase =  d %>%  as_tibble() %>%
+            group_by( orgUnit, data.id ) %>%
+            summarise( 
+              mase = mase( actual = original, predicted = expected  ) ,
+              MASE = 100 * mase  ,
+              n = sum( !is.na( original )) 
             )
-          )
           
         return( d.mase )
 
@@ -1027,39 +1003,41 @@ cleaning_widget_server <- function( id ,
         
         cat('\n - summary' )
         
-        # data.table 
-        os <- setDT( d )[ !is.na( mad15 ) ,
-                          .( n = sum( !is.na( original ) ) ,
-                             total = sum( original , na.rm = T )  ,
-                             max = max( original , na.rm = T ) %>% comma() ) ,
-                          cols] %>%
-          as_tibble %>%
-          arrange_at( cols ) %>%
-          bind_cols( total  ) %>%
-          mutate(
-            `%N` = percent( n / N ) ,
-            `%Total` = percent( total / Total ) ,
-            n = comma( n ) ,
-            total = comma( total )
-          )   %>%
-          select( !! cols  , n ,  `%N` ,  max , total , `%Total`  )
-        
-        # Tidy
-        # os <- setDT( d )[ !is.na( mad15 ) , 
-        #                  .( n = sum( !is.na( original ) ) , 
-        #                     total = sum( original , na.rm = T )  ,
-        #                     max = max( original , na.rm = T ) %>% comma() ) , 
-        #                  cols] %>%
-        #   as_tibble %>% 
-        #   arrange_at( cols ) %>%
+        # data.table? 
+        # os = d %>%
+        #   filter(  !is.na( mad15 ) ) %>%
+        #   group_by_at( cols ) %>%
+        #   summarise( n = sum( !is.na( original )) ,
+        #              total = sum( original , na.rm = T )  ,
+        #              max = max( original , na.rm = T ) %>% comma()
+        #              ) %>%
+        # 
         #   bind_cols( total  ) %>%
+        # 
         #   mutate(
         #              `%N` = percent( n / N ) ,
         #              `%Total` = percent( total / Total ) ,
         #              n = comma( n ) ,
         #              total = comma( total )
         #              )   %>%
-        #   select( !! cols  , n ,  `%N` ,  max , total , `%Total`  ) 
+        #   ungroup %>%
+        #   select( !! cols  , n ,  `%N` ,  max , total , `%Total`  )
+        
+        os <- setDT( d )[ !is.na( mad15 ) , 
+                         .( n = sum( !is.na( original ) ) , 
+                            total = sum( original , na.rm = T )  ,
+                            max = max( original , na.rm = T ) %>% comma() ) , 
+                         cols] %>%
+          as_tibble %>% 
+          arrange_at( cols ) %>%
+          bind_cols( total  ) %>%
+          mutate(
+                     `%N` = percent( n / N ) ,
+                     `%Total` = percent( total / Total ) ,
+                     n = comma( n ) ,
+                     total = comma( total )
+                     )   %>%
+          select( !! cols  , n ,  `%N` ,  max , total , `%Total`  ) 
           
         cat('\n - summary has' , nrow(os) , 'rows')
         return( os )

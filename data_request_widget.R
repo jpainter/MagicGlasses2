@@ -207,39 +207,10 @@ data_request_widget_server <- function( id ,
           # .orgUnitLevels = orgUnitLevels()
           .orgUnits = orgUnitRequest()
           .formula.name = indicator()
-          
-          
-          # If categoryOption is NA, then omit from request.  This will return 'total' with no categories.  
-          # NB this happens if any category is missing 
-          # TODO: revise so there can be a mix of categoryOptionCombo and no categoryOptionCombo
-          
-            #        .elements = formula_elements() %>% 
-            # mutate( )
-            # unite( id , dataElement.id, categoryOptionCombo.ids , sep="." ) %>%
-            # unite( name , dataElement, Categories , sep="." ) %>%
-            # select( id , name )
-          
-          if ( any(!is.na( formula_elements()$categoryOptionCombo.ids )) ){
-                .elements = formula_elements() %>% 
-                  filter( ! dataElement.id == "aaaaaaaaaaa" ) %>%
-                    mutate( 
-                      categoryOptionCombo.ids = ifelse( is.na( categoryCombo.id ) , NA , categoryOptionCombo.ids ) ,
-                      Categories = ifelse( is.na( categoryCombo.id ) , NA , Categories ) 
-                      ) %>%
-                    unite( id , dataElement.id, categoryOptionCombo.ids , sep="." , na.rm = TRUE )  %>%
-                    unite( name , dataElement, Categories , sep="." , na.rm = TRUE ) %>%
-                    select( id , name )
-            } 
-          else {
-                .elements = formula_elements() %>% 
-                          unite( id , dataElement.id,  sep="." )  %>%
-                          unite( name , dataElement,  sep="." ) %>%
-                          select( id , name )
-          }
-          
-          # TEsting 
-          saveRDS( .elements, "dataRequestElements.rds" )
-          
+          .elements = formula_elements() %>% 
+            unite( id , dataElement.id, categoryOptionCombo.ids , sep="." ) %>%
+            unite( name , dataElement, Categories , sep="." ) %>%
+            select( id , name )
           .level1.id = orgUnits() %>% filter( level == 1 ) %>% pull( id )
           
           cat( '\n - .level1.id:' , .level1.id )  
@@ -309,7 +280,7 @@ data_request_widget_server <- function( id ,
             modalDialog( title = "New file is saved", 
                          easyClose = TRUE ,
                          size = 's' ,
-                         footer= '(To refresh data in the app: use the refresh button (to left) and then re-select formula file and formula. '
+                         footer= '(To refresh data in the app: choose another formula, then switch back.  Still working on getting the app to refresh "automagically")'
                          )
           )  
           cat( '\n* finished downloading' , .formula.name , '\n') 

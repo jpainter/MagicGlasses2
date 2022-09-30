@@ -1,6 +1,6 @@
 ---
 title: "DHIS2 Magic Glasses"
-# author: "John Painter"
+# author: "John Painter"`
 # date: "12/20/2021"
 output: 
   flexdashboard::flex_dashboard:
@@ -112,7 +112,7 @@ library( igraph )
 # library( progressr )
 library( progress )
 library(sf)
-library(mapview)
+# library(mapview)
 library( leaflet )
 library( crosstalk )
 # library(rmapshaper)
