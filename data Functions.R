@@ -10,7 +10,7 @@ period = function( data ){
       return( period  )
     }
   
-getlevelNames = function( orgUnits ){ 
+getLevelNames = function( orgUnits ){ 
 
     if ( 'sf' %in% class( orgUnits ) ) orgUnits = orgUnits %>% st_drop_geometry()
     cat( '\n* levelNames:' )
@@ -59,7 +59,6 @@ cleanedData = function( data1 , source = 'Original' ){
       
       cat( '\n-' , paste('cleaning changes total by', sum( data$original , na.rm = T ) - sum( data$dataCol , na.rm = T )) )
     }  
-    
     
     cat( '\n - nrow( d ):' , nrow( data ))
     
@@ -138,22 +137,24 @@ selectedData = function( d,
   
    data = d %>% mutate( Selected = 'All' ) 
     
-   if ( alwaysReporting ) .selectedOUs  = selectedOUs( d , ... )
+   if ( alwaysReporting ){
+     
+     .selectedOUs  = selectedOUs( d , ... )
+         # Add var for selected ous
+    cat( '\n - selectedData length( selectedOUs()): ' , length( .selectedOUs ) )
     
+    if ( length( .selectedOUs  > 0 ) ) data = setDT( data )[ , Selected := fifelse( orgUnit %in% .selectedOUs, 
+                                                      'Reporting Each Period',
+                                                      'Inconsistent Reporting') ] %>%
+      as_tibble(.)
+    
+   }
+   
     # filter to selected category
     cat( '\n - selectedData filtered by' , data_categories )
 
     if ( !all_categories )  data = data %>% filter( data %in% data_categories )
-    
-    # Add var for selected ous
-    cat( '\n - selectedData length( selectedOUs()): ' , length( .selectedOUs ) )
-    
-   if ( length( .selectedOUs  > 0 ) ) data  = data %>%
-      mutate( Selected = ifelse(
-        orgUnit %in% .selectedOUs ,
-        'Reporting Each Period',
-        'Inconsistent Reporting' )
-      )
+        
     
     # if ( length( .selectedOUs  > 0 ) ) data = setDT( data )[ , Selected := ifelse(
     #        orgUnit %in% .selectedOUs ,
@@ -169,7 +170,7 @@ selectedData = function( d,
 }
 
   
-group_by_cols = function( data = NULL , levelNames, split = NULL, merge = TRUE  ){
+group_by_cols = function( data = NULL , levelNames = NULL, split = NULL, merge = TRUE  ){
     # req( input$split )
     cat("\n* group_by_cols():")
   
@@ -178,6 +179,8 @@ group_by_cols = function( data = NULL , levelNames, split = NULL, merge = TRUE  
     group_by_cols =  c(.period , 'orgUnit', 'Selected', 'data' ) 
     
     if ( !merge ) group_by_cols = c( group_by_cols, 'dataSet' )
+    
+    if (is.null( levelNames)) levelNames = getLevelNames( orgUnits = orgUnits )
    
     group_by_cols = c( group_by_cols, levelNames )
   
@@ -212,10 +215,11 @@ data.total = function( data ,
   
     cat( '\n - period:' , .period )
     
-    .dates = data %>% pull( !!rlang::sym( period )  )
+    .dates = data %>% pull( !!rlang::sym( .period )  )
     if ( is.null( startDisplayMonth ) )  startDisplayMonth = min( .dates , na.rm = TRUE  )
     if ( is.null( endDisplayMonth ) ) endDisplayMonth = max( .dates , na.rm = TRUE   )
     
+    if ( is.null( .group_by_cols )) .group_by_cols = group_by_cols( data )
     cat( '\n - data.total .group_by_cols:'  , .group_by_cols )
   
     # Total categories by facilities and datasets
@@ -323,12 +327,14 @@ data.total = function( data ,
 
 backtick <- function(x) paste0("`", x, "`")
 
-hts = function( agg_level = NULL , levelNames , hts = TRUE , 
-                selectedOUs = NULL ,
+hts = function( agg_level = NULL , levelNames = NULL , hts = TRUE , 
+                .selectedOUs = NULL ,
                 split = 'None' ){   
  
     cat("\n* hts():" )
 
+    if (is.null( levelNames)) levelNames = getLevelNames( orgUnits = orgUnits )
+   
     adms = backtick( levelNames )
     
     if (hts){ 
@@ -350,10 +356,10 @@ hts = function( agg_level = NULL , levelNames , hts = TRUE ,
     }
     
     hts = paste( "(" , hts , ")" )
-    
-    # if >1 Facilities (ie. selected)
-    num_facilities = length( .selectedOUs )
-    if ( num_facilities > 1 )  hts = paste( 
+
+    # num_facilities = length( .selectedOUs )
+    # if ( num_facilities > 1 )  
+      hts = paste( 
              'Selected *' , hts 
              )
     
@@ -374,8 +380,9 @@ hts = function( agg_level = NULL , levelNames , hts = TRUE ,
     return( hts )
   }
   
-data.hts = function( .d , hts ){
+data.hts = function( .d , hts = NULL, ... ){
 
+    if ( is.null( hts ) ) hts = hts()
     cat('\n* data.hts():' )
     
     # Testing
@@ -397,22 +404,12 @@ trendData = function( .d = data.hts ,
                       selectedOUs = NULL , 
                       period = "Month" ,
                       selected = TRUE ,
-                      levelNames , 
+                      levelNames = NULL , 
                       split = 'None' ,
                       agg_level = NULL,
                       scale = FALSE ){
 
       cat( '\n* evaluation_widget: trendData(): ' )
-
-      # cat( '\n - data.hts datasets:' , unique( .d$dataSet ) )
-      num_facilities = length( .selectedOUs )
-      if ( selected  & num_facilities > 1 ){ 
-        
-        cat( '\n- input$selected TRUE' )
-      
-        .d = .d %>% filter( 
-          Selected ==  'Reporting Each Period' )
-  } 
     
       if ( is.null( agg_level ) ){ 
         agg_level = levelNames[1] 
@@ -479,7 +476,7 @@ trendData = function( .d = data.hts ,
              filter( !is_aggregated( !! rlang::sym( split ) ) 
              ) %>%
              mutate( grouping_var = as.character( 
-               !! rlang::sym( split() ) )
+               !! rlang::sym( split ) )
              )
            cat( '\n- .d  aggregated split' , unique(.d$grouping_var) )
            # print( glimpse( .d ))
@@ -506,7 +503,7 @@ trendData = function( .d = data.hts ,
       .d = .d %>% as_tsibble( key = all_of(keyVars) , index = indexVar  ) 
       
       cat( '\n- end trend data():'); # print( glimpse( .d ) ); # print(.d)
-      saveRDS( .d , 'trendData.rds' )
+      # saveRDS( .d , 'trendData.rds' )
   
   return( .d )
 }
@@ -580,5 +577,210 @@ getForecast = function( test_data , model = NULL ,
       cat( '\n - fcast end:' );  #glimpse( fcast )
   
       return( fcast )
-      }
+}
+
+  plotTrends = function( plotData , scale = FALSE , 
+                         legend = FALSE , label = FALSE ,
+                         facet_split = FALSE ,
+                         facet_admin = FALSE ,
+                         agg_level = 'National' ,
+                         pre_evaluation = FALSE ,
+                         evaluation = FALSE ){
+
+          cat( '\n* evaluation_widget plotTrends():' )
+
+          .limits =
+          if ( scale ){
+            c( NA , NA ) } else {
+              c( 0 , NA )
+          }
+
+          # data.text = paste( unique( plotData$data ), collapse = " + " )
+          
+          cat( '\n - ploTrends .d:') ; #glimpse(.d)
+
+          # if ( !input$filter_display %in% 'All' ) .d = .d %>%
+          #         filter( .data[[ split() ]] %in%
+          #                   input$filter_display )
+
+
+          .period = period( plotData )
+
+      ## Main plot ####
+          g = plotData %>%
+          filter( !is.na( total ) ) %>%
+          # autoplot( total ) +
+          ggplot( aes( x = !! rlang::sym( .period ), y = total
+
+                     , group =  grouping_var # as.character( !! rlang::sym( input$agg_level  ) )
+
+                     , color =  grouping_var
+                    ) )  +
+          geom_line() +
+          theme_minimal()
+
+          # Testing
+          # save(.d, file = 'plot-trend-test-data.rda')
+
+
+          cat( '\n - basic plot done' ) 
+
+          if ( legend ) g = g +
+            theme(legend.position = "none")
+
+          if ( label ){
+            g = g + geom_label_repel(
+                       data = .d %>%
+                         filter(
+                           !! rlang::sym( .period ) == max( .d %>% pull( .period ) ,
+                                                            na.rm = T )
+                           ) ,
+                       aes( label = grouping_var ,
+                            group = grouping_var )
+                       )
+          }
+
+          # Determine number of agg levels available
+          # If only one, do not facet (causes error, perhaps because of autoplot?)
+
+          num_agg_levels = count( .d %>% as_tibble ,
+                                  !! rlang::sym( agg_level ) ) %>%
+            nrow()
+
+          # if ( input$agg_level != levelNames()[1] & input$facet_admin ){
+          if ( num_agg_levels  > 1 & facet_admin ){
+            cat( '\n -  admin facets' )
+
+            if ( facet_split ){
+              cat( '\n -  facet admin - split' )
+
+                g = g +
+                    facet_grid( rows = vars( as.character( !! rlang::sym( agg_level ) ) ) ,
+                                cols = grouping_var   ,
+                                   scales = "free_y" )
+          } else {
+
+            g = g +
+            facet_wrap( vars( as.character( !! rlang::sym( agg_level ) ) ) ,
+                           scales = "free_y" )
+          }} else {
+
+           if ( facet_split ){
+            cat( '\n - facet_split' )
+            g = g +
+            facet_wrap( ~ grouping_var   ,
+                           scales = "free_y" )
+          }
+            }
+
+          # Time scale
+          cat( '\n - Evaluation: setting x axis time scale', .period )
+          if ( .period %in% 'Month') g = g + scale_x_yearmonth("", date_breaks = "1 year" )
+          # Default for weeks seems ok - 6 months
+          # if ( .period %in% 'Week') g = g + scale_x_yearweek("", date_breaks = "1 year" )
+
+          g = g +
+            scale_y_continuous( label = comma, limits = .limits ) +
+            scale_color_discrete( drop = TRUE  ) +
+            labs( y = "" , x="" 
+                  # title = str_wrap( indicator , 200 ) ,
+                  # subtitle = str_wrap( data.text , 200 )
+                  # caption =  str_wrap( caption.text() , 200 )
+                  )
+          cat( '\n - axis scales and labs done' )
+
+          # Eval Date
+      #     cat( '\n - evaluation date' , input$evaluation_month )
+      #     if ( .period %in% 'Month' ) eval_date =   yearmonth( input$evaluation_month  )
+      #     if ( .period %in% 'Week' ) eval_date =   yearweek( input$evaluation_month  )
+      #     cat( '\n - eval_date:' , eval_date )
+      # 
+      # ## Pre-Evaluation trend line #####
+      if ( pre_evaluation ){
+          cat( '\n - pre-evaluation line.  ' )
+          cat( '\n - pi_levels:' , pi_levels() )
+
+          cat( '\n - pre-evaluation date'  )
+          if ( .period %in% 'Month' ) pre_eval_date =   yearmonth( input$evaluation_month  ) -12
+          if ( .period %in% 'Week' ) pre_eval_date =   yearweek( input$evaluation_month  ) - 25
+          cat( '\n - pre_eval_date:' , pre_eval_date )
+
+          g = g +
+             forecast::autolayer( tsPreForecast()
+                       # , level = c(80,90) # ci_levels()
+                       , PI = TRUE
+                       , color = 'black'
+                       , linetype = 'dotted'  , size = 2
+                       ,  alpha = .75 ) +
+            # geom_line( data = tsPreForecast(), aes(  y = .mean )
+            #   # ,   color = 'light blue'
+            #   , alpha = .75
+            #   , linetype = 'dotted'  , size = 2
+            # ) +
+            # geom_vline( xintercept = as.Date( pre_eval_date ) ,
+            #             color = 'brown' ,
+            #             alpha = .25 ) +
+            geom_vline( xintercept = as.Date( eval_date ) ,
+                        color = 'black', alpha = 1 )
+
+            if ( input$pe ) g = g +
+              geom_label_repel( data =  key.mape() ,
+                       aes(  x = !! rlang::sym( period() ) , y = actual ,
+                       label = paste( "MAPE:" , percent( mape, accuracy = 1.0 ) ) ,
+                       hjust = just ) ,
+                       # force_pull = 0 ,
+                       segment.colour = NA
+                       )
+
+          }
+
+          cat( '\n - pre-evaluation line done' )
+
+
+      ## Evaluation Trend Line ####
+          if ( evaluation ){
+            cat( '\n - evaluation line.  ')
+            cat( '\n - evaluation line.  ' , 'pi_levels:' , pi_levels() )
+
+           g = g +
+            forecast::autolayer( tsForecast()
+                       , level = pi_levels()
+                       , color = 'black'
+                       , linetype = 'dashed', size = 1
+                       ,  alpha = .5 ) +
+            # geom_line( data = tsForecast() , aes( y = .mean )
+            #   # ,   color = 'light blue'
+            #   , alpha = .75
+            #   , linetype = 'dotted'  , size = 2
+            # ) +
+
+            geom_vline( xintercept = as.Date( eval_date ) ,
+                        color = 'blue', alpha = 1 )
+
+            # annotate( "text" ,
+            #           x = as.Date( eval_date ) ,
+            #           y = Inf ,
+            #           hjust = 0 , vjust = 1 ,
+            #           label = paste( "MPE:\n" )
+            #           ) +
+
+            if (input$pe) g = g +
+              geom_label_repel( data =  key.mpe() ,
+                       aes(  x = !! rlang::sym( period() ) , y = actual ,
+                       label = paste( "MPE:" , percent( mpe, accuracy = 1.0 ) ) ,
+                       hjust = just
+                       ) ,
+                       # force_pull = 0 ,
+                       segment.colour = NA
+                       )
+          }
+
+          cat( '\n - evaluation line done' )
+
+      ## End ####
+          cat( '\n - end plotTrends():' )
+
+          # saveRDS( g, 'plotTrends.rds')
+          return( g )
+        }
     

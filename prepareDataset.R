@@ -1,16 +1,43 @@
 
 translate_dataset = function( data , formula_elements ){
   cat('\n* translate_dataset:')
+  
+  # Data may contain mix of elements with and without categories. 
+  if ( any( is.na( data$categoryOptionCombo ))){
+    element_match = match( paste( data$dataElement, data$categoryOptionCombo ) , 
+                       paste( formula_elements$dataElement.id , 
+                              ifelse( is.na( formula_elements$n_categoryOptions ) , 
+                                      NA ,  
+                                      formula_elements$categoryOptionCombo.ids ) 
+                              )
+    )
+  } else {
+    element_match = match( paste( data$dataElement, data$categoryOptionCombo ) , 
+                       paste( formula_elements$dataElement.id , 
+                              formula_elements$categoryOptionCombo.ids )
+    )
+  }
+  
+  
+  formula_data = formula_elements[ element_match , ] %>% select( - dataElement.id, - categoryOptionCombo.ids )
+
   dd = data %>% 
-        rename( 
-          dataElement.id = dataElement , 
-          categoryOptionCombo.ids = categoryOptionCombo 
-          ) %>%
-        left_join( formula_elements %>% 
-                     select( dataSet, periodType, zeroIsSignificant, 
-                             dataElement.id, categoryOptionCombo.ids, dataElement, Categories ) , 
-                   by = c("dataElement.id", "categoryOptionCombo.ids")
-                   )
+      rename( 
+        dataElement.id = dataElement , 
+        categoryOptionCombo.ids = categoryOptionCombo 
+        ) %>%
+      bind_cols( formula_data )
+          
+  # dd = data %>% 
+  #       rename( 
+  #         dataElement.id = dataElement , 
+  #         categoryOptionCombo.ids = categoryOptionCombo 
+  #         ) %>%
+  #       left_join( formula_elements %>% 
+  #                    select( dataSet, periodType, zeroIsSignificant, 
+  #                            dataElement.id, categoryOptionCombo.ids, dataElement, Categories ) , 
+  #                  by = c("dataElement.id", "categoryOptionCombo.ids")
+  #                  )
   
   # d.ts = df_pre_ts( dd )
   
@@ -162,6 +189,8 @@ data_1 = function( data , formula_elements , ousTree   ){
   cat( '\n - periodType is' , p )
   
   cat('\n - translate_dataset:')
+  
+  if (! 'categoryOptionCombo' %in% names( data )) data = data %>% mutate( categoryOptionCombo = NA )
   dd = translate_dataset( data , formula_elements )
   
   cat('\n - df_pre_ts:')
