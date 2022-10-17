@@ -1330,8 +1330,11 @@ metadata_widget_server <- function( id ,
     cat( '\n - split geofeatures')
     split_geofeatures = split( geoFeatures.ous() , f = gf[['levelName']]  )
 
-    levels = names( split_geofeatures )
-    cat( '\n geoFeatures map for:' , levels , '\n')
+        
+    # levels = names( split_geofeatures )
+    levels = bind_rows(gf %>% st_drop_geometry()) %>% filter( !is.na( level)) %>% distinct( level, levelName ) 
+
+    cat( '\n geoFeatures map for:' , levels$levelName  , '\n')
 
     # levels = gf %>% as_tibble %>% count( level, levelName ) %>% 
     #   filter( !is.na( level ) ) %>%
@@ -1340,7 +1343,7 @@ metadata_widget_server <- function( id ,
     # levels = ouLevels %>% pull( levelName )
     
     # reorder levels
-    split_geofeatures = split_geofeatures[ levels ]
+    split_geofeatures = split_geofeatures[ levels$levelName ]
 
 
     # match( levels, orgUnitLevels() , )]
@@ -1354,8 +1357,8 @@ metadata_widget_server <- function( id ,
     cat( paste('geoFeatures split into' , n_levels , 'levels' ,
                  paste( names( split_geofeatures ), collapse = ',' ), sep = " " ) , '\n')
 
-    colors = RColorBrewer::brewer.pal(n_levels, 'Set2')
-    names( colors ) = levels[ not_all_empty_geo ]
+    level.colors = RColorBrewer::brewer.pal(n_levels, 'Set2')
+    names( level.colors ) = levels[ not_all_empty_geo, 'levelName' ]
 
     # Set option to display points (https://stackoverflow.com/questions/65485747/mapview-points-not-showing-in-r)
     mapviewOptions(fgb = FALSE)
@@ -1363,12 +1366,24 @@ metadata_widget_server <- function( id ,
     split_gf = split_geofeatures[ not_all_empty_geo ]
     
     gf.map = mapView( 
+      
             split_gf ,
-            # gf. , 
-                 color = colors[ levels[ not_all_empty_geo]  ] ,
-                 col.regions = colors[ levels[ not_all_empty_geo]  ] ,
-                 alpha.regions = 0, cex = 1 ,
-                 burst = TRUE, hide = TRUE
+            
+            color = level.colors ,
+            col.regions = level.colors  ,
+            
+            # zcol = "parentName"  ,
+            
+            alpha.regions = 0, cex = 1 ,
+        
+            label = map( split_gf , ~paste( .x$name ,  
+                                            ifelse( .x$level < 3 , '' , 
+                                                    paste( 'in' , .x$parentName ) )
+                                            )
+                         ),
+
+            burst = TRUE ,
+            hide = FALSE 
     )
     
     # Testing 

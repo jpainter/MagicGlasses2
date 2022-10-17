@@ -42,7 +42,7 @@ evaluation_widget_ui = function ( id ){
                 selected = 1  ) ,
 
               checkboxInput( ns( "facet_admin" ) , label ="Facet by admin",
-                             value = FALSE  ) ,
+                             value = TRUE  ) ,
               
               checkboxInput( ns( "facet_split" ) , label ="Facet by split",
                              value = FALSE  ) ,
@@ -178,6 +178,7 @@ evaluation_widget_server <- function( id ,
     # data.hts = reactive({ reporting_widget_output$data.hts() })
     levelNames = reactive({ reporting_widget_output$levelNames() })
     period = reactive({ reporting_widget_output$period() })
+    group_by_cols = reactive({ reporting_widget_output$group_by_cols() })
     split = reactive({ reporting_widget_output$split() })
     startingMonth = reactive({ reporting_widget_output$startingMonth() })
     endingMonth = reactive({ reporting_widget_output$endingMonth() })
@@ -186,6 +187,7 @@ evaluation_widget_server <- function( id ,
     plotData = reactive({ reporting_widget_output$plotData() })
     caption.text = reactive({ reporting_widget_output$caption.text() })
     data.total = reactive({ reporting_widget_output$data.total() })
+    aggregatePlotData = reactive({ reporting_widget_output$aggregatePlotData() })
     selectedOUs = reactive({ reporting_widget_output$selectedOUs() })
 
 
@@ -336,10 +338,10 @@ evaluation_widget_server <- function( id ,
 
 # Impact ####
       observeEvent(
-        trendData() , {
+        data.total() , {
         cat('\n* evaluation_widget update var_y:');
         updateSelectInput( session, 'var_y' ,
-                choices =  names( trendData() )
+                choices =  names( data.total() )
                 )
         } )
 
@@ -946,13 +948,34 @@ evaluation_widget_server <- function( id ,
       if ( input$bootstrap ){
 
         fcast = tsModel() %>%
-          forecast( h = as.numeric( input$horizon ) ,
+          forecast( h = as.integer( input$horizon ) ,
                     bootstrap = TRUE,
                     times = as.integer( input$Reps )
           )
       } else {
-        fcast = tsModel() %>%
-          forecast( h = as.numeric( input$horizon ) )
+        # fcast = tsModel() %>%
+        #   forecast( h = as.numeric( input$horizon ) )
+        
+          if ( !is.null( input$covariates ) ){
+        
+          if ( period() %in% "Month" ) time_period = yearmonth( input$evaluation_month  ) # - month(1)
+          if ( period() %in% "Week" ) time_period = yearweek( input$evaluation_month  )
+ 
+          forecast.fit.data  = trendData() %>%
+            select( - total ) %>%
+            filter_index( as.character( time_period ) ~ . ,
+                        .preserve = TRUE ) %>%
+            filter( 
+              Month > time_period ,
+              Month <= ( time_period + as.integer( input$horizon ) )  )
+          
+          fcast = tsModel() %>% forecast( new_data = forecast.fit.data )
+          
+        } else {
+          
+          fcast = tsModel() %>% forecast( h = as.integer( input$horizon ) )
+        }
+          
       }
 
       # preserve tsibble key and index,
@@ -1012,17 +1035,25 @@ evaluation_widget_server <- function( id ,
       time_period = yearmonth( eval_month  ) - 12
 
       cat( '\n* evaluation_widget tsPreForecast' )
-      if ( input$covariates %in% "avg_mm"){
+      # if ( input$covariates %in% "avg_mm"){
 
         test.data  = trendData() %>%
+          select( - total ) %>%
           filter_index( as.character( time_period ) ~ as.character( time_period + as.integer( input$horizon ) ) ,
                       .preserve = TRUE )
 
-        fcast= getForecast( test_data = test.data , model = tsPreModel() ,
-                 bootstrap = FALSE , Reps = 1000 )
+        # fcast= getForecast( test_data = test.data , model = tsPreModel() ,
+        #          bootstrap = FALSE , Reps = 1000 )
 
         # if ( period() %in% 'Month' ) fcast = tsPreModel() %>% forecast( h = 12 , level = pi_levels() )
         # if ( period() %in% 'Week' ) fcast = tsPreModel() %>% forecast( h = 52  )
+        
+        if ( !is.null( input$covariates ) ){
+        
+          if ( period() %in% "Month" ) time_period = yearmonth( input$evaluation_month  ) # - month(1)
+          if ( period() %in% "Week" ) time_period = yearweek( input$evaluation_month  )
+ 
+          fcast = tsPreModel() %>% forecast( new_data = test.data )
 
       } else {
 
@@ -1131,6 +1162,20 @@ evaluation_widget_server <- function( id ,
     # saveRDS( data.total(), 'data.total.hts.rds' )
 
     data.hts = data.total()
+    # data.hts = aggregatePlotData()
+    
+    if ( !is_tsibble( data.hts ) ){
+      
+      cat('\n - preparing data.total as tsibble')
+    
+      key.cols = setdiff( group_by_cols() , period() )
+  
+      
+      data.hts = data.hts %>% 
+        as_tsibble( index = !! rlang::sym( period() )  ,
+                  key =  all_of(  {{ key.cols }} ) )
+    }
+    
 
      # if ( input$transform ) .d = .d %>% mutate( .total = fabletools::box_cox( total , lambda = .5  ) )
 

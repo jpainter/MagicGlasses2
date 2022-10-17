@@ -24,11 +24,17 @@ getLevelNames = function( orgUnits ){
 
 
 # cleanedData equivalent to MG2 reactive function d()
-cleanedData = function( data1 , source = 'Original' ){
+cleanedData = function( data1 , 
+                        .effectiveLeaf = TRUE , 
+                        source = 'Original' , 
+                        algorithm = 'seasonal3'){
 
       cat( '\n* d:')
     
       .period = period( data1 )
+      
+      cat( '\n - filtering by effectiveLeaf' , .effectiveLeaf )
+      data1 = data1 %>% filter( effectiveLeaf == .effectiveLeaf )
 
       if ( nrow( data1 ) == 0 ){
         cat('\n - data1 has zero rows')
@@ -45,10 +51,12 @@ cleanedData = function( data1 , source = 'Original' ){
       data = data %>% mutate( dataCol = original )
     }  
       
-    if ( source %in% 'Cleaned' & 'seasonal3' %in% names(data) ){
+    if ( ( source %in% 'Cleaned' ) & ( algorithm %in% names(data) ) ){
+      
       cat( '\n-' , paste('cleaning removes', sum( data$value , na.rm = T ) - sum( data$seasonal3 , na.rm = T )  , 'data points' ) )
+      
       data = data %>% 
-        mutate( dataCol = ifelse( seasonal3, original, NA  ) )
+        mutate( dataCol = ifelse( !! rlang::sym( algorithm ) , original, NA  ) )
       
       # Modify variables used for cleaning data so that FALSE when NA -- meaning it failed prior cleaning step, and TRUE means data is ok
       if ('mad15' %in% names( data )) data = data %>% mutate( mad15 = ifelse( value & is.na( mad15)|!mad15, FALSE, TRUE ) )
@@ -137,10 +145,8 @@ selectedData = function( d,
   
    data = d %>% mutate( Selected = 'All' ) 
     
-   if ( alwaysReporting ){
-     
-     .selectedOUs  = selectedOUs( d , ... )
-         # Add var for selected ous
+   .selectedOUs  = selectedOUs( d , ... )
+   # Add var for selected ous
     cat( '\n - selectedData length( selectedOUs()): ' , length( .selectedOUs ) )
     
     if ( length( .selectedOUs  > 0 ) ) data = setDT( data )[ , Selected := fifelse( orgUnit %in% .selectedOUs, 
@@ -148,6 +154,8 @@ selectedData = function( d,
                                                       'Inconsistent Reporting') ] %>%
       as_tibble(.)
     
+   if ( alwaysReporting ){
+       data = data %>% filter( Selected %in% 'Reporting Each Period' )
    }
    
     # filter to selected category
@@ -170,13 +178,15 @@ selectedData = function( d,
 }
 
   
-group_by_cols = function( data = NULL , levelNames = NULL, split = NULL, merge = TRUE  ){
+group_by_cols = function( data = NULL , levelNames = NULL, 
+                          split = NULL, 
+                          merge = TRUE  ){
     # req( input$split )
     cat("\n* group_by_cols():")
   
    .period = period( data )
     
-    group_by_cols =  c(.period , 'orgUnit', 'Selected', 'data' ) 
+    group_by_cols =  c(.period , 'orgUnit', 'data' ) 
     
     if ( !merge ) group_by_cols = c( group_by_cols, 'dataSet' )
     
@@ -327,7 +337,9 @@ data.total = function( data ,
 
 backtick <- function(x) paste0("`", x, "`")
 
-hts = function( agg_level = NULL , levelNames = NULL , hts = TRUE , 
+hts = function( agg_level = NULL , 
+                levelNames = NULL , 
+                hts = TRUE , 
                 .selectedOUs = NULL ,
                 split = 'None' ){   
  
@@ -359,9 +371,9 @@ hts = function( agg_level = NULL , levelNames = NULL , hts = TRUE ,
 
     # num_facilities = length( .selectedOUs )
     # if ( num_facilities > 1 )  
-      hts = paste( 
-             'Selected *' , hts 
-             )
+      # hts = paste( 
+      #        'Selected *' , hts 
+      #        )
     
     # if >1 dataset 
     # if ( num_datasets > 1 )  
@@ -380,19 +392,31 @@ hts = function( agg_level = NULL , levelNames = NULL , hts = TRUE ,
     return( hts )
   }
   
-data.hts = function( .d , hts = NULL, ... ){
+data.hts = function( .d , hts = NULL, covariates = "" , ... ){
 
     if ( is.null( hts ) ) hts = hts()
     cat('\n* data.hts():' )
     
     # Testing
     # saveRDS( data.total(), 'data.total.hts.rds' )
-  
-   # TODO:  Any way to speed this up???
+    
+   if ( grepl( "avg_mm" , covariates ) & "avg_mm" %in% names( .d ) ){
+      cat( "\n - grepl( 'avg_mm' , covariates ) & 'avg_mm' %in% names( .d )" )
+      
+     .d = .d %>%
+        aggregate_key(  .spec = !!rlang::parse_expr( hts ),
+                      total = sum( total , na.rm = T ) ,
+                      avg_mm = mean( !!rlang::parse_expr( 'avg_mm' ) , na.rm = T )
+                      )
+    } else {
+      
+      # TODO:  Any way to speed this up???
     .d = .d %>%
       aggregate_key(  .spec = !!rlang::parse_expr( hts ) ,
                       total = sum( total , na.rm = T )
                       ) 
+    }
+
     # }
     
     cat('\n - end data.hts():' ) 
@@ -460,14 +484,14 @@ trendData = function( .d = data.hts ,
          # 
          # }
     
-         if ( num_facilities > 1 ){
-           .d = .d %>%
-           filter( !is_aggregated( Selected )  ) %>%
-           mutate( Selected = as.character( Selected ) %>%
-               str_remove_all( "<aggregated>" )  ) 
-    
-           cat( '\n- Facilities:' ,  unique(.d$Selected) )
-         }
+         # if ( num_facilities > 1 ){
+         #   .d = .d %>%
+         #   filter( !is_aggregated( Selected )  ) %>%
+         #   mutate( Selected = as.character( Selected ) %>%
+         #       str_remove_all( "<aggregated>" )  ) 
+         # 
+         #   cat( '\n- Facilities:' ,  unique(.d$Selected) )
+         # }
             
         # if split, remove aggregate grouping
          if ( !split %in% 'None' ){
@@ -508,28 +532,100 @@ trendData = function( .d = data.hts ,
   return( .d )
 }
 
-getForecast = function( test_data , model = NULL , 
+getForecast = function( forecastData , 
+                        model = NULL , 
+                        model.string = NULL , 
+                        transform = TRUE ,
+                        lambda = .5 , 
+                        covariates = NULL ,
+                        horizon = 12 ,
                         bootstrap = FALSE, Reps = 1000 ,
                         future.seed=TRUE ,
                         split = 'None' ,
                         agg_level = NULL ,
-                        agg_method = "None" ){ 
+                        agg_method = "None" ,
+                        .period = "Month" ,
+                        eval_date = yearmonth('Jan 2021') ){ 
       
       cat( '\n* tsForecast()' )
       
-      if ( bootstrap ){
-        # remove null models because throws error...
-        .model = model[ which( !is_null_model( model$arima ) ), ]
-        
-        fcast = .model %>%
-          forecast( new_data = test_data , 
-                    # simulate = TRUE ,
-                    bootstrap = TRUE, 
-                    times = Reps  )
-        
+      # if ( bootstrap ){
+      #   # remove null models because throws error...
+      #   .model = model[ which( !is_null_model( model$arima ) ), ]
+      #   
+      #   fcast = .model %>%
+      #     forecast( new_data = test_data , 
+      #               # simulate = TRUE ,
+      #               bootstrap = TRUE, 
+      #               times = Reps  )
+      #   
+      # } else {
+      #   fcast = .model %>%
+      #     forecast( new_data = test_data  ) 
+      # }
+      
+      if ( .period %in% "Month" ) time_period = yearmonth( eval_date  ) # - month(1)
+      if ( .period %in% "Week" ) time_period = yearweek( eval_date  )
+
+      fit.data  = forecastData %>%
+        filter_index( ~ as.character( time_period ) ,
+                      .preserve = TRUE )
+      
+      # test.data  = forecastData %>%
+      #   filter_index( as.character( time_period ) ~  ,
+      #                 .preserve = TRUE )
+      
+      if ( is.null( model.string ) ) model.string = 'fabletools::box_cox( total , lambda = .5  ) ~  pdq() + PDQ() '
+      # model.string = 'total  ~  pdq() + PDQ()'
+      
+      if ( transform ){ 
+        model.string = paste( 'fabletools::box_cox( total , lambda =', lambda, ') ~  pdq() ' )
+      } else { 
+        model.string = 'total ~  pdq() '
+        } 
+
+      if (.period %in% "Month" ) model.string = paste0( model.string ,
+                                                             '+ PDQ( period = "1 year" )'   )
+  
+      if ( .period %in% "Week" ) model.string = paste0( model.string ,
+                                                             '+ PDQ( period = 52 )'   )
+      
+      
+      if ( !is.null( covariates )) model.string =
+             paste( model.string , '+ xreg(' , covariates , ' ) '  )
+      
+      cat( '\n - model:' , model.string )
+
+      fit = fit.data %>% model(
+          arima = ARIMA( as.formula( model.string ) )
+      )
+      
+     if ( bootstrap ){
+
+        fcast = fit %>%
+          forecast( h = as.numeric( horizon ) ,
+                    bootstrap = TRUE,
+                    times = as.integer( Reps )
+          )
       } else {
-        fcast = model %>%
-          forecast( new_data = test_data ) 
+        
+        if ( !is.null( covariates ) ){
+        
+          forecast.fit.data  = forecastData %>%
+            select( - total ) %>%
+            filter_index( as.character( time_period ) ~ . ,
+                        .preserve = TRUE ) %>%
+            filter( 
+              Month > time_period ,
+              Month <= ( time_period + horizon )  )
+          
+          fcast = fit %>% forecast( new_data = forecast.fit.data )
+          
+        } else {
+          
+          fcast = fit %>% forecast( h = as.numeric( horizon ) )
+        }
+          
       }
       
       # preserve tsibble key and index,
@@ -579,13 +675,83 @@ getForecast = function( test_data , model = NULL ,
       return( fcast )
 }
 
-  plotTrends = function( plotData , scale = FALSE , 
-                         legend = FALSE , label = FALSE ,
+  key.mpe = function( forecastData = tsForecast , actualData = td , 
+                      .period = 'Month' ,
+                      horizon = 12 ,
+                      agg_level = NULL ,
+                      levelNames = NULL , 
+                      split = 'None' ){
+
+        cat('\n* evaluation_widget key.mpe()')
+
+        predicted = forecastData %>%
+          rename( pred = .mean )
+
+        actual =  actualData %>%
+          rename( actual = total )
+
+        keyvars = key_vars( actual )
+        cat('\n - keyvars' , keyvars )
+
+        truth = predicted %>%
+           inner_join( actual , by = c( .period, keyvars  ) )
+
+        # print( 'truth'); #print( truth )
+
+        mid_point = round( as.integer( horizon ) /2  )
+        
+        if (is.null( levelNames)) levelNames = getLevelNames( orgUnits = orgUnits )
+
+        if ( is.null( agg_level ) ) agg_level = levelNames[1] 
+
+        e = truth %>%
+          group_by_key() %>%
+          index_by( 1 ) %>%
+          summarise(
+                mpe = ifelse( mean( pred , na.rm = T ) > 0 ,
+                             mean( actual - pred  , na.rm = T ) /
+                             mean( pred , na.rm = T ) ,
+                             NA ) ,
+                !! .period   := nth( !! rlang::sym( .period )  , mid_point ) ,
+                 actual = ifelse( mpe<=0 , max( actual, na.rm = TRUE ),
+                                 min( actual, na.rm = TRUE  )
+                                 #nth( actual , mid_point )
+                ) ,
+                pred = ifelse( mpe<=0 , max( pred, na.rm = TRUE ),
+                                 min( pred, na.rm = TRUE  )
+                                 #nth( actual , mid_point )
+                ) ,
+                just = ifelse( mpe >= 0 , 1, -1 )
+                ) %>%
+        as_tibble()  %>%
+            mutate( !! agg_level :=
+                      as.character( !! rlang::sym( agg_level  ) ) )
+
+      if ( !split %in% 'None' ){
+           cat( '\n - key.mape grouping_var' , split )
+           e = e %>%
+             mutate(
+               grouping_var = as.character( !! rlang::sym( split ) )
+             )
+       } else {
+             e = e %>%
+               mutate(  grouping_var = 'Total' )
+           }
+
+        cat( "\n - mpe"  ); #glimpse(e )
+        return( e )
+      }
+      
+plotTrends = function( plotData , scale = FALSE , 
+                         legend = FALSE , 
+                         label = FALSE ,
                          facet_split = FALSE ,
                          facet_admin = FALSE ,
                          agg_level = 'National' ,
                          pre_evaluation = FALSE ,
-                         evaluation = FALSE ){
+                         evaluation = FALSE ,
+                         eval_date = yearmonth('Jan 2021') ,
+                         pe = TRUE ,  ... ){
 
           cat( '\n* evaluation_widget plotTrends():' )
 
@@ -625,8 +791,8 @@ getForecast = function( test_data , model = NULL ,
 
           cat( '\n - basic plot done' ) 
 
-          if ( legend ) g = g +
-            theme(legend.position = "none")
+          if ( !legend ) g = g +
+            theme( legend.position = "none")
 
           if ( label ){
             g = g + geom_label_repel(
@@ -675,7 +841,9 @@ getForecast = function( test_data , model = NULL ,
 
           # Time scale
           cat( '\n - Evaluation: setting x axis time scale', .period )
-          if ( .period %in% 'Month') g = g + scale_x_yearmonth("", date_breaks = "1 year" )
+          if ( .period %in% 'Month') g = g + scale_x_yearmonth("", 
+                                                               date_labels = "%b\n%Y" ,
+                                                               date_breaks = "1 year" )
           # Default for weeks seems ok - 6 months
           # if ( .period %in% 'Week') g = g + scale_x_yearweek("", date_breaks = "1 year" )
 
@@ -690,11 +858,11 @@ getForecast = function( test_data , model = NULL ,
           cat( '\n - axis scales and labs done' )
 
           # Eval Date
-      #     cat( '\n - evaluation date' , input$evaluation_month )
-      #     if ( .period %in% 'Month' ) eval_date =   yearmonth( input$evaluation_month  )
-      #     if ( .period %in% 'Week' ) eval_date =   yearweek( input$evaluation_month  )
-      #     cat( '\n - eval_date:' , eval_date )
-      # 
+        #     cat( '\n - evaluation date' , input$evaluation_month )
+        #     if ( .period %in% 'Month' ) eval_date =   yearmonth( input$evaluation_month  )
+        #     if ( .period %in% 'Week' ) eval_date =   yearweek( input$evaluation_month  )
+        #     cat( '\n - eval_date:' , eval_date )
+        
       # ## Pre-Evaluation trend line #####
       if ( pre_evaluation ){
           cat( '\n - pre-evaluation line.  ' )
@@ -723,14 +891,14 @@ getForecast = function( test_data , model = NULL ,
             geom_vline( xintercept = as.Date( eval_date ) ,
                         color = 'black', alpha = 1 )
 
-            if ( input$pe ) g = g +
-              geom_label_repel( data =  key.mape() ,
-                       aes(  x = !! rlang::sym( period() ) , y = actual ,
-                       label = paste( "MAPE:" , percent( mape, accuracy = 1.0 ) ) ,
-                       hjust = just ) ,
-                       # force_pull = 0 ,
-                       segment.colour = NA
-                       )
+            # if ( input$pe ) g = g +
+            #   geom_label_repel( data =  key.mape() ,
+            #            aes(  x = !! rlang::sym( period() ) , y = actual ,
+            #            label = paste( "MAPE:" , percent( mape, accuracy = 1.0 ) ) ,
+            #            hjust = just ) ,
+            #            # force_pull = 0 ,
+            #            segment.colour = NA
+            #            )
 
           }
 
@@ -738,16 +906,21 @@ getForecast = function( test_data , model = NULL ,
 
 
       ## Evaluation Trend Line ####
-          if ( evaluation ){
+        if ( evaluation ){
+          
+           tsForecast = getForecast( plotData , ... )
+          
             cat( '\n - evaluation line.  ')
-            cat( '\n - evaluation line.  ' , 'pi_levels:' , pi_levels() )
+            # cat( '\n - evaluation line.  ' , 'pi_levels:' , pi_levels() )
 
            g = g +
-            forecast::autolayer( tsForecast()
-                       , level = pi_levels()
+            forecast::autolayer( tsForecast
+                       # , level = pi_levels()
                        , color = 'black'
-                       , linetype = 'dashed', size = 1
-                       ,  alpha = .5 ) +
+                       # , linetype = 'dashed'
+                       , size = 1
+                       ,  alpha = .5
+                       ) +
             # geom_line( data = tsForecast() , aes( y = .mean )
             #   # ,   color = 'light blue'
             #   , alpha = .75
@@ -764,9 +937,12 @@ getForecast = function( test_data , model = NULL ,
             #           label = paste( "MPE:\n" )
             #           ) +
 
-            if (input$pe) g = g +
-              geom_label_repel( data =  key.mpe() ,
-                       aes(  x = !! rlang::sym( period() ) , y = actual ,
+           
+            mpeData = key.mpe( forecastData = tsForecast , actualData = plotData  )
+            
+            if ( pe ) g = g +
+              geom_label_repel( data =  mpeData ,
+                       aes(  x = !! rlang::sym( .period ) , y = pred ,
                        label = paste( "MPE:" , percent( mpe, accuracy = 1.0 ) ) ,
                        hjust = just
                        ) ,

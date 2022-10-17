@@ -580,7 +580,7 @@ reporting_widget_server <- function( id ,
       data = d()
       
       #Testing
-      saveRDS( data, 'orgunits.reports.data.rds')
+      # saveRDS( data, 'orgunits.reports.data.rds')
       
       if ( !input$count.any & !input$all_categories ){
         # data =  data %>% filter( data %in% input$data_categories )
@@ -609,7 +609,7 @@ reporting_widget_server <- function( id ,
       cat('\n-orgunit.reports--o.r.(DT)')
       
       # Testing:
-      saveRDS( o.r. , "o.r..rds")
+      # saveRDS( o.r. , "o.r..rds")
       
       o.r. = setDT( o.r. )[ ,  .(n_periods = uniqueN( base::get( .period ) ) ) , 
                        by = c( 'year' , 'orgUnit' ) ] %>%
@@ -1023,7 +1023,7 @@ reporting_widget_server <- function( id ,
     
     # save data for testing ggplot options
     # cat('\n- saving plot2_data.rds')
-    saveRDS( monthly.reports(), 'monthly.reports.rds' )
+    # saveRDS( monthly.reports(), 'monthly.reports.rds' )
     
     if ( length( monthly.reports()$year) > 0  ) {
     
@@ -1202,7 +1202,7 @@ reporting_widget_server <- function( id ,
     cat( "\n - plotData cols:" ,  names( data ) ) 
     cat( '\n- end  plotData()')  
     # TESTING
-    saveRDS( data , "plotData.rds" )
+    # saveRDS( data , "plotData.rds" )
     
   return( data )
 })
@@ -1248,15 +1248,16 @@ reporting_widget_server <- function( id ,
       
       .group_by_cols =  group_by_cols()  
       cat( '\n - data.total .group_by_cols:'  )
+      
       # Testing
-      saveRDS( .group_by_cols , 'group_by_cols.rds' )
+      # saveRDS( .group_by_cols , 'group_by_cols.rds' )
   
       # Total categories by facilities and datasets
       data = plotData() 
       cat( "\n - starting with plotData().  class/cols:\n -- " , class( plotData() ) , "\n -- " , names( plotData() ) )
       
       # Testing
-      saveRDS( data , 'plotData.rds' )
+      # saveRDS( data , 'plotData.rds' )
       
       # Merge  datasets 
       # Set all dataSets to Combined and re-summaries taking mean
@@ -1300,6 +1301,7 @@ reporting_widget_server <- function( id ,
         
         # Testing
         # saveRDS( data, "data.rds")
+        
         toc()
         # data = setDT( data )[ , dataSet := dataSet %>% str_replace_all( fixed("\r\n"), "") , ]
         # 
@@ -1388,16 +1390,21 @@ reporting_widget_server <- function( id ,
     
     cat( "\n - data.total cols:" , names( data.total ) )
     
+    ## NB does data.total need to be a Tsibble?--it is slow.  
+    
     data.total = data.total[ , total := replace_na( dataCol , 0)  ,] %>%
       
         # dataMerge %>% 
         # # fill_gaps( .full = TRUE  ) %>%
-        # mutate( 
+        
+      # mutate( 
         #         total = replace_na( dataCol , 0) 
         #         )  %>% # for plotting, replace missing with zero 
-      
-        as_tsibble( index = !! rlang::sym( .period )  , 
-                    key =  all_of(  {{ key.cols }} ) ) 
+        
+        as_tibble()
+    
+        # as_tsibble( index = !! rlang::sym( .period )  , 
+        #             key =  all_of(  {{ key.cols }} ) ) 
 
     cat( '\n - data.total class' , class( data.total ) ) 
     cat( '\n - data.total cols' , names( data.total ) ) 
@@ -1406,8 +1413,8 @@ reporting_widget_server <- function( id ,
     # cat( '/n - data.total cols:', names( data.total ) )
     
 
-    # test:
-    saveRDS( data.total, 'data.total.rds')
+    # testing:
+    # saveRDS( data.total, 'data.total.rds')
     
     cat('\n- end data.total()')
     return( data.total )
@@ -1470,7 +1477,22 @@ reporting_widget_server <- function( id ,
     # saveRDS( data.hts() , 'data.hts.rds' )
     # saveRDS( levelNames() , 'levelNames.rds')
     
-    .d = data.total() %>% 
+    .d = data.total()
+    
+    if ( !is_tsibble( .d ) ){
+      cat('\n - preparing data.total as tsibble')
+      
+      key.cols = setdiff( group_by_cols() , period() )
+      
+      cat('\n - key.cols:',key.cols )
+      
+      .d = .d %>% 
+        as_tsibble( index = !! rlang::sym( period() )  ,
+                    key =  all_of(  {{ key.cols }} ) )
+    }  
+    
+    cat('\n - preparing aggregate_key')
+    .d = .d %>%
       aggregate_key(  .spec = !!rlang::parse_expr( aggregateDataKey() ) ,
                       total = sum( total , na.rm = T )
                       ) 
@@ -1641,7 +1663,9 @@ reporting_widget_server <- function( id ,
       d = d ,
       # data.hts = data.hts ,
       data.total = data.total , 
-      period = period , 
+      aggregatePlotData = aggregatePlotData , 
+      period = period ,
+      group_by_cols = group_by_cols ,
       levelNames = levelNames ,
       split = split ,
       startingMonth = startingMonth ,

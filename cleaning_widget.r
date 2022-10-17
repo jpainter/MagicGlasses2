@@ -1078,7 +1078,8 @@ cleaning_widget_server <- function( id ,
     d = outlier.dataset()
      
     # testing
-    # saveRDS( d , 'data1.rds')
+    # saveRDS( d , 'outlier.dataset.rds')
+    
     # MAD Error
     cat( "\n - input$Error:" , input$Error )
     if ( input$Error %in% names( d ) ){

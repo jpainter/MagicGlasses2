@@ -533,7 +533,7 @@ Outliers
 ========================
 
 
-```{r  , eval= TRUE }
+```{r  , eval= TRUE } 
 source( 'cleaning_widget.r' )
 
 cleaning_widget_ui( "cleaning1" )
