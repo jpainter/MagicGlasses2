@@ -823,6 +823,8 @@ evaluation_widget_server <- function( id ,
 
       cat("\n - nrow(trendData()):" , nrow( trendData() )  )
       cat("\n - nrow(fit.data:" , nrow( fit.data )  )
+      
+      # Testing:
       # saveRDS( trendData() , 'trendData.rds' )
       saveRDS( fit.data , 'fit.data.rds' )
 
@@ -948,7 +950,7 @@ evaluation_widget_server <- function( id ,
       if ( input$bootstrap ){
 
         fcast = tsModel() %>%
-          forecast( h = as.integer( input$horizon ) ,
+          fabletools::forecast( h = as.integer( input$horizon ) ,
                     bootstrap = TRUE,
                     times = as.integer( input$Reps )
           )
@@ -956,8 +958,8 @@ evaluation_widget_server <- function( id ,
         # fcast = tsModel() %>%
         #   forecast( h = as.numeric( input$horizon ) )
         
-          if ( !is.null( input$covariates ) ){
-        
+        if ( nchar( input$covariates ) > 0 ){
+          cat( '\n - covariates')
           if ( period() %in% "Month" ) time_period = yearmonth( input$evaluation_month  ) # - month(1)
           if ( period() %in% "Week" ) time_period = yearweek( input$evaluation_month  )
  
@@ -969,11 +971,10 @@ evaluation_widget_server <- function( id ,
               Month > time_period ,
               Month <= ( time_period + as.integer( input$horizon ) )  )
           
-          fcast = tsModel() %>% forecast( new_data = forecast.fit.data )
+          fcast = tsModel() %>% fabletools::forecast( new_data = forecast.fit.data )
           
         } else {
-          
-          fcast = tsModel() %>% forecast( h = as.integer( input$horizon ) )
+          fcast = tsModel() %>% fabletools::forecast(  h = as.integer( input$horizon ) )
         }
           
       }
@@ -1048,17 +1049,17 @@ evaluation_widget_server <- function( id ,
         # if ( period() %in% 'Month' ) fcast = tsPreModel() %>% forecast( h = 12 , level = pi_levels() )
         # if ( period() %in% 'Week' ) fcast = tsPreModel() %>% forecast( h = 52  )
         
-        if ( !is.null( input$covariates ) ){
-        
-          if ( period() %in% "Month" ) time_period = yearmonth( input$evaluation_month  ) # - month(1)
-          if ( period() %in% "Week" ) time_period = yearweek( input$evaluation_month  )
+        if ( nchar( input$covariates ) > 0 ){
+          cat( "\n - input$covariates:" , input$covariates )
+          if ( period() %in% "Month" ) time_period = yearmonth( eval_month  ) # - month(1)
+          if ( period() %in% "Week" ) time_period = yearweek( eval_month  )
  
-          fcast = tsPreModel() %>% forecast( new_data = test.data )
+          fcast = tsPreModel() %>% fabletools::forecast( new_data = test.data )
 
       } else {
 
-        if ( period() %in% 'Month' ) fcast = tsPreModel() %>% forecast( h = 12 , level = pi_levels() )
-        if ( period() %in% 'Week' ) fcast = tsPreModel() %>% forecast( h = 52  )
+        if ( period() %in% 'Month' ) fcast = tsPreModel() %>% fabletools::forecast(h = "12 months" , level = pi_levels() ) 
+        if ( period() %in% 'Week' ) fcast = tsPreModel() %>% fabletools::forecast(h = "52 weeks" , level = pi_levels() ) 
 
       }
 
@@ -1092,7 +1093,10 @@ evaluation_widget_server <- function( id ,
 
       cat( '\n - tsPreForecast done.' )
       print( names( fcast ) )
-      # saveRDS( fcast , 'tsPreForecast.rds' )
+      
+      # Testing:
+      saveRDS( fcast , 'tsPreForecast.rds' )
+      
       return( fcast )
       })
 
@@ -1159,7 +1163,7 @@ evaluation_widget_server <- function( id ,
     cat( "\n - data.total cols:" , paste( names( data.total() ) , collapse = "," ) )
 
     # Testing
-    # saveRDS( data.total(), 'data.total.hts.rds' )
+    saveRDS( data.total(), 'data.total.rds' )
 
     data.hts = data.total()
     # data.hts = aggregatePlotData()
@@ -1179,16 +1183,20 @@ evaluation_widget_server <- function( id ,
 
      # if ( input$transform ) .d = .d %>% mutate( .total = fabletools::box_cox( total , lambda = .5  ) )
 
-    if ( grepl( "avg_mm" , input$covariates ) & "avg_mm" %in% names( data.hts ) ){
-      cat( "\n - grepl( 'avg_mm' , input$covariates ) & 'avg_mm' %in% names( data.hts )")
+    # if ( grepl( "avg_mm" , input$covariates ) & "avg_mm" %in% names( data.hts ) ){
+    if ( input$covariates %in% names( data.hts ) ){
+      cat( "\n - ",  input$covariates , "%in% names( data.hts )" )
     # testing exogenous vaiables
     # if ( input$covariates %in% c('ipti' , 'doses' ) ){
+      xreg.var = input$covariates 
+      
       data.hts = data.hts %>%
       aggregate_key(  .spec = !!rlang::parse_expr( hts() ) ,
                       total = sum( total , na.rm = T ) ,
-                      avg_mm = mean( !!rlang::parse_expr( 'avg_mm' ) , na.rm = T )
+                      # avg_mm = mean( !!rlang::parse_expr( 'avg_mm' ) , na.rm = T )
                       # ipti = sum( !!rlang::parse_expr( 'ipti' ) , na.rm = T ) ,
                       # doses = sum( !!rlang::parse_expr( 'doses' ) , na.rm = T )
+                      xreg.var := sum( !!rlang::parse_expr( xreg.var ) , na.rm = T )
                       )
     } else {
       
@@ -1457,8 +1465,8 @@ evaluation_widget_server <- function( id ,
 
           g = g +
              forecast::autolayer( tsPreForecast()
-                       # , level = c(80,90) # ci_levels()
-                       , PI = TRUE
+                       , level = c( 80, 90 )  # ci_levels()
+                       # , PI = TRUE
                        , color = 'black'
                        , linetype = 'dotted'  , size = 2
                        ,  alpha = .75 ) +

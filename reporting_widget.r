@@ -1282,13 +1282,13 @@ reporting_widget_server <- function( id ,
         # cat( "\n - mergeDatasets are:" , mergeDatasets )
         
         data = 
-                setDT( data )[ , dataSet := dataSet %>% str_replace_all( fixed("\r\n"), "")  ] %>%
-                # mutate( dataSet = dataSet %>% str_replace_all( fixed("\r\n"), "") ) %>%
+                # setDT( data )[ , dataSet := dataSet %>% str_replace_all( fixed("\r\n"), "")  ] %>%
+                # # mutate( dataSet = dataSet %>% str_replace_all( fixed("\r\n"), "") ) %>%
+                # 
+                # .[ ,  dataSet := dataSet %>% str_replace_all( fixed("\n"), "")   ] %>%
+                # # mutate( dataSet = dataSet %>% str_replace_all( fixed("\n"), "") ) %>%
           
-                .[ ,  dataSet := dataSet %>% str_replace_all( fixed("\n"), "")   ] %>%
-                # mutate( dataSet = dataSet %>% str_replace_all( fixed("\n"), "") ) %>%
-          
-                .[ any( dataSet %in% mergeDatasets ) ,  dataSet :=  'Combined'  ] %>%
+                setDT( data )[ any(  mergeDatasets %in% dataSet ) ,  dataSet :=  'Combined'  ] %>%
           
                 as_tibble
                 # mutate(
