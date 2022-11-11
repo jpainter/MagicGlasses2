@@ -1,24 +1,24 @@
 
-period = function( data ){
-      cat('\n* period: ')
+period = function( data , .cat = FALSE ){
+      if ( .cat ) cat('\n* period: ')
       
       weekly = any( map_lgl( data ,
                              ~any(class(.x) %in% 'yearweek'  )) )
 
       period = ifelse( weekly, "Week", "Month" )
-      cat( period )
+      if ( .cat ) cat( period )
       return( period  )
     }
   
-getLevelNames = function( orgUnits ){ 
+getLevelNames = function( orgUnits, .cat = FALSE ){ 
 
     if ( 'sf' %in% class( orgUnits ) ) orgUnits = orgUnits %>% st_drop_geometry()
-    cat( '\n* levelNames:' )
+    if ( .cat ) cat( '\n* levelNames:' )
     l = count( orgUnits %>% as_tibble, level, levelName ) %>% 
       filter( !is.na( level ) ) %>%
       arrange( level ) %>% pull(levelName ) %>% unique
     l = l[ !is.na(l) ]
-    cat( '\n - end levelNames:', paste(l, collapse = ", " )  )
+    if ( .cat ) cat( '\n - end levelNames:', paste(l, collapse = ", " )  )
     return(l)
 }
 
@@ -27,33 +27,34 @@ getLevelNames = function( orgUnits ){
 cleanedData = function( data1 , 
                         .effectiveLeaf = TRUE , 
                         source = 'Original' , 
-                        algorithm = 'seasonal3'){
+                        algorithm = 'seasonal3' ,
+                        .cat = FALSE ){
 
-      cat( '\n* d:')
+      if ( .cat ) cat( '\n* d:')
     
       .period = period( data1 )
       
-      cat( '\n - filtering by effectiveLeaf' , .effectiveLeaf )
+      if ( .cat ) cat( '\n - filtering by effectiveLeaf' , .effectiveLeaf )
       data1 = data1 %>% filter( effectiveLeaf == .effectiveLeaf )
 
       if ( nrow( data1 ) == 0 ){
-        cat('\n - data1 has zero rows')
+        if ( .cat ) cat('\n - data1 has zero rows')
         return()
       } 
 
-      cat('\n - period is', .period )
+      if ( .cat ) cat('\n - period is', .period )
       
       # TODO for speed -- use data.table ....
       data = data1  %>% mutate( period = !!rlang::sym( .period ) )
       
     if ( source %in% 'Original' ){
-      cat('\n- source is original')
+      if ( .cat ) cat('\n- source is original')
       data = data %>% mutate( dataCol = original )
     }  
       
     if ( ( source %in% 'Cleaned' ) & ( algorithm %in% names(data) ) ){
       
-      cat( '\n-' , paste('cleaning removes', sum( data$value , na.rm = T ) - sum( data$seasonal3 , na.rm = T )  , 'data points' ) )
+      if ( .cat ) cat( '\n-' , paste('cleaning removes', sum( data$value , na.rm = T ) - sum( data$seasonal3 , na.rm = T )  , 'data points' ) )
       
       data = data %>% 
         mutate( dataCol = ifelse( !! rlang::sym( algorithm ) , original, NA  ) )
@@ -65,25 +66,26 @@ cleanedData = function( data1 ,
       if ('seasonal5' %in% names( data )) data = data %>% mutate( seasonal5 = ifelse( value & is.na( seasonal5)|!seasonal5, FALSE, TRUE ) )
       if ('seasonal3' %in% names( data )) data = data %>% mutate( seasonal3 = ifelse( value & is.na( seasonal3)|!seasonal3, FALSE, TRUE ) )
       
-      cat( '\n-' , paste('cleaning changes total by', sum( data$original , na.rm = T ) - sum( data$dataCol , na.rm = T )) )
+      if ( .cat ) cat( '\n-' , paste('cleaning changes total by', sum( data$original , na.rm = T ) - sum( data$dataCol , na.rm = T )) )
     }  
     
-    cat( '\n - nrow( d ):' , nrow( data ))
+    if ( .cat ) cat( '\n - nrow( d ):' , nrow( data ))
     
     # Remove rows where data not translated correctly.  data is 'NA_'
-    cat( '\n - removing rows where data is NA_: ', sum( data$data %in% "NA_" ) , 'rows')
+    if ( .cat ) cat( '\n - removing rows where data is NA_: ', sum( data$data %in% "NA_" ) , 'rows')
     
     # TODO speed up with data.table
     data = data %>% filter( ! data %in% 'NA_') 
     
-    cat( '\n - nrow( d ):' , nrow( data ))
+    if ( .cat ) cat( '\n - nrow( d ):' , nrow( data ))
     return( data )
 }
 
 selectedOUs <- function( d ,  endingMonth = NULL , startingMonth = NULL , 
                          count.any = TRUE , all_categories = TRUE , 
-                         data_categories = NULL ){
-    cat( '\n* selectedOUS' )
+                         data_categories = NULL ,
+                         .cat = FALSE ){
+    if ( .cat ) cat( '\n* selectedOUS' )
 
     data = d
     
@@ -95,7 +97,7 @@ selectedOUs <- function( d ,  endingMonth = NULL , startingMonth = NULL ,
     # TODO for speed -- use data.table ....
     
     if ( !count.any & !all_categories  ){
-          cat( '\n - input$all_categories:'  )
+          if ( .cat ) cat( '\n - input$all_categories:'  )
           data = data %>% filter( data %in% data_categories )
        }
   
@@ -108,7 +110,7 @@ selectedOUs <- function( d ,  endingMonth = NULL , startingMonth = NULL ,
        } 
       
     if ( .period %in% 'Week' ){
-         cat( '\n - selectedOUS by Week')
+         if ( .cat ) cat( '\n - selectedOUS by Week')
          data = data %>% as_tibble %>%
          filter( 
            period >=  yearweek( startingMonth )  ,
@@ -130,7 +132,7 @@ selectedOUs <- function( d ,  endingMonth = NULL , startingMonth = NULL ,
          filter( n == max( mr$n ) ) %>%
          pull( orgUnit ) %>% unique
        
-    cat( "\n - number selectedOUs:", length(s), 'orgUnits' ) 
+    if ( .cat ) cat( "\n - number selectedOUs:", length(s), 'orgUnits' ) 
     return( s )
 }  
 
@@ -139,15 +141,17 @@ selectedOUs <- function( d ,  endingMonth = NULL , startingMonth = NULL ,
 selectedData = function( d,  
                          all_categories = TRUE , 
                          data_categories = NULL ,
-                         alwaysReporting = TRUE , ... ){
+                         alwaysReporting = TRUE , 
+                         .cat = FALSE ,
+                         ... ){
 
-   cat( "\n* plotData():" )
+   if ( .cat ) cat( "\n* plotData():" )
   
    data = d %>% mutate( Selected = 'All' ) 
     
    .selectedOUs  = selectedOUs( d , ... )
    # Add var for selected ous
-    cat( '\n - selectedData length( selectedOUs()): ' , length( .selectedOUs ) )
+    if ( .cat ) cat( '\n - selectedData length( selectedOUs()): ' , length( .selectedOUs ) )
     
     if ( length( .selectedOUs  > 0 ) ) data = setDT( data )[ , Selected := fifelse( orgUnit %in% .selectedOUs, 
                                                       'Reporting Each Period',
@@ -159,7 +163,7 @@ selectedData = function( d,
    }
    
     # filter to selected category
-    cat( '\n - selectedData filtered by' , data_categories )
+    if ( .cat ) cat( '\n - selectedData filtered by' , data_categories )
 
     if ( !all_categories )  data = data %>% filter( data %in% data_categories )
         
@@ -170,7 +174,7 @@ selectedData = function( d,
     #        'Inconsistent Reporting' ) ] %>%
     #   as_tibble()
     
-    cat( '\n - end  selectedData()' )  ; # #print( names( data )) 
+    if ( .cat ) cat( '\n - end  selectedData()' )  ; # #print( names( data )) 
     # TESTING
     # saveRDS( data , "plotData.rds" )
     
@@ -180,9 +184,10 @@ selectedData = function( d,
   
 group_by_cols = function( data = NULL , levelNames = NULL, 
                           split = NULL, 
-                          merge = TRUE  ){
+                          merge = TRUE ,
+                          .cat = FALSE ){
     # req( input$split )
-    cat("\n* group_by_cols():")
+    if ( .cat ) cat("\n* group_by_cols():")
   
    .period = period( data )
     
@@ -194,7 +199,7 @@ group_by_cols = function( data = NULL , levelNames = NULL,
    
     group_by_cols = c( group_by_cols, levelNames )
   
-    cat("\n - group_by_cols():", group_by_cols )
+    if ( .cat ) cat("\n - group_by_cols():", group_by_cols )
     
     if ( !is.null( split ) ) group_by_cols = c( group_by_cols , split )
     
@@ -204,7 +209,7 @@ group_by_cols = function( data = NULL , levelNames = NULL,
     # # If not merge when total, show separate datsets
     # if ( !input$merge & input$all_categories ) group_by_cols = c( group_by_cols , 'dataSet' )
     #   
-    cat( "\n- end group_by_cols()" , unique( group_by_cols )  )
+    if ( .cat ) cat( "\n- end group_by_cols()" , unique( group_by_cols )  )
     return( unique( group_by_cols ) )
 
 }
@@ -217,20 +222,21 @@ data.total = function( data ,
                       merge = FALSE ,
                       dataset_merge_average = FALSE ,
                       startDisplayMonth = NULL  , 
-                      endDisplayMonth = NULL 
+                      endDisplayMonth = NULL,
+                      .cat = FALSE 
                        ){
-    cat( '\n* data.total():' )
+    if ( .cat ) cat( '\n* data.total():' )
   
     .period = period( data )
   
-    cat( '\n - period:' , .period )
+    if ( .cat ) cat( '\n - period:' , .period )
     
     .dates = data %>% pull( !!rlang::sym( .period )  )
     if ( is.null( startDisplayMonth ) )  startDisplayMonth = min( .dates , na.rm = TRUE  )
     if ( is.null( endDisplayMonth ) ) endDisplayMonth = max( .dates , na.rm = TRUE   )
     
     if ( is.null( .group_by_cols )) .group_by_cols = group_by_cols( data )
-    cat( '\n - data.total .group_by_cols:'  , .group_by_cols )
+    if ( .cat ) cat( '\n - data.total .group_by_cols:'  , .group_by_cols )
   
     # Total categories by facilities and datasets
     # data = plotData
@@ -238,11 +244,11 @@ data.total = function( data ,
       # Merge  datasets 
       # Set all dataSets to Combined and re-summaries taking mean
       # #print( 'data.total datasets' );  #print( dataSets() )
-      cat( '\n - merge ', merge )
-      cat( '\n - data datsets ' , unique( dataSet) ) 
+      if ( .cat ) cat( '\n - merge ', merge )
+      if ( .cat ) cat( '\n - data datsets ' , unique( dataSet) ) 
       
       mergeDatasets = merge %>% str_replace_all( fixed("\n"), "") 
-      cat( '\n - mergeDatasets:' , mergeDatasets )
+      if ( .cat ) cat( '\n - mergeDatasets:' , mergeDatasets )
       
      
       if ( merge  ){
@@ -259,7 +265,7 @@ data.total = function( data ,
                 setDT() %>%
                 .[ , .(dataCol = sum( dataCol , na.rm = TRUE  )) , by =  .group_by_cols ] 
       
-      cat('\n - Combining dataSets %in% input$merge:' , mergeDatasets )
+      if ( .cat ) cat('\n - Combining dataSets %in% input$merge:' , mergeDatasets )
       
 
       } else { combineSelectDatasets = data }
@@ -270,7 +276,7 @@ data.total = function( data ,
       # data.table sum/mean 
       
       if ( dataset_merge_average ) {
-            cat( '\n** merge data.table MEAN') 
+           if ( .cat )  cat( '\n** merge data.table MEAN') 
             
             dataMerge = combineSelectDatasets %>%
                 mutate( dataSet = 'Merged') %>%
@@ -278,7 +284,7 @@ data.total = function( data ,
                 # Mean of dataSets within orgUnit
                 .[  , .(dataCol = mean( dataCol , na.rm = TRUE  )) , by =  .group_by_cols ] 
   
-            cat( '\ndataMerge done' );  # glimpse( dataMerge )
+            if ( .cat ) cat( '\ndataMerge done' );  # glimpse( dataMerge )
         
       } else {
           dataMerge = combineSelectDatasets
@@ -290,7 +296,7 @@ data.total = function( data ,
       # #print( dataMerge %>% duplicates %>% glimpse )
   
     key.cols = setdiff( .group_by_cols , .period ) 
-    cat('\n - key.cols:' ,  key.cols )
+    if ( .cat ) cat('\n - key.cols:' ,  key.cols )
     
     data.total = 
         dataMerge %>% 
@@ -301,14 +307,14 @@ data.total = function( data ,
         as_tsibble( index = !! rlang::sym( .period )  , 
                     key =  all_of(  {{ key.cols }} ) ) 
 
-    cat( '\n - data.total class' , class( data.total ) ) 
-    cat( '\n - data.total cols' , names( data.total ) ) 
+    if ( .cat ) cat( '\n - data.total class' , class( data.total ) ) 
+    if ( .cat ) cat( '\n - data.total cols' , names( data.total ) ) 
     
     # Filter display dates
     # cat( '/n - data.total cols:' , names( data.total ) )
     
     if ( .period %in% 'Month' ){
-      cat( '\n -  .period %in% Month' )
+      if ( .cat ) cat( '\n -  .period %in% Month' )
       data.total = data.total %>% 
         filter( 
           Month >=  yearmonth( startDisplayMonth )  ,
@@ -317,7 +323,7 @@ data.total = function( data ,
     } 
     
     if ( .period %in% 'Week' ){
-      cat( '\n -  .period %in% weeks' )
+      if ( .cat ) cat( '\n -  .period %in% weeks' )
       data.total = data.total %>% 
         filter( 
           Week >=  yearweek( startDisplayMonth )  ,
@@ -329,7 +335,7 @@ data.total = function( data ,
     # test:
     # saveRDS( data.total, 'data.total.rds')
     
-    cat('\n- end data.total()')
+    if ( .cat ) cat('\n- end data.total()')
     return( data.total )
       
   
@@ -341,9 +347,10 @@ hts = function( agg_level = NULL ,
                 levelNames = NULL , 
                 hts = TRUE , 
                 .selectedOUs = NULL ,
-                split = 'None' ){   
+                split = 'None' ,
+                .cat = FALSE ){   
  
-    cat("\n* hts():" )
+    if ( .cat ) cat("\n* hts():" )
 
     if (is.null( levelNames)) levelNames = getLevelNames( orgUnits = orgUnits )
    
@@ -354,14 +361,14 @@ hts = function( agg_level = NULL ,
       
     } else {
       
-      cat( '\n - amds:',  adms )
-      cat( '\n - input$agg_level:',  agg_level )
+      if ( .cat ) cat( '\n - amds:',  adms )
+      if ( .cat ) cat( '\n - input$agg_level:',  agg_level )
       
       if ( is.null( agg_level ) ) agg_level = levelNames[1] 
       
       hts_level = which( agg_level == levelNames   )
       
-      cat( '\n - hts_level:',  hts_level )
+      if ( .cat ) cat( '\n - hts_level:',  hts_level )
       
       hts = paste( adms[1:( hts_level + 1 )] , 
                    collapse = "/" ) 
@@ -387,21 +394,22 @@ hts = function( agg_level = NULL ,
     # if ( length( selectedOUs() ) > 0  & !input$split %in% 'None' ) hts =
     #   paste( input$split ,  ' * Facilities * (', hts , ')' )
     
-    cat("\n - end hts():" , hts )
+    if ( .cat ) cat("\n - end hts():" , hts )
   
     return( hts )
   }
   
-data.hts = function( .d , hts = NULL, covariates = "" , ... ){
+data.hts = function( .d , hts = NULL, covariates = "" , 
+                     .cat = FALSE , ... ){
 
     if ( is.null( hts ) ) hts = hts()
-    cat('\n* data.hts():' )
+    if ( .cat ) cat('\n* data.hts():' )
     
     # Testing
     # saveRDS( data.total(), 'data.total.hts.rds' )
     
    if ( grepl( "avg_mm" , covariates ) & "avg_mm" %in% names( .d ) ){
-      cat( "\n - grepl( 'avg_mm' , covariates ) & 'avg_mm' %in% names( .d )" )
+      if ( .cat ) cat( "\n - grepl( 'avg_mm' , covariates ) & 'avg_mm' %in% names( .d )" )
       
      .d = .d %>%
         aggregate_key(  .spec = !!rlang::parse_expr( hts ),
@@ -419,7 +427,7 @@ data.hts = function( .d , hts = NULL, covariates = "" , ... ){
 
     # }
     
-    cat('\n - end data.hts():' ) 
+    if ( .cat ) cat('\n - end data.hts():' ) 
 
     return(.d)
   }
@@ -431,17 +439,18 @@ trendData = function( .d = data.hts ,
                       levelNames = NULL , 
                       split = 'None' ,
                       agg_level = NULL,
-                      scale = FALSE ){
+                      scale = FALSE ,
+                      .cat = FALSE ){
 
-      cat( '\n* evaluation_widget: trendData(): ' )
+      if ( .cat ) cat( '\n* evaluation_widget: trendData(): ' )
     
       if ( is.null( agg_level ) ){ 
         agg_level = levelNames[1] 
-        cat( "\n- input$agg_level:", agg_level )
+        if ( .cat ) cat( "\n- input$agg_level:", agg_level )
       }
       
       sub_agg = levelNames[ which( agg_level == levelNames ) + 1 ] 
-      cat( "\n- sub agg level" , sub_agg )
+      if ( .cat ) cat( "\n- sub agg level" , sub_agg )
       
       .d = .d %>% 
           filter( 
@@ -451,10 +460,10 @@ trendData = function( .d = data.hts ,
             ! is_aggregated(  !! rlang::sym( agg_level   ) )
           )
               
-      cat( '\n- !is_empty(sub_agg)' , sub_agg , !is_empty(sub_agg) )
+      if ( .cat ) cat( '\n- !is_empty(sub_agg)' , sub_agg , !is_empty(sub_agg) )
 
       if ( !is_empty( sub_agg ) ){
-        cat( '\n - filtering by sub_agg' )
+        if ( .cat) cat( '\n - filtering by sub_agg' )
         .d = .d %>% filter( 
               is_aggregated( !! rlang::sym( sub_agg  ) )
         )
@@ -472,7 +481,7 @@ trendData = function( .d = data.hts ,
              fill_gaps( .full = TRUE  )
     
          
-         cat( '\n- .d in trendData' ); # glimpse(.d)
+         if ( .cat ) cat( '\n- .d in trendData' ); # glimpse(.d)
          
          # num_datasets = length( unique( .d$dataSet ))
          # if ( num_datasets > 1 ){
@@ -495,19 +504,19 @@ trendData = function( .d = data.hts ,
             
         # if split, remove aggregate grouping
          if ( !split %in% 'None' ){
-           cat( '\n-input split:' , split )
+           if ( .cat ) cat( '\n-input split:' , split )
            .d = .d %>%
              filter( !is_aggregated( !! rlang::sym( split ) ) 
              ) %>%
              mutate( grouping_var = as.character( 
                !! rlang::sym( split ) )
              )
-           cat( '\n- .d  aggregated split' , unique(.d$grouping_var) )
+           if ( .cat ) cat( '\n- .d  aggregated split' , unique(.d$grouping_var) )
            # print( glimpse( .d ))
            
          } 
     
-      cat( '\n- nrow(.d)' , nrow(.d))
+      if ( .cat ) cat( '\n- nrow(.d)' , nrow(.d))
          
         # if ( !split() %in% 'None' & !input$filter_data %in% 'All' ){
         #     print( 'filter_data is not null' )
@@ -526,7 +535,7 @@ trendData = function( .d = data.hts ,
       # ensure tsibble before using fill_gaps
       .d = .d %>% as_tsibble( key = all_of(keyVars) , index = indexVar  ) 
       
-      cat( '\n- end trend data():'); # print( glimpse( .d ) ); # print(.d)
+      if ( .cat ) cat( '\n- end trend data():'); # print( glimpse( .d ) ); # print(.d)
       # saveRDS( .d , 'trendData.rds' )
   
   return( .d )
@@ -545,9 +554,10 @@ getForecast = function( forecastData ,
                         agg_level = NULL ,
                         agg_method = "None" ,
                         .period = "Month" ,
-                        eval_date = yearmonth('Jan 2021') ){ 
+                        eval_date = yearmonth('Jan 2021') ,
+                        .cat = FALSE ){ 
       
-      cat( '\n* tsForecast()' )
+      if ( .cat ) cat( '\n* tsForecast()' )
       
       # if ( bootstrap ){
       #   # remove null models because throws error...
@@ -594,7 +604,7 @@ getForecast = function( forecastData ,
       if ( !is.null( covariates )) model.string =
              paste( model.string , '+ xreg(' , covariates , ' ) '  )
       
-      cat( '\n - model:' , model.string )
+      if ( .cat ) cat( '\n - model:' , model.string )
 
       fit = fit.data %>% model(
           arima = ARIMA( as.formula( model.string ) )
@@ -619,10 +629,11 @@ getForecast = function( forecastData ,
               Month > time_period ,
               Month <= ( time_period + horizon )  )
           
-          fcast = fit %>% forecast( new_data = forecast.fit.data )
+          fcast = fit %>% forecast( new_data = forecast.fit.data  )
           
         } else {
           
+          if ( .cat ) cat( '\n - forecast horizon' , horizon )
           fcast = fit %>% forecast( h = as.numeric( horizon ) )
         }
           
@@ -670,7 +681,7 @@ getForecast = function( forecastData ,
       # }
         
       # saveRDS( fcast , 'tsForecast.rds')
-      cat( '\n - fcast end:' );  #glimpse( fcast )
+      if ( .cat ) cat( '\n - fcast end:' );  #glimpse( fcast )
   
       return( fcast )
 }
@@ -680,9 +691,10 @@ getForecast = function( forecastData ,
                       horizon = 12 ,
                       agg_level = NULL ,
                       levelNames = NULL , 
-                      split = 'None' ){
+                      split = 'None' ,
+                      .cat = FALSE ){
 
-        cat('\n* evaluation_widget key.mpe()')
+        if ( .cat ) cat('\n* evaluation_widget key.mpe()')
 
         predicted = forecastData %>%
           rename( pred = .mean )
@@ -691,7 +703,7 @@ getForecast = function( forecastData ,
           rename( actual = total )
 
         keyvars = key_vars( actual )
-        cat('\n - keyvars' , keyvars )
+        if ( .cat ) cat('\n - keyvars' , keyvars )
 
         truth = predicted %>%
            inner_join( actual , by = c( .period, keyvars  ) )
@@ -728,7 +740,7 @@ getForecast = function( forecastData ,
                       as.character( !! rlang::sym( agg_level  ) ) )
 
       if ( !split %in% 'None' ){
-           cat( '\n - key.mape grouping_var' , split )
+           if ( .cat ) cat( '\n - key.mape grouping_var' , split )
            e = e %>%
              mutate(
                grouping_var = as.character( !! rlang::sym( split ) )
@@ -738,7 +750,7 @@ getForecast = function( forecastData ,
                mutate(  grouping_var = 'Total' )
            }
 
-        cat( "\n - mpe"  ); #glimpse(e )
+        if ( .cat ) cat( "\n - mpe"  ); #glimpse(e )
         return( e )
       }
       
@@ -750,10 +762,13 @@ plotTrends = function( plotData , scale = FALSE ,
                          agg_level = 'National' ,
                          pre_evaluation = FALSE ,
                          evaluation = FALSE ,
+                         horizon = 12 ,
                          eval_date = yearmonth('Jan 2021') ,
-                         pe = TRUE ,  ... ){
+                         pe = TRUE ,  
+                       .cat = FALSE , 
+                       ... ){
 
-          cat( '\n* evaluation_widget plotTrends():' )
+          if ( .cat ) cat( '\n* evaluation_widget plotTrends():' )
 
           .limits =
           if ( scale ){
@@ -763,7 +778,7 @@ plotTrends = function( plotData , scale = FALSE ,
 
           # data.text = paste( unique( plotData$data ), collapse = " + " )
           
-          cat( '\n - ploTrends .d:') ; #glimpse(.d)
+          if ( .cat ) cat( '\n - ploTrends .d:') ; #glimpse(.d)
 
           # if ( !input$filter_display %in% 'All' ) .d = .d %>%
           #         filter( .data[[ split() ]] %in%
@@ -789,7 +804,7 @@ plotTrends = function( plotData , scale = FALSE ,
           # save(.d, file = 'plot-trend-test-data.rda')
 
 
-          cat( '\n - basic plot done' ) 
+          if ( .cat ) cat( '\n - basic plot done' ) 
 
           if ( !legend ) g = g +
             theme( legend.position = "none")
@@ -815,10 +830,10 @@ plotTrends = function( plotData , scale = FALSE ,
 
           # if ( input$agg_level != levelNames()[1] & input$facet_admin ){
           if ( num_agg_levels  > 1 & facet_admin ){
-            cat( '\n -  admin facets' )
+            if ( .cat )  cat( '\n -  admin facets' )
 
             if ( facet_split ){
-              cat( '\n -  facet admin - split' )
+              if ( .cat )  cat( '\n -  facet admin - split' )
 
                 g = g +
                     facet_grid( rows = vars( as.character( !! rlang::sym( agg_level ) ) ) ,
@@ -832,7 +847,7 @@ plotTrends = function( plotData , scale = FALSE ,
           }} else {
 
            if ( facet_split ){
-            cat( '\n - facet_split' )
+            if ( .cat ) cat( '\n - facet_split' )
             g = g +
             facet_wrap( ~ grouping_var   ,
                            scales = "free_y" )
@@ -840,7 +855,7 @@ plotTrends = function( plotData , scale = FALSE ,
             }
 
           # Time scale
-          cat( '\n - Evaluation: setting x axis time scale', .period )
+          if ( .cat ) cat( '\n - Evaluation: setting x axis time scale', .period )
           if ( .period %in% 'Month') g = g + scale_x_yearmonth("", 
                                                                date_labels = "%b\n%Y" ,
                                                                date_breaks = "1 year" )
@@ -855,7 +870,7 @@ plotTrends = function( plotData , scale = FALSE ,
                   # subtitle = str_wrap( data.text , 200 )
                   # caption =  str_wrap( caption.text() , 200 )
                   )
-          cat( '\n - axis scales and labs done' )
+          if ( .cat ) cat( '\n - axis scales and labs done' )
 
           # Eval Date
         #     cat( '\n - evaluation date' , input$evaluation_month )
@@ -865,13 +880,13 @@ plotTrends = function( plotData , scale = FALSE ,
         
       # ## Pre-Evaluation trend line #####
       if ( pre_evaluation ){
-          cat( '\n - pre-evaluation line.  ' )
-          cat( '\n - pi_levels:' , pi_levels() )
+          if ( .cat ) cat( '\n - pre-evaluation line.  ' )
+          if ( .cat ) cat( '\n - pi_levels:' , pi_levels() )
 
-          cat( '\n - pre-evaluation date'  )
+          if ( .cat ) cat( '\n - pre-evaluation date'  )
           if ( .period %in% 'Month' ) pre_eval_date =   yearmonth( input$evaluation_month  ) -12
           if ( .period %in% 'Week' ) pre_eval_date =   yearweek( input$evaluation_month  ) - 25
-          cat( '\n - pre_eval_date:' , pre_eval_date )
+          if ( .cat ) cat( '\n - pre_eval_date:' , pre_eval_date )
 
           g = g +
              forecast::autolayer( tsPreForecast()
@@ -899,18 +914,21 @@ plotTrends = function( plotData , scale = FALSE ,
             #            # force_pull = 0 ,
             #            segment.colour = NA
             #            )
+          
+            if ( .cat ) cat( '\n - pre-evaluation line done' )
 
           }
 
-          cat( '\n - pre-evaluation line done' )
+
 
 
       ## Evaluation Trend Line ####
         if ( evaluation ){
           
-           tsForecast = getForecast( plotData , ... )
+           if ( .cat ) cat( '\n - evaluation with horizon - ' , horizon )
+           tsForecast = getForecast( plotData , horizon = horizon ,  ... )
           
-            cat( '\n - evaluation line.  ')
+            if ( .cat ) cat( '\n - evaluation line.  ')
             # cat( '\n - evaluation line.  ' , 'pi_levels:' , pi_levels() )
 
            g = g +
@@ -951,10 +969,10 @@ plotTrends = function( plotData , scale = FALSE ,
                        )
           }
 
-          cat( '\n - evaluation line done' )
+          if ( .cat ) cat( '\n - evaluation line done' )
 
       ## End ####
-          cat( '\n - end plotTrends():' )
+          if ( .cat ) cat( '\n - end plotTrends():' )
 
           # saveRDS( g, 'plotTrends.rds')
           return( g )

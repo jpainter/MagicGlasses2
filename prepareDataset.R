@@ -127,16 +127,17 @@ data_leaves = function( d ){
   cat('\n* determining effective leaf')
   data.leaves = d  %>%
     as_tibble() %>%
-    group_by( orgUnit ) %>%
+    group_by( orgUnit, dataElement.id ) %>%
     summarise( 
       n = ifelse( !all(is.na( COUNT ) ) , max( COUNT , na.rm = TRUE ) , 0 )
          ) %>%
     mutate( 
       effectiveLeaf = ifelse( n == 1, TRUE, FALSE ) ) %>%
-    select( orgUnit , effectiveLeaf ) 
+    select( orgUnit , dataElement.id , effectiveLeaf ) 
   
   return( data.leaves )
 }
+
 
 # Wrapper function to prepare data before testing for outliers
 # data can be used with reporting_widget
@@ -202,10 +203,9 @@ data_1 = function( data , formula_elements , ousTree   ){
   cat('\n - data_leaves')
   data.leaves = data_leaves( d )
   
-  cat('\n - d.')
-  
+  cat('\n - combining data.leaves, outTree, and ouLevels')
   d. = d.ts %>%
-  left_join( data.leaves , by = 'orgUnit') %>%
+  left_join( data.leaves , by = c( 'orgUnit' , 'dataElement.id' ) )  %>%
   left_join( ousTree , by = 'orgUnit')  %>%
   mutate( original = SUM , value = !is.na( SUM ))
   
@@ -217,3 +217,6 @@ data_1 = function( data , formula_elements , ousTree   ){
 }
 
 # Outlier detection-flag
+
+
+
