@@ -129,7 +129,7 @@ data_leaves = function( d ){
     as_tibble() %>%
     group_by( orgUnit, dataElement.id ) %>%
     summarise( 
-      n = ifelse( !all(is.na( COUNT ) ) , max( COUNT , na.rm = TRUE ) , 0 )
+      n = ifelse( !all(is.na( COUNT ) ) , max( COUNT , na.rm = TRUE ) , 0 ) , .groups = 'keep'
          ) %>%
     mutate( 
       effectiveLeaf = ifelse( n == 1, TRUE, FALSE ) ) %>%
@@ -174,7 +174,7 @@ data_leaves = function( d ){
 #   return( d. )
 # }
 
-data_1 = function( data , formula_elements , ousTree   ){
+data_1 = function( data , formula_elements , ousTree , timing = FALSE  ){
   cat('\n* preparing data_1:')
   
   #   # TESTING
@@ -192,28 +192,59 @@ data_1 = function( data , formula_elements , ousTree   ){
   cat('\n - translate_dataset:')
   
   if (! 'categoryOptionCombo' %in% names( data )) data = data %>% mutate( categoryOptionCombo = NA )
-  dd = translate_dataset( data , formula_elements )
   
-  cat('\n - df_pre_ts:')
-  d = df_pre_ts( dd , period = p  )
+  # if ( timing ) tic()
+  # dd = translate_dataset( data , formula_elements )
+  # if ( timing ) toc() 
+  # 
+  # cat('\n - df_pre_ts:')
+  # if ( timing ) tic()
+  # d = df_pre_ts( dd , period = p  )
+  # if ( timing ) toc()
+  # 
+  # cat('\n - df_ts:')
+  # if ( timing ) tic()
+  # d.ts = df_ts( d , period = p ) 
+  # if ( timing ) toc()
+  # 
+  # cat('\n - data_leaves')
+  # 
+  # cat('\n - combining data.leaves, outTree, and ouLevels')
+  # if ( timing ) tic()
+  # d. = d.ts %>%
+  # left_join( data.leaves , by = c( 'orgUnit' , 'dataElement.id' ) )  %>%
+  # left_join( ousTree , by = 'orgUnit')  %>%
+  # mutate( original = SUM , value = !is.na( SUM ))
   
-  cat('\n - df_ts:')
-  d.ts = df_ts( d , period = p ) 
-
-  cat('\n - data_leaves')
-  data.leaves = data_leaves( d )
-  
-  cat('\n - combining data.leaves, outTree, and ouLevels')
-  d. = d.ts %>%
-  left_join( data.leaves , by = c( 'orgUnit' , 'dataElement.id' ) )  %>%
-  left_join( ousTree , by = 'orgUnit')  %>%
-  mutate( original = SUM , value = !is.na( SUM ))
   
   # %>%
   # left_join( ouLevels %>% select( level, levelName) , by = 'level' )
 # glimpse( d. )
+  if ( timing ) tic()
+    
+  d. =  data  %>%
+    as_tibble %>% 
+    # select( dataElement.id , categoryOptionCombo.ids , orgUnit , period ,  COUNT , SUM  ) %>%
+    # rename( dataElement = dataElement.id , categoryOptionCombo = categoryOptionCombo.ids ) %>%
+    translate_dataset( . , formula_elements ) 
+    
+    data.leaves = data_leaves( d. )
+
+  if ( timing ) toc() 
+    
+  if ( timing ) tic()
+  d.. = 
+    setDT(d.) %>%
+    table.express::left_join( setDT( data.leaves ) , orgUnit , dataElement.id  )  %>%
+    table.express::left_join( setDT( ousTree ) , orgUnit )  %>%
+    mutate( original = SUM , value = !is.na( SUM )) %>%
+    as_tibble() %>%
+    df_pre_ts( . , period = p  ) %>%
+    df_ts( d , period = p ) 
+    
+  if ( timing ) toc()
   
-  return( d. )
+  return( d.. )
 }
 
 # Outlier detection-flag

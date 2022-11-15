@@ -98,7 +98,7 @@ evaluation_widget_ui = function ( id ){
               choices = c( 
                           # 'TSLM',
                            'TSLM (trend)' , 'TSLM (trend+season)' , 
-                           'ETS' , 'ARIMA', 
+                           'ETS' , 'ARIMA', 'NNETAR' ,
                            # 'BSTS' , 
                           'Prophet'
                           
@@ -600,10 +600,14 @@ evaluation_widget_server <- function( id ,
       cat( '\n* evaluation_widget model_formula' )
 
 
-      # if (input$model %in% 'BSTS'){
-      #   f = as.formula( 'total ~ intercept()' )
-      #
-      # }
+      # Base models...
+      
+      formula.string = input$model.formula
+      
+      if ( input$transform ) formula.string = 'fabletools::box_cox( total , lambda = .5  )'
+      
+      f = as.formula(  formula.string )
+      
 
       if (input$model %in% 'ARIMA' ){
         cat("\n - input$model = ARIMA")
@@ -636,21 +640,6 @@ evaluation_widget_server <- function( id ,
         if ( input$transform ) formula.string = 'fabletools::box_cox( total , lambda = .5  ) ~ season("year")'
 
       }
-
-
-      if ( any(input$model %in% c( 'TSLM', 'TSLM (trend+season)' ,'TSLM (trend)',
-                                    'ETS',  'Prophet' ) ) ){
-        cat("\n - input$model not ARIMA or BSTS' )")
-
-        f = as.formula(  input$model.formula )
-
-        formula.string = paste( 'total' )
-
-        if ( input$transform ) formula.string = 'fabletools::box_cox( total , lambda = .5  )'
-
-        # f = as.formula(  formula.string )
-
-        }
 
       cat( '\n - end model_formula:', formula.string )
       return( f )
@@ -726,6 +715,19 @@ evaluation_widget_server <- function( id ,
 
         return( fit )
       }
+      
+      if (input$model %in% 'NNETAR' ){
+        fit = fit.data %>%
+          model(
+                nnetar = NNETAR( total  )
+          )
+        
+        if ( input$transform ) fit = fit.data %>% model( nnetar = NNETAR( fabletools::box_cox( total , lambda = .5  )  ) )
+        
+        
+        cat( '\n - end tsModel():' )
+        return( fit )
+      }
 
       if (input$model %in% 'BSTS' ){
         fit = fit.data %>%
@@ -746,12 +748,15 @@ evaluation_widget_server <- function( id ,
         # if ( input$transform ){
         #   fit = fit.data %>% model( a = ETS( fabletools::box_cox( total , lambda = .5  ) )  )
         # } else {
-          fit = fit.data %>% model( a = ETS( total )  )
-
-          if ( input$transform ) fit = fit.data %>% model( a = ETS( fabletools::box_cox( total , lambda = .5  )  ) )
+        
+          # fit = fit.data %>% model( a = ETS( total )  )
+          # 
+          # if ( input$transform ) fit = fit.data %>% model( a = ETS( fabletools::box_cox( total , lambda = .5  )  ) )
 
 
         # }
+          
+          fit = fit.data %>% model( ets = ETS( model_formula() ))
 
 
         cat( '\n - end ETS tsModel():' )
@@ -765,38 +770,45 @@ evaluation_widget_server <- function( id ,
       }
 
       if (input$model %in% 'Prophet' ){
-        fit =  fit.data %>% model(
-                prophet = prophet( total ~
-
-                                        growth( type = 'linear',
-                                                changepoint_range = 1 ,
-                                                changepoint_prior_scale = 1 ,
-                                                # capacity = 1e5 ,
-                                                # floor = 0
-                                                ) +
-                                        season(period = 12,
-                                               order = 4 ,
-                                               type='multiplicative'),
-                                   seed = TRUE )
-            )
-
-
-        if ( input$transform ) fit =  fit.data %>% model(
-                prophet = prophet( fabletools::box_cox( total , lambda = .5  )  ~
-
-                                        growth( type = 'linear',
-                                                changepoint_range = 1 ,
-                                                changepoint_prior_scale = 1 ,
-                                                # capacity = 1e5 ,
-                                                # floor = 0
-                                                ) +
-                                        season(period = 12,
-                                               order = 4 ,
-                                               type='multiplicative'),
-                                   seed = TRUE )
-            )
-
-        cat( '\n - end tsModel():' )
+        
+        
+        if ( input$transform ){
+          
+          fit =  fit.data %>% model(
+            prophet = prophet( fabletools::box_cox( total , lambda = .5  )  ~
+                                 
+                                 growth( type = 'linear',
+                                         changepoint_range = 1 ,
+                                         changepoint_prior_scale = 1 ,
+                                         # capacity = 1e5 ,
+                                         # floor = 0
+                                 ) +
+                                 season(period = 12,
+                                        order = 4 ,
+                                        type='multiplicative'),
+                               seed = TRUE )
+          ) 
+        } else {
+          
+          fit =  fit.data %>% model(
+            prophet = prophet( total ~
+                                 
+                                 growth( type = 'linear',
+                                         changepoint_range = 1 ,
+                                         changepoint_prior_scale = 1 ,
+                                         # capacity = 1e5 ,
+                                         # floor = 0
+                                 ) +
+                                 season(period = 12,
+                                        order = 4 ,
+                                        type='multiplicative'),
+                               seed = TRUE )
+          )
+          
+          
+        }
+        
+        cat( '\n - end tsPreModel() Prophet:' )
         return( fit )
       }
 
@@ -826,7 +838,7 @@ evaluation_widget_server <- function( id ,
       
       # Testing:
       # saveRDS( trendData() , 'trendData.rds' )
-      saveRDS( fit.data , 'fit.data.rds' )
+      # saveRDS( fit.data , 'fit.data.rds' )
 
 
       if (input$model %in% 'TSLM' ){
@@ -871,7 +883,21 @@ evaluation_widget_server <- function( id ,
 
         return( fit )
       }
-
+      
+      
+      if (input$model %in% 'NNETAR' ){
+        fit = fit.data %>%
+          model(
+            nnetar = NNETAR( total  )
+          )
+        
+        if ( input$transform ) fit = fit.data %>% model( nnetar = NNETAR( fabletools::box_cox( total , lambda = .5  )  ) )
+        
+        
+        cat( '\n - end tsModel():' )
+        return( fit )
+      }
+      
       if (input$model %in% 'BSTS' ){
         fit = fit.data %>%
           model(
@@ -903,23 +929,11 @@ evaluation_widget_server <- function( id ,
       }
 
       if (input$model %in% 'Prophet' ){
-        fit =  fit.data %>% model(
-                prophet = prophet( total ~
-
-                                        growth( type = 'linear',
-                                                changepoint_range = 1 ,
-                                                changepoint_prior_scale = 1 ,
-                                                # capacity = 1e5 ,
-                                                # floor = 0
-                                                ) +
-                                        season(period = 12,
-                                               order = 4 ,
-                                               type='multiplicative'),
-                                   seed = TRUE )
-            )
 
 
-        if ( input$transform ) fit =  fit.data %>% model(
+        if ( input$transform ){
+          
+          fit =  fit.data %>% model(
                 prophet = prophet( fabletools::box_cox( total , lambda = .5  )  ~
 
                                         growth( type = 'linear',
@@ -932,7 +946,26 @@ evaluation_widget_server <- function( id ,
                                                order = 4 ,
                                                type='multiplicative'),
                                    seed = TRUE )
-            )
+            ) 
+        } else {
+          
+          fit =  fit.data %>% model(
+            prophet = prophet( total ~
+                                 
+                                 growth( type = 'linear',
+                                         changepoint_range = 1 ,
+                                         changepoint_prior_scale = 1 ,
+                                         # capacity = 1e5 ,
+                                         # floor = 0
+                                 ) +
+                                 season(period = 12,
+                                        order = 4 ,
+                                        type='multiplicative'),
+                               seed = TRUE )
+          )
+          
+          
+        }
 
         cat( '\n - end tsPreModel() Prophet:' )
         return( fit )
@@ -1000,9 +1033,9 @@ evaluation_widget_server <- function( id ,
       }
 
       # Ensure result is tstiblle
-      fcast = fcast %>%
-             as_tsibble( key = all_of(keyVars) , index = indexVar  ) %>%
-             fill_gaps( .full = TRUE  )
+      # fcast = fcast %>%
+      #        as_tsibble( key = all_of(keyVars) , index = indexVar  ) %>%
+      #        fill_gaps( .full = TRUE  )
 
       # Reconcile
       if ( input$agg_method %in% "None" ){
@@ -1087,15 +1120,15 @@ evaluation_widget_server <- function( id ,
       cat( '\n - tsPreForecast grouping_var values:' , unique(fcast$grouping_var) )
 
       # Ensure result is tsibble
-      fcast = fcast %>%
-             as_tsibble( key = all_of(keyVars) , index = indexVar  ) %>%
-             fill_gaps( .full = TRUE  )
+      # fcast = fcast %>%
+      #        as_tsibble( key = all_of(keyVars) , index = indexVar  ) %>%
+      #        fill_gaps( .full = TRUE  )
 
       cat( '\n - tsPreForecast done.' )
       print( names( fcast ) )
       
       # Testing:
-      saveRDS( fcast , 'tsPreForecast.rds' )
+      # saveRDS( fcast , 'tsPreForecast.rds' )
       
       return( fcast )
       })
@@ -1147,7 +1180,7 @@ evaluation_widget_server <- function( id ,
     # if ( length( selectedOUs() ) > 0  & !input$split %in% 'None' ) hts =
     #   paste( input$split ,  ' * Facilities * (', hts , ')' )
 
-    saveRDS( hts, 'hts.rds' )
+    # saveRDS( hts, 'hts.rds' )
 
     cat("\n - end hts():" , hts )
 
@@ -1163,7 +1196,7 @@ evaluation_widget_server <- function( id ,
     cat( "\n - data.total cols:" , paste( names( data.total() ) , collapse = "," ) )
 
     # Testing
-    saveRDS( data.total(), 'data.total.rds' )
+    # saveRDS( data.total(), 'data.total.rds' )
 
     data.hts = data.total()
     # data.hts = aggregatePlotData()
@@ -1207,7 +1240,7 @@ evaluation_widget_server <- function( id ,
     }
 
     cat('\n- end data.hts():' ) ; toc()
-    # saveRDS( .d, 'data.hts.rds' )
+    # saveRDS( data.hts, 'data.hts.rds' )
 
     return( data.hts )
   })
@@ -1329,7 +1362,7 @@ evaluation_widget_server <- function( id ,
     .d = .d %>% as_tsibble( key = all_of( keyVars ) , index = indexVar  )
 
       cat( '\n - end trend data():'); # print( glimpse( .d ) ); # print(.d)
-      saveRDS( .d , 'trendData.rds' )
+      # saveRDS( .d , 'trendData.rds' )
 
   return( .d )
 })
@@ -1464,9 +1497,8 @@ evaluation_widget_server <- function( id ,
           cat( '\n - pre_eval_date:' , pre_eval_date )
 
           g = g +
-             forecast::autolayer( tsPreForecast()
-                       , level = c( 80, 90 )  # ci_levels()
-                       # , PI = TRUE
+            fabletools::autolayer( tsPreForecast()
+                       , level = ifelse( input$forecast_ci , 89 , FALSE )
                        , color = 'black'
                        , linetype = 'dotted'  , size = 2
                        ,  alpha = .75 ) +
@@ -1501,16 +1533,12 @@ evaluation_widget_server <- function( id ,
             cat( '\n - evaluation line.  ' , 'pi_levels:' , pi_levels() )
 
            g = g +
-            forecast::autolayer( tsForecast()
-                       , level = pi_levels()
+            fabletools::autolayer( tsForecast()
+                       # , level = 80  # pi_levels()
                        , color = 'black'
+                       , level = ifelse( input$forecast_ci , 89 , FALSE )
                        , linetype = 'dashed', size = 1
                        ,  alpha = .5 ) +
-            # geom_line( data = tsForecast() , aes( y = .mean )
-            #   # ,   color = 'light blue'
-            #   , alpha = .75
-            #   , linetype = 'dotted'  , size = 2
-            # ) +
 
             geom_vline( xintercept = as.Date( eval_date ) ,
                         color = 'blue', alpha = 1 )
@@ -1532,6 +1560,17 @@ evaluation_widget_server <- function( id ,
                        segment.colour = NA
                        )
           }
+          
+      ## prediction Interval
+          # if ( ){
+          #   
+          #   g = g + 
+          #     geom_line( data = tsForecast() , aes( y = .mean )
+          #              # ,   color = 'light blue'
+          #              , alpha = .75
+          #              , linetype = 'dotted'  , size = 2
+          #   ) +
+          # }
 
           cat( '\n - evaluation line done' )
 
