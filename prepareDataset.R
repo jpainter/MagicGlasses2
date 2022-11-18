@@ -4,6 +4,7 @@ translate_dataset = function( data , formula_elements ){
   
   # Data may contain mix of elements with and without categories. 
   if ( any( is.na( data$categoryOptionCombo ))){
+    
     element_match = match( paste( data$dataElement, data$categoryOptionCombo ) , 
                        paste( formula_elements$dataElement.id , 
                               ifelse( is.na( formula_elements$n_categoryOptions ) , 
@@ -12,6 +13,7 @@ translate_dataset = function( data , formula_elements ){
                               )
     )
   } else {
+    
     element_match = match( paste( data$dataElement, data$categoryOptionCombo ) , 
                        paste( formula_elements$dataElement.id , 
                               formula_elements$categoryOptionCombo.ids )
@@ -224,6 +226,7 @@ data_1 = function( data , formula_elements , ousTree , timing = FALSE  ){
     
   d. =  data  %>%
     as_tibble %>% 
+    filter( !is.na( SUM ) ) %>%
     # select( dataElement.id , categoryOptionCombo.ids , orgUnit , period ,  COUNT , SUM  ) %>%
     # rename( dataElement = dataElement.id , categoryOptionCombo = categoryOptionCombo.ids ) %>%
     translate_dataset( . , formula_elements ) 
@@ -240,7 +243,7 @@ data_1 = function( data , formula_elements , ousTree , timing = FALSE  ){
     mutate( original = SUM , value = !is.na( SUM )) %>%
     as_tibble() %>%
     df_pre_ts( . , period = p  ) %>%
-    df_ts( d , period = p ) 
+    df_ts( . , period = p ) 
     
   if ( timing ) toc()
   

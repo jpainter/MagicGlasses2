@@ -873,19 +873,34 @@ api_data = function(      periods = NA ,
               #if elements have a category , then include categoryOptionCombo
               if ( any( str_detect( Var3  , fixed(".") )) ){
                 .by = c("dataElement", "period", "orgUnit", "categoryOptionCombo")
+                
+                cat( "\n - joining sum and count downloads by" , .by )
+              
+                             # Join d.sum and d.count
+                d = d.count %>%
+                      rename( COUNT = value ) %>%
+                      full_join( d.sum %>% rename( SUM = value ) 
+                                # ,  by = c("dataElement", "dataElement.id", "Categories" , "categoryOptionCombo.ids", "period", "orgUnit", "orgUnitName" ,  "level" , "levelName")
+                                , by = .by
+                                )
+                
               } else {
                 .by = c("dataElement", "period", "orgUnit")
+                
+                cat( "\n - joining sum and count downloads by" , .by )
+              
+                d = d.count %>%
+                      select( - categoryOptionCombo ) %>%
+                      rename( COUNT = value ) %>%
+                      full_join( d.sum %>% rename( SUM = value )
+                                # ,  by = c("dataElement", "dataElement.id", "Categories" , "categoryOptionCombo.ids", "period", "orgUnit", "orgUnitName" ,  "level" , "levelName")
+                                , by = .by
+                                )
+                  
               }
               
-              cat( "\n - joining sum and count downloads by" , .by )
               
-              # Join d.sum and d.count
-              d = d.count %>%
-                    rename( COUNT = value ) %>%
-                    full_join( d.sum %>% rename( SUM = value ) 
-                              # ,  by = c("dataElement", "dataElement.id", "Categories" , "categoryOptionCombo.ids", "period", "orgUnit", "orgUnitName" ,  "level" , "levelName")
-                              , by = .by
-                              )
+ 
               
               d = d %>% select(-starts_with('aggreg'))
               

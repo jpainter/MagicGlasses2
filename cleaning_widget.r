@@ -11,7 +11,7 @@ tagList(
           
         tabsetPanel( type = "tabs", 
                      
-         tabPanel( "Outliers",  
+         tabPanel( ns("Outliers") ,  
                    
                 sidebarLayout(
                     sidebarPanel( 
@@ -182,7 +182,21 @@ cleaning_widget_server <- function( id ,
     formulas = reactive({ data_widget_output$formulas() })
     dataset.file = reactive({ data_widget_output$dataset.file() })
     # dataset = reactive({ data_widget_output$dataset() })
+    
+    ## Set reactive data only when tab is active
     data1 = reactive({ data_widget_output$data1() })
+    
+    # data1 =  reactive({ }) 
+    # observeEvent( input$tabs , {
+    #   if ( input$tabs == "Outliers"  ) data1 =  reactive({ data_widget_output$data1() }) 
+    #   } , ignoreNULL = TRUE, ignoreInit = TRUE )
+    
+    # data1 = reactive({ 
+    #   if ( input$tabs == "Outliers"  ) data1 =  reactive({ data_widget_output$data1() })  
+    #   return( data1 )
+    #   })
+    
+    
     formula_elements = reactive({ data_widget_output$formula_elements() })
     dataElements = reactive({ metadata_widget_output$dataElements() })  
     categories = reactive({ metadata_widget_output$categories() })  
@@ -882,6 +896,7 @@ cleaning_widget_server <- function( id ,
       #     Month <= yearmonth(input$endingMonth )
       #     )
       # d. = as.data.table( outlierData$df_data )
+      
       d. = as.data.table( data1() )
    
       cat( '\n - period():' , period()) 

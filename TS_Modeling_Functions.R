@@ -134,7 +134,8 @@ df_ts = function( df.pre.ts , period = "Month" ,
   
   cat( '\n - .period is' , period )
   
-  ts = df.pre.ts %>%  distinct() %>%
+  ts = df.pre.ts %>%  
+    distinct() %>%
     as_tsibble( key = c(orgUnit, data.id ) , index = !! .period ) 
 
     # set NA to missing 

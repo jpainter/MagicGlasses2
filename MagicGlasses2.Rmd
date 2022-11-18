@@ -1,17 +1,15 @@
 ---
 title: "DHIS2 Magic Glasses"
-# author: "John Painter"`
-# date: "12/20/2021"
-output: 
+output:
   flexdashboard::flex_dashboard:
     orientation: columns
     vertical_layout: fill
-    # css: my-sass-rules.scss
-    # theme: !expr bslib::bs_theme( )
     theme:
       version: 4
       bootswatch: flatly
 runtime: shiny
+resource_files:
+- renv.lock
 ---
 
 <!-- For mapping, need to install the GDAL library.  On mac, use homebrew.  On windows ?  -->
@@ -19,7 +17,7 @@ runtime: shiny
 <!-- remotes::install_github("r-spatial/sf", configure.args = "--with-gdal-config=/opt/homebrew/opt/gdal/bin/gdal-config --with-sqlite3-lib=/opt/homebrew/opt/sqlite3") -->
 ```{r renv, include=FALSE , eval=FALSE}
 
-
+# Sys.setenv(RENV_DOWNLOAD_METHOD = "libcurl") # suggeted by M. Hainsworth
 # renv::restore()
 # renv::repair()
 # renv::snapshot()
@@ -127,7 +125,7 @@ library( forecast )
 
 
 # older package that may not be able to install on some machines (e.g. Mac ARM)
-if ( 'fable.bsts' %in% installed.packages() ) library( fable.bsts )
+# if ( 'fable.bsts' %in% installed.packages() ) library( fable.bsts )
 
 # busy spinner
 library(shinybusy)
@@ -153,8 +151,8 @@ conflict_prefer("runExample", "shiny")
 conflict_prefer(":=", "rlang")
 conflict_prefer("validate", "jsonlite")
 
-home = getActiveProject()
-cat('\n ## getActiveProject():' , getActiveProject() )
+# home = getActiveProject()
+# cat('\n ## getActiveProject():' , getActiveProject() )
 ```
 
 ```{r sources, include=FALSE}

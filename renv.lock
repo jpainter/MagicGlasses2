@@ -415,19 +415,6 @@
         "sass"
       ]
     },
-    "bsts": {
-      "Package": "bsts",
-      "Version": "0.9.8",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "3d5d883f0a9e35cbf3c2684efaaa313d",
-      "Requirements": [
-        "Boom",
-        "BoomSpikeSlab",
-        "xts",
-        "zoo"
-      ]
-    },
     "cachem": {
       "Package": "cachem",
       "Version": "1.0.6",

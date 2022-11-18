@@ -49,6 +49,10 @@ reporting_widget_ui = function ( id ){
               selectInput( ns("split") , label = "Split Data By:" , 
                           choices = "None" , 
                           selected = "None" ) , 
+            
+            # selectInput( ns("split") , label = "Include covariates:" , 
+            #              choices = "None" , 
+            #              selected = "None" ) , 
               
               checkboxInput( ns("count.any") , label ='Count any categories', value = FALSE ) 
               
@@ -57,19 +61,24 @@ reporting_widget_ui = function ( id ){
         
         h5( 'Filter to consistently reporting facilties') ,
         
+        checkboxInput( ns("mostReports") , label ='Find facilities reporting each month', value = TRUE ) ,
+        
         inputPanel( 
           
-          checkboxInput( ns("mostReports") , label ='Find facilities reporting each month', value = TRUE ) ,
+            selectizeInput( ns("startingMonth") , label = "Begining with", 
+                            choices = NULL ,
+                            selected = NULL ) ,
+            
+            selectizeInput( ns("endingMonth"), label = "Ending with", 
+                            choices = NULL , 
+                            selected = NULL ) ,
+            
+            selectizeInput( ns("missing_reports") , label = "Number of missing reports allowed/yr" , 
+                         choices = 0:2 , 
+                         selected = 0 ) 
+          )
           
-          selectizeInput( ns("startingMonth") , label = "Begining with", 
-                          choices = NULL ,
-                          selected = NULL ) ,
-          
-          selectizeInput( ns("endingMonth"), label = "Ending with", 
-                          choices = NULL , 
-                          selected = NULL )
-          
-          ) ,
+        ,
         
         h5( 'Filter display dates') ,
         
@@ -504,7 +513,7 @@ reporting_widget_server <- function( id ,
       cat('\n - d() source is original')
       
       # data = data %>% mutate( dataCol = original )
-      data = setDT( data )[ , dataCol := original , ] 
+      data = setDT( data )[ , dataCol := as.numeric( original ) , ] 
     }  
     
     if ( input$source %in% 'Cleaned' & 'seasonal3' %in% names(data) ){
@@ -884,7 +893,7 @@ reporting_widget_server <- function( id ,
   
   selectedOUs <- reactive({
     #print( 'selectedOUS()' )
-    tic()
+
     req( input$endingMonth )
     req( input$startingMonth  )
     
@@ -916,18 +925,46 @@ reporting_widget_server <- function( id ,
                  )
        } 
       
-       mr = data %>% 
-         filter( !is.na( original  ) ) %>%
-         distinct( !! rlang::sym( period() ) , orgUnit ) %>%
-         group_by( orgUnit ) %>%
-         summarise( n = n() ) %>%
-         arrange( desc( n ))
-       
-       #print( "mr" ); #print( summary( mr$n ) )
-  
-       s = mr %>%
-         filter( n == max( mr$n ) ) %>%
-         pull( orgUnit ) %>% unique
+       # mr = data %>% 
+       #   filter( !is.na( original  ) ) %>%
+       #   distinct( !! rlang::sym( period() ) , orgUnit ) %>%
+       #   group_by( orgUnit ) %>%
+       #   summarise( n = n() ) %>%
+       #   arrange( desc( n ))
+       # 
+       # #print( "mr" ); #print( summary( mr$n ) )
+       # 
+       # s = mr %>%
+       #   filter( n == max( mr$n ) ) %>%
+       #   pull( orgUnit ) %>% unique
+      
+      mr = data %>% 
+        filter( !is.na( original  ) ,   ) %>%
+        group_by( year = year( Month ) ) %>%
+        distinct( !! rlang::sym( period() ) , orgUnit ) %>%
+        group_by( year , orgUnit ) %>%
+        summarise( months = n() ) 
+      
+      periods_per_year = data %>% distinct( Month ) %>% 
+        mutate( year = year( Month )) %>%
+        count( year ) %>%
+        rename( max = n )
+      
+      missing_reports = as.integer( input$missing_reports )
+      max_years =  n_distinct( mr$year , na.rm = FALSE ) 
+      
+      s = mr %>%
+        inner_join( periods_per_year , by = "year" ) %>%
+        ungroup %>% 
+        group_by( orgUnit ) %>% 
+        summarise(  
+          years = n() , 
+          consistent = all( months >= ( max - missing_reports ) ) ,
+          champion =  ( years == max_years ) & consistent 
+        ) %>%
+        filter( champion ) %>%
+        pull( orgUnit ) 
+      
        
        cat( "\n*** mostReports selectedOUs:", length(s), 'orgUnits' ); toc() 
        return( s )
@@ -1251,6 +1288,7 @@ reporting_widget_server <- function( id ,
       
       # Testing
       # saveRDS( .group_by_cols , 'group_by_cols.rds' )
+      # saveRDS( plotData() , 'plotData.rds' )
   
       # Total categories by facilities and datasets
       data = plotData() 
@@ -1623,7 +1661,8 @@ reporting_widget_server <- function( id ,
     # facet when selected > 0
     if ( length( selectedOUs() ) > 0 ) g =
     g + facet_wrap( vars( Selected ) ,
-                    scales = 'free' , ncol = 3 ) 
+                    # scales = 'free' , 
+                    ncol = 3 ) 
     
     # Time scales
     if ( period() %in% 'Month' )  g = g + 
