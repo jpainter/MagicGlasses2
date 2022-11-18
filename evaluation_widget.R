@@ -98,7 +98,7 @@ evaluation_widget_ui = function ( id ){
               choices = c( 
                           # 'TSLM',
                            'TSLM (trend)' , 'TSLM (trend+season)' , 
-                           'ETS' , 'ARIMA', 'NNETAR' ,
+                           'ETS' , 'ARIMA', 'NNETAR' , 'SNAIVE' ,
                            # 'BSTS' , 
                           'Prophet'
                           
@@ -106,9 +106,6 @@ evaluation_widget_ui = function ( id ){
                           # , 'TSLM (trend+season)'
                           ) , 
               selected = 'ARIMA'  ) ,
-
-      textInput( ns( 'model.formula' ) , 'Model Formula' ,
-          value =  'total ~ 1' ) ,
 
       textInput( ns( 'covariates' ), 'Model covariates' ,
           value =  NULL ) ,
@@ -138,7 +135,10 @@ evaluation_widget_ui = function ( id ){
     checkboxInput( ns( "bootstrap" ) , label ='Bootstrap estimate',
                    value = FALSE  ) 
     
-          )
+          ) ,
+    
+    textInput( ns( 'model.formula' ) , 'Model Formula' ,
+               value =  'total' ) 
 )
 ))
 )
@@ -599,51 +599,133 @@ evaluation_widget_server <- function( id ,
       req( input$model.formula )
       cat( '\n* evaluation_widget model_formula' )
 
-
-      # Base models...
-      
       formula.string = input$model.formula
       
-      if ( input$transform ) formula.string = 'fabletools::box_cox( total , lambda = .5  )'
+      # if ( input$transform ) formula.string = 'fabletools::box_cox( total , lambda = .5  )'
+      # 
+      # f = as.formula(  formula.string )
+      # 
+      # 
+      # if (input$model %in% 'ARIMA' ){
+      #   cat("\n - input$model = ARIMA")
+      # 
+      #   # formula.string = paste( 'fabletools::box_cox( total , lambda = .5  ) ~ ',
+      #   #                         ' pdq() ' )
+      # 
+      #   formula.string = ' total ~  pdq() '
+      #   if ( input$transform ) formula.string = 'fabletools::box_cox( total , lambda = .5  ) ~  pdq() '
+      # 
+      #   if ( period() %in% "Month" ) formula.string = paste0( formula.string ,
+      #                                                      '+ PDQ( period = "1 year" )'   )
+      # 
+      #   if ( period() %in% "Week" ) formula.string = paste0( formula.string ,
+      #                                                      '+ PDQ( period = 52 )'   )
+      # 
+      # 
+      #    if ( nchar( input$covariates ) > 0 ) formula.string =
+      #        paste( formula.string , '+ xreg(' , input$covariates , ' ) '  )
+      # 
+      #    cat( '\n - ARIMA formula string:', formula.string )
+      #    f = as.formula( formula.string )
+      # }
+      # 
+      # if (input$model %in% 'BSTS' ){
+      #   cat("\n - input$model = BSTS")
+      # 
+      #    f = as.formula( paste( 'total ~ season("year")' ) )
+      # 
+      #   if ( input$transform ) formula.string = 'fabletools::box_cox( total , lambda = .5  ) ~ season("year")'
+      # 
+      # }
+      # 
+      # if (input$model %in% 'ETS' ){
+      #   cat("\n - input$model = ETS")
+      #   
+      #   f = as.formula( paste( 'total ~ season("year")' ) )
+      #   
+      #   if ( input$transform ) formula.string = 'fabletools::box_cox( total , lambda = .5  ) ~ error() + trend() + season()'
+      #   
+      # }
+
+      cat( '\n - end model_formula:', formula.string )
+      return( formula.string )
+
+    })
+    
+    
+    # Default models formulas
+    observeEvent( input$model, {
       
-      f = as.formula(  formula.string )
+      if (input$model %in% 'TSLM (trend+season)' ){
+        cat("\n - input$model = TSLM")
+        
+        formula.string  = "total ~ trend() + season()" 
+        
+        if ( input$transform ) formula.string = 'fabletools::box_cox( total , lambda = .5  ) ~ trend() + season()'
+        
+      }
       
+      if (input$model %in% 'TSLM (trend)' ){
+        cat("\n - input$model = TSLM (trend)")
+        
+        formula.string  =  "total ~ trend()" 
+        
+        if ( input$transform ) formula.string = 'fabletools::box_cox( total , lambda = .5  ) ~ season()'
+        
+      }
+
 
       if (input$model %in% 'ARIMA' ){
         cat("\n - input$model = ARIMA")
-
+        
         # formula.string = paste( 'fabletools::box_cox( total , lambda = .5  ) ~ ',
         #                         ' pdq() ' )
-
+        
         formula.string = ' total ~  pdq() '
+        
         if ( input$transform ) formula.string = 'fabletools::box_cox( total , lambda = .5  ) ~  pdq() '
-
+        
         if ( period() %in% "Month" ) formula.string = paste0( formula.string ,
-                                                           '+ PDQ( period = "1 year" )'   )
-
+                                                              '+ PDQ( period = "1 year" )'   )
+        
         if ( period() %in% "Week" ) formula.string = paste0( formula.string ,
-                                                           '+ PDQ( period = 52 )'   )
-
-
-         if ( nchar( input$covariates ) > 0 ) formula.string =
-             paste( formula.string , '+ xreg(' , input$covariates , ' ) '  )
-
-         cat( '\n - ARIMA formula string:', formula.string )
-         f = as.formula( formula.string )
+                                                             '+ PDQ( period = 52 )'   )
+        
+        
+        if ( nchar( input$covariates ) > 0 ) formula.string =
+          paste( formula.string , '+ xreg(' , input$covariates , ' ) '  )
+        
       }
-
+      
       if (input$model %in% 'BSTS' ){
         cat("\n - input$model = BSTS")
-
-         f = as.formula( paste( 'total ~ season("year")' ) )
-
-        if ( input$transform ) formula.string = 'fabletools::box_cox( total , lambda = .5  ) ~ season("year")'
-
+        
+        formula.string  =  'total ~ season("year")' 
+        
+        if ( input$transform ) formula.string = 'fabletools::box_cox( total , lambda = .5  ) ~ season()'
+        
       }
-
-      cat( '\n - end model_formula:', formula.string )
-      return( f )
-
+      
+      if (input$model %in% 'ETS' ){
+        cat("\n - input$model = ETS")
+        
+        formula.string = 'total ~ error() + trend() + season()'  
+    
+        if ( input$transform ) formula.string = 'fabletools::box_cox( total , lambda = .5  ) ~ error() + trend() + season()'
+        
+      }
+      
+      if (input$model %in% 'NNETAR' ){
+        cat("\n - input$model = NNETAR")
+        
+        formula.string = 'total'  
+        
+        if ( input$transform ) formula.string = 'fabletools::box_cox( total , lambda = .5  )'
+        
+      }
+      
+      updateTextInput( session, "model.formula" , value = formula.string )
+      
     })
 
     tsModel = reactive({
@@ -657,6 +739,8 @@ evaluation_widget_server <- function( id ,
                    paste( names(trendData()), collapse = ',')
                    )
       )
+      
+      cat( '\n* evaluation_widget tsModel():' , as.character( model_formula() ) )
 
       # Dickey-Fuller test for stationary series
       # Null hypothese is non-stationary.
@@ -673,26 +757,22 @@ evaluation_widget_server <- function( id ,
       fit.data  = trendData() %>%
         filter_index( ~ as.character( time_period ) ,
                       .preserve = TRUE )
+      
 
-      if (input$model %in% 'TSLM' ){
-        fit = fit.data %>% model( l = TSLM( model_formula() ) )
-        cat( '\n - end tsModel():' )
-        return( fit )
-        }
+      model.formula = model_formula()
+      if ( grepl( "~" ,  model.formula , fixed = TRUE ) ) model.formula = as.formula ( model.formula )
+
+
 
       if (input$model %in% 'TSLM (trend)' ){
-        fit = fit.data %>% model( l = TSLM( total ~ trend()  ) )
-
-        if ( input$transform ) fit = fit.data %>% model( l = TSLM( fabletools::box_cox( total , lambda = .5  )  ~ trend()  ) )
+        fit = fit.data %>% model( l = TSLM( model.formula  ) )
 
         cat( '\n - end tsModel():' )
         return( fit )
       }
 
       if (input$model %in% 'TSLM (trend+season)' ){
-        fit = fit.data %>% model( l = TSLM( total ~ trend() + season() ) )
-
-        if ( input$transform ) fit = fit.data %>% model( l = TSLM( fabletools::box_cox( total , lambda = .5  )  ~ trend() + season() ) )
+        fit = fit.data %>% model( l = TSLM( model.formula ) )
 
         cat( '\n - end tsModel():' )
         return( fit )
@@ -700,7 +780,7 @@ evaluation_widget_server <- function( id ,
 
       if (input$model %in% 'ARIMA' ){
         fit = fit.data %>% model(
-          arima = ARIMA( model_formula()  )
+          arima = ARIMA(  model.formula )
           )
       # if ( input$reconcile ) fit = fit %>%
       #       reconcile(
@@ -719,10 +799,9 @@ evaluation_widget_server <- function( id ,
       if (input$model %in% 'NNETAR' ){
         fit = fit.data %>%
           model(
-                nnetar = NNETAR( total  )
+                nnetar = NNETAR( !! rlang::sym( model.formula  ) )
           )
-        
-        if ( input$transform ) fit = fit.data %>% model( nnetar = NNETAR( fabletools::box_cox( total , lambda = .5  )  ) )
+      
         
         
         cat( '\n - end tsModel():' )
@@ -733,11 +812,8 @@ evaluation_widget_server <- function( id ,
         fit = fit.data %>%
           model(
             # b = BSTS( model_formula() )
-            bsts = BSTS( total ~  ar() + seasonal("1 year"))
+            bsts = BSTS( model.formula )
             )
-
-        if ( input$transform ) fit = fit.data %>% model( bsts = BSTS( fabletools::box_cox( total , lambda = .5  )  ~ ar() + seasonal("1 year") ) )
-
 
         cat( '\n - end tsModel():' )
         return( fit )
@@ -756,7 +832,7 @@ evaluation_widget_server <- function( id ,
 
         # }
           
-          fit = fit.data %>% model( ets = ETS( model_formula() ))
+          fit = fit.data %>% model( ets = ETS( !! model.formula ))
 
 
         cat( '\n - end ETS tsModel():' )
@@ -765,6 +841,14 @@ evaluation_widget_server <- function( id ,
       #       reconcile(
       #         mint = min_trace(a, method = "mint_shrink")
       #         )
+        cat( '\n - end tsModel():' )
+        return( fit )
+      }
+      
+      if (input$model %in% 'SNAIVE' ){
+        
+        fit = fit.data %>% model( ets = SNAIVE( !! rlang::sym( model.formula ) ) )
+        
         cat( '\n - end tsModel():' )
         return( fit )
       }
@@ -840,27 +924,18 @@ evaluation_widget_server <- function( id ,
       # saveRDS( trendData() , 'trendData.rds' )
       # saveRDS( fit.data , 'fit.data.rds' )
 
-
-      if (input$model %in% 'TSLM' ){
-        fit = fit.data %>% model( l = TSLM( model_formula() ) )
-        # print( 'end tsPreModel() TSLM:' )
-        cat( '\n - end tsPreModel() TSLM:' )
-        return( fit )
-        }
+      model.formula = model_formula()
+      if ( grepl( "~" ,  model.formula , fixed = TRUE ) ) model.formula = as.formula (model.formula )
 
       if (input$model %in% 'TSLM (trend)' ){
-        fit = fit.data %>% model( l = TSLM( total ~ trend()  ) )
-
-        if ( input$transform ) fit = fit.data %>% model( l = TSLM( fabletools::box_cox( total , lambda = .5  )  ~ trend()  ) )
+        fit = fit.data %>% model( l = TSLM( model.formula  ) )
 
         cat( '\n - end tsPreModel() TSLM(trend):' )
         return( fit )
       }
 
       if (input$model %in% 'TSLM (trend+season)' ){
-        fit = fit.data %>% model( l = TSLM( total ~ trend() + season() ) )
-
-        if ( input$transform ) fit = fit.data %>% model( l = TSLM( fabletools::box_cox( total , lambda = .5  )  ~ trend() + season() ) )
+        fit = fit.data %>% model( l = TSLM( model.formula ) )
 
         cat( '\n - end tsPreModel() TSLM(trend + season):' )
         return( fit )
@@ -868,7 +943,7 @@ evaluation_widget_server <- function( id ,
 
       if (input$model %in% 'ARIMA' ){
         fit = fit.data %>% model(
-          arima = ARIMA( model_formula()  )
+          arima = ARIMA( model.formula  )
           )
       # if ( input$reconcile ) fit = fit %>%
       #       reconcile(
@@ -902,29 +977,30 @@ evaluation_widget_server <- function( id ,
         fit = fit.data %>%
           model(
             # b = BSTS( model_formula() )
-            bsts = BSTS( total ~  ar() + seasonal("1 year"))
+            bsts = BSTS( model.formula )
             )
-
-        if ( input$transform ) fit = fit.data %>% model( bsts = BSTS( fabletools::box_cox( total , lambda = .5  )  ~ ar() + seasonal("1 year") ) )
-
 
         cat( '\n - end tsPreModel() BSTS:' )
         return( fit )
       }
 
       if (input$model %in% 'ETS' ){
-
-
-          fit = fit.data %>% model( a = ETS( total )  )
-
-          if ( input$transform ) fit = fit.data %>% model( a = ETS( fabletools::box_cox( total , lambda = .5  )  ) )
-
-
-      # if ( input$reconcile ) fit = fit %>%
-      #       reconcile(
-      #         mint = min_trace(a, method = "mint_shrink")
-      #         )
-        cat( '\n - end tsPreModel() ETS:' )
+        
+        fit = fit.data %>% model( ets = ETS( !!  rlang::sym( model.formula ) ) )
+    
+         # if ( input$reconcile ) fit = fit %>%
+        #       reconcile(
+        #         mint = min_trace(a, method = "mint_shrink")
+        #         )
+        cat( '\n - end tsModel():' )
+        return( fit )
+      }
+      
+      if (input$model %in% 'SNAIVE' ){
+        
+        fit = fit.data %>% model( ets = SNAIVE( !! rlang::sym( model.formula ) ) )
+        
+        cat( '\n - end tsModel():' )
         return( fit )
       }
 
