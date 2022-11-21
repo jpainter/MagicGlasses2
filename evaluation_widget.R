@@ -98,14 +98,14 @@ evaluation_widget_ui = function ( id ){
               choices = c( 
                           # 'TSLM',
                            'TSLM (trend)' , 'TSLM (trend+season)' , 
-                           'ETS' , 'ARIMA', 'NNETAR' , 'SNAIVE' ,
+                           'ETS' , 'ARIMA', 'SNAIVE' , 'NNETAR' ,
                            # 'BSTS' , 
                           'Prophet'
                           
                           # , 'TSLM (trend)'
                           # , 'TSLM (trend+season)'
                           ) , 
-              selected = 'ARIMA'  ) ,
+              selected = 'ETS'  ) ,
 
       textInput( ns( 'covariates' ), 'Model covariates' ,
           value =  NULL ) ,
@@ -138,7 +138,7 @@ evaluation_widget_ui = function ( id ){
           ) ,
     
     textInput( ns( 'model.formula' ) , 'Model Formula' ,
-               value =  'total' ) 
+               value =  "total ~ error() + trend() + season()" ) 
 )
 ))
 )
@@ -653,8 +653,14 @@ evaluation_widget_server <- function( id ,
     })
     
     
-    # Default models formulas
-    observeEvent( input$model, {
+    # Models formulas
+    modelSpecs <- reactive({ 
+      req( input$model ) 
+      specs = list( input$model, input$transform ) 
+      return( specs )
+      })
+    
+    observeEvent( modelSpecs() , {
       
       if (input$model %in% 'TSLM (trend+season)' ){
         cat("\n - input$model = TSLM")
@@ -670,7 +676,7 @@ evaluation_widget_server <- function( id ,
         
         formula.string  =  "total ~ trend()" 
         
-        if ( input$transform ) formula.string = 'fabletools::box_cox( total , lambda = .5  ) ~ season()'
+        if ( input$transform ) formula.string = 'fabletools::box_cox( total , lambda = .5  ) ~ trend()'
         
       }
 
@@ -721,6 +727,15 @@ evaluation_widget_server <- function( id ,
         formula.string = 'total'  
         
         if ( input$transform ) formula.string = 'fabletools::box_cox( total , lambda = .5  )'
+        
+      }
+      
+      if (input$model %in% 'SNAIVE' ){
+        cat("\n - input$model = SNAIVE")
+        
+        formula.string = 'total ~ lag("year")'  
+      
+        if ( input$transform ) formula.string = 'fabletools::box_cox( total , lambda = .5  ) ~ lag("year")'
         
       }
       
@@ -847,7 +862,7 @@ evaluation_widget_server <- function( id ,
       
       if (input$model %in% 'SNAIVE' ){
         
-        fit = fit.data %>% model( ets = SNAIVE( !! rlang::sym( model.formula ) ) )
+        fit = fit.data %>% model( snaive = SNAIVE( model.formula ) )
         
         cat( '\n - end tsModel():' )
         return( fit )
@@ -986,7 +1001,7 @@ evaluation_widget_server <- function( id ,
 
       if (input$model %in% 'ETS' ){
         
-        fit = fit.data %>% model( ets = ETS( !!  rlang::sym( model.formula ) ) )
+        fit = fit.data %>% model( ets = ETS( !! model.formula ))
     
          # if ( input$reconcile ) fit = fit %>%
         #       reconcile(
@@ -998,7 +1013,7 @@ evaluation_widget_server <- function( id ,
       
       if (input$model %in% 'SNAIVE' ){
         
-        fit = fit.data %>% model( ets = SNAIVE( !! rlang::sym( model.formula ) ) )
+        fit = fit.data %>% model( ets = SNAIVE(  model.formula ) )
         
         cat( '\n - end tsModel():' )
         return( fit )
