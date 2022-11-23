@@ -1,6 +1,6 @@
 {
   "R": {
-    "Version": "4.2.1",
+    "Version": "4.2.2",
     "Repositories": [
       {
         "Name": "CRAN",
@@ -413,6 +413,19 @@
         "memoise",
         "rlang",
         "sass"
+      ]
+    },
+    "bsts": {
+      "Package": "bsts",
+      "Version": "0.9.8",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "3d5d883f0a9e35cbf3c2684efaaa313d",
+      "Requirements": [
+        "Boom",
+        "BoomSpikeSlab",
+        "xts",
+        "zoo"
       ]
     },
     "cachem": {
@@ -1831,10 +1844,10 @@
     },
     "mgcv": {
       "Package": "mgcv",
-      "Version": "1.8-40",
+      "Version": "1.8-41",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "c6b2fdb18cf68ab613bd564363e1ba0d",
+      "Hash": "6b3904f13346742caa3e82dd0303d4ad",
       "Requirements": [
         "Matrix",
         "nlme"
@@ -2459,10 +2472,10 @@
     },
     "rpart": {
       "Package": "rpart",
-      "Version": "4.1.16",
+      "Version": "4.1.19",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "ea3ca1d9473daabb3cd0f1b4f974c1ed",
+      "Hash": "b3c892a81783376cc2204af0f5805a80",
       "Requirements": []
     },
     "rprojroot": {
@@ -2895,6 +2908,21 @@
       "Hash": "90b28393209827327de889f49935140a",
       "Requirements": [
         "cpp11"
+      ]
+    },
+    "table.express": {
+      "Package": "table.express",
+      "Version": "0.4.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "38979065705c0af37e90f82fb8382b31",
+      "Requirements": [
+        "R6",
+        "data.table",
+        "dplyr",
+        "magrittr",
+        "rlang",
+        "tidyselect"
       ]
     },
     "terra": {
