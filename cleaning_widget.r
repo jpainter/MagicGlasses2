@@ -547,7 +547,7 @@ cleaning_widget_server <- function( id ,
            arrange(-n)
 
         # Default: values where the number happens at least 3 > than
-         # medianof the top 10 rows
+         # median of the top 10 rows
          key_entry_errors = key_entry_errors %>%
            filter(  n > 3 * median(
              key_entry_errors %>% filter( row_number()<11 )  %>%

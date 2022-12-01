@@ -12,16 +12,14 @@ reporting_widget_ui = function ( id ){
     sidebarLayout(
       sidebarPanel(
           tabsetPanel( type = "tabs",
-          tabPanel( "Monthly reporting",  
+          tabPanel( "Org Levels",  
+                    
+
+            h5( 'Filter Org Units') ,
  
             inputPanel(
-             selectInput( ns("level") , label = "Organization Level:" ,
-                          choices = c( 'leaf'  ) ,
-                          selected = NULL ) ,
-             
-            checkboxInput( ns("exclude_recent_month") , label ='Exclude most recent period?',
-                       value = TRUE  ) ,
             
+             
               selectInput( ns("level2"), label = "OrgUnit Level2" , 
                             choices = NULL, 
                             selected = NULL ,
@@ -48,37 +46,12 @@ reporting_widget_ui = function ( id ){
               
               selectInput( ns("split") , label = "Split Data By:" , 
                           choices = "None" , 
-                          selected = "None" ) , 
-            
-            # selectInput( ns("split") , label = "Include covariates:" , 
-            #              choices = "None" , 
-            #              selected = "None" ) , 
-              
-              checkboxInput( ns("count.any") , label ='Count any categories', value = FALSE ) 
+                          selected = "None" )
               
       
         ) ,
         
-        h5( 'Filter to consistently reporting facilties') ,
         
-        checkboxInput( ns("mostReports") , label ='Find facilities reporting each month', value = TRUE ) ,
-        
-        inputPanel( 
-          
-            selectizeInput( ns("startingMonth") , label = "Begining with", 
-                            choices = NULL ,
-                            selected = NULL ) ,
-            
-            selectizeInput( ns("endingMonth"), label = "Ending with", 
-                            choices = NULL , 
-                            selected = NULL ) ,
-            
-            selectizeInput( ns("missing_reports") , label = "Number of missing reports allowed/yr" , 
-                         choices = 0:2 , 
-                         selected = 0 ) 
-          )
-          
-        ,
         
         h5( 'Filter display dates') ,
         
@@ -92,19 +65,58 @@ reporting_widget_ui = function ( id ){
                           choices = NULL , 
                           selected = NULL )
           
-        )
-        )  
+        ) ,
+        
+        
+        h5( 'Aggregate Level' ) ,
+        
+        selectInput( ns("level") , label = 'Select data only at specific level ("leaf" is all facilities that enter data):' ,
+                     choices = c( 'leaf'  ) ,
+                     selected = NULL ) 
+        
+        )  ,
+        
+        tabPanel( "Reporting Consistency" , 
+
+                  h5( 'Find *Champion* facilities  -- the ones that reported the most each year' ) ,
+                  
+                  br() , 
+                  
+                  checkboxInput( ns("mostReports") , label ='Stratify by consistently reporting facilties', value = TRUE ) ,
+                  
+                  inputPanel( 
+                    
+
+                    
+                    selectizeInput( ns("startingMonth") , label = "Begining with", 
+                                    choices = NULL ,
+                                    selected = NULL ) ,
+                    
+                    selectizeInput( ns("endingMonth"), label = "Ending with", 
+                                    choices = NULL , 
+                                    selected = NULL ) ,
+                  
+                  
+                  checkboxInput( ns("exclude_recent_month") , label ='Exclude most latest period? (e.g. current month if data expected to be incomplete)',
+                                 value = TRUE  ) ,
+                  
+                  selectizeInput( ns("missing_reports") , label = "Number of missing reports allowed/yr" , 
+                                  choices = 0:2 , 
+                                  selected = 0 ) 
+                  ) 
+                  
+              ) , 
       
-        , 
-      
-       tabPanel( "Choose dataElements, categories, and dataSets ",  
+       tabPanel( "dataElements and dataSets",  
         # inputPanel(
         
+        h5( "Datasets (forms used to enter data)" ) , 
+        
               checkboxInput( ns("dataset_merge"), 
-                             label ='Merge all datasets', value = FALSE ) ,
+                             label ='Merge data from all datasets (or choose datasets below)', value = FALSE ) ,
               
               checkboxInput( ns("dataset_merge_average") , 
-                             label ='Average values when reported to mutliple datasets', value = FALSE ) ,
+                             label ='When merging, average values reported by same facility to mutliple datasets', value = FALSE ) ,
               
               selectInput( ns("merge") , 
                            label ='Merge selected datasets with selected dataElements/Categories', 
@@ -113,9 +125,11 @@ reporting_widget_ui = function ( id ){
                            width = "100%" ,
                            multiple = TRUE ,
                            selectize = TRUE ) ,
+        
+        h5( "Data elements" ) , 
               
                checkboxInput( ns("all_categories") , 
-                                      label = 'Select all dataElement/Categories',
+                                      label = 'Select all dataElements/Categories',
                                       value = TRUE )  ,
       
                selectInput( ns("data_categories") , 
@@ -125,7 +139,11 @@ reporting_widget_ui = function ( id ){
                           width = "100%" ,
                           multiple = TRUE ,
                           selectize = TRUE
-                          ) 
+                          ) ,
+        
+             h5( "By default, facility counted as reporting if the selected data was reported") ,
+        
+              checkboxInput( ns("count.any") , label ='Categorize facility as reporting if any data submitted, even when data not selected above', value = FALSE )
       
 
                # ) # end inputPanel 
@@ -134,36 +152,57 @@ reporting_widget_ui = function ( id ){
       ) , # end sidebar panel 
       
       mainPanel( 
-        tabPanel( "Facilities Reporting",  style = "height:90vh;" ,
+        tabsetPanel( type = "tabs", 
+        tabPanel( "Charts",  style = "height:95vh;" ,
       
                   fluidPage( 
-                  fluidRow( style = "height:40vh;",
-                          column(6, 
-                            ### Number of Facilties Reporting each Period (plot_reporting_by_month)
-                            plotOutput( ns('plot_reporting_by_month') , 
-                                click = "plot2_click" ,
-                                dblclick = "plot2_dblclick" ,
-                                hover = "plot2_hover" ,
-                                brush = "plot2_brush" )
-                            ) ,
+                    
+                    
+                    fluidRow( style = "height:40vh;",
+                              
+                            column(6, 
+                                   
+                              h5( 'Number of Facilties Reporting Each Period') ,
+                              
+                              ### Number of Facilties Reporting each Period (plot_reporting_by_month)
+                              plotOutput( ns('plot_reporting_by_month') , 
+                                  click = "plot2_click" ,
+                                  dblclick = "plot2_dblclick" ,
+                                  hover = "plot2_hover" ,
+                                  brush = "plot2_brush" )
+                              ) ,
+                              
+                             column(6,  
+                              # htmlOutput("x_value") ,
+                              
+                              h5( 'Histogram of Periods Reported Each Year') ,
+        
+                              ### Histogram of Annual Number of Months Reported (plot_reports_in_a_year)
+                                  # miniContentPanel(
+         
+                                            plotOutput( ns('plot_reports_in_a_year') ,
+                                              click = "plot1_click" ,
+                                              dblclick = "plot1_dblclick" ,
+                                              hover = "plot1_hover" ,
+                                              brush = "plot1_brush" ) ,
+                                            
+                                            scrollable = TRUE
+                                            )
+                            # ) 
                             
-                           column(6,  
-                            # htmlOutput("x_value") ,
-      
-                            ### Histogram of Annual Number of Months Reported (plot_reports_in_a_year)
-                                miniContentPanel(
-       
-                                          plotOutput( ns('plot_reports_in_a_year') ,
-                                            click = "plot1_click" ,
-                                            dblclick = "plot1_dblclick" ,
-                                            hover = "plot1_hover" ,
-                                            brush = "plot1_brush" ) ,
-                                          
-                                          scrollable = TRUE
-                                          )
-                          ) 
-                  )
-        ,
+                          # , h6( 'Red indicates the facilities that reported each month (*Champions*)' ) 
+                    ) ,
+                    
+                  # h5( "Data Values: On Right, from facilities that reported each month (*Champions*); on left, from all others")  ,
+                  
+                  # fluidRow( style = "height:10vh;",
+                  #           
+                  #           column(6, h5( "Data Values from Inconsistenly Reporting Facilities" ) ) ,
+                  #           
+                  #           column(6, h5( "Data Values from *Champion* Facilities" ) ) 
+                  #           
+                  # ) , 
+
                   fluidRow( style = "height:40vh;"  ,
                           
                           column(12, 
@@ -174,7 +213,52 @@ reporting_widget_ui = function ( id ){
                           )
                           )
                   )
-        ) 
+        ) ,
+        
+        tabPanel( "Facilities", 
+                  
+                 # tableOutput( ns('orgUnitReportingTable')) 
+                 
+                 
+                 # miniPage(
+                 # gadgetTitleBar( "Shiny gadget example" ),
+                 
+                 # miniTabstripPanel(
+                 tabsetPanel( type = "tabs" ,
+
+                   tabPanel( "Chart" , style = "height:80vh;" ,
+                   # miniTabPanel( "Visualize" , icon = icon("area-chart"),
+                                 # miniContentPanel(
+                                   plotOutput( ns("facility_chart") , height = "100%")
+                                 # )
+                   ),
+                   tabPanel( "Map" , style = "height:90vh;" ,
+                   # miniTabPanel( ns("Map") ,
+                                 # icon = icon("map-o"),
+
+                                 # miniContentPanel(padding = 0,
+                                                  # leafletOutput( ns("map") , height = "100%")
+                                 # ),
+                                 # miniButtonBlock(
+                                   # actionButton( ns("resetMap") , "Reset" )
+                                 # )
+                   
+                       fluidRow( style = "height:80vh;",
+                                 column(12, 
+                                        leafletOutput( ns("facility_map") , height = "100%")  )
+                                 )
+                       ) ,
+                   tabPanel( "Data" , style = "height:80vh;" ,
+                   # miniTabPanel( ns("Data")  , icon = icon("table"),
+                                 # miniContentPanel(
+                                   DT::dataTableOutput( ns("facility_table") )
+                                 # )
+                   )
+                 )
+        )
+        )
+                  
+                  
         ) # end main panel
 ) # end sidbar layout
 ) # end tagset
@@ -209,6 +293,7 @@ reporting_widget_server <- function( id ,
     formula_elements = reactive({ data_widget_output$formula_elements() })
     orgUnits = reactive({ metadata_widget_output$orgUnits() })  
     orgUnitLevels = reactive({ metadata_widget_output$orgUnitLevels() })
+    geoFeatures = reactive({ metadata_widget_output$geoFeatures() })
     data2 = reactive({ cleaning_widget_output$data2() })
     
     # see https://stackoverflow.com/questions/54438495/shift-legend-into-empty-facets-of-a-faceted-plot-in-ggplot2
@@ -503,7 +588,10 @@ reporting_widget_server <- function( id ,
       } else {
         
         # data = data %>% filter( levelName  %in% input$level  )
-        data = setDT( data )[ levelName  %in% input$level , , ] 
+        level. = count( orgUnits() %>% as_tibble, level, levelName ) %>% 
+          filter(levelName  %in% input$level  ) %>% pull( level )
+        
+        data = setDT( data )[ level  %in% level. , , ] 
       }
   
   # if ( input$exclude_recent_month ) data = data %>% 
@@ -1689,6 +1777,240 @@ reporting_widget_server <- function( id ,
   
   output$plot_values <- renderPlot({  plotAgregateValue()  })
   outputOptions( output, "plot_values", suspendWhenHidden = TRUE )
+  
+# Champions Map and Table####
+  
+  # Avg Value by facility 
+  avgValues = reactive({ 
+    req( plotData())  
+    cat( "\n * avgValues:")
+    
+    avgValues =
+      plotData()  %>% 
+      group_by( orgUnit, Month ) %>% 
+      summarise( dataCol = sum( dataCol , na.rm = TRUE )) %>%
+      group_by( orgUnit ) %>%
+      summarise( medianValue = median( dataCol , na.rm = TRUE )) 
+    
+    cat( "\n - done avgValues:")
+    return( avgValues )
+  })
+  
+  champion_facilities = reactive({
+    req( avgValues()) 
+    req( selectedOUs() )
+    cat( "\n * champion_facilities:")
+    
+    sou = selectedOUs()
+    gf = geoFeatures()
+    avgValues = avgValues()
+    
+    # testing 
+    # saveRDS( gf , 'gf.rds' )
+    # saveRDS( sou , 'sou.rds' )
+    # saveRDS( plotData() , 'plotData.rds' )
+    
+    cat( "\n - quartile values:")
+    quartileValues = quantile( avgValues$medianValue , probs = c( 0, 0.25, 0.5, 0.75, 1) )
+ 
+    cat( "\n - champion column:")
+    champion_facilities = gf %>%
+        filter( st_geometry_type(.) == 'POINT') %>% 
+        filter( !st_is_empty(.) ) %>%
+        mutate( 
+          champion = ifelse( id %in% sou , "Consistent Reporting (Champion)", "Inconstent Reporting" )
+        )
+    
+    cat( "\n - join avgvalues:")
+    champion_facilities = champion_facilities %>%
+      # filter( id %in% "a08881Oz98k" ) %>%
+      left_join( avgValues , by = c( "id" = "orgUnit" ) ) %>%
+      mutate( medianValueRange = cut( medianValue , breaks =  unique( quartileValues ) , ordered_result = TRUE ) ,
+              medianValueRangeSize = medianValueRange %>% as.numeric() )
+      
+    cat( "\n - done facilities:")
+    return( champion_facilities )
+  })
+  
+  
+  facility_chart = reactive({
+    req( champion_facilities() )
+    cat( "\n * facility_chart:")
+    
+    champion_facilities = champion_facilities() %>% st_drop_geometry()
+    
+    summary = champion_facilities %>%
+      group_by( champion ) %>%
+      summarise( n = n() , mean = mean( medianValue , na.rm = TRUE )) 
+    
+    annotation = paste0( "mean = ", round( summary$mean ), " (n=", scales::comma( summary$n ) , ")" )
+    
+    facility_chart = 
+      champion_facilities %>%
+      ggplot( aes( champion, medianValue  ) ) + 
+      geom_boxplot() +
+      stat_summary( fun = mean , geom = "point", shape = 5, size = 4 ) +
+      geom_jitter( width = .35 ) +
+      labs( x = "", y = "Median Value") +
+      scale_y_log10() +
+      annotate( 'text' , x = 1:2 , y = 1.5 , label =  annotation  ) +
+      labs( title = "Comparison of Values Repoted by Consistent and Inconsistent Reporting Facilities" )
+
+    cat( "\n - done facility_chart:")
+    return( facility_chart )
+  })
+  
+  base.map = reactive({
+    
+    cat( "\n * reporting_widget: base.map")
+    gf = geoFeatures()
+
+    cat( '\n - split geofeatures')
+    split_geofeatures = base::split( gf , f = gf[['levelName']]  )
+    
+    levels = bind_rows(gf %>% st_drop_geometry()) %>% filter( !is.na( level)) %>% distinct( level, levelName ) 
+    
+    cat( '\n - levels:' , levels$levelName  , '\n')
+    
+    # reorder levels
+    split_geofeatures = split_geofeatures[ levels$levelName ]
+    
+    # test for empty geometry
+    not_all_empty_geo = map_lgl( split_geofeatures , ~!all(is.na(st_dimension(.x))) )
+    
+    n_levels = sum( not_all_empty_geo ) # 
+    
+    cat( paste('\n - geoFeatures split into' , n_levels , 'levels' ,
+               paste( names( split_geofeatures ), collapse = ',' ), sep = " " ) , '\n')
+    
+    level.colors = RColorBrewer::brewer.pal(n_levels, 'Set2')
+    names( level.colors ) = levels[ not_all_empty_geo, 'levelName' ]
+    
+    
+    split_gf = split_geofeatures[ not_all_empty_geo ]
+    
+    
+    admins = gf %>% filter( st_geometry_type(.) != 'POINT') %>% filter( !st_is_empty(.) )
+    
+    admin.levels = admins$levelName %>% unique 
+    
+    # pal <- colorNumeric( palette = "YlGnBu", domain = avgValues$medianValue  )
+    
+    base.map =
+      leaflet( ) %>%
+      addTiles(group = "OSM (default)") %>%
+      addProviderTiles( providers$Stamen.Toner , group = "Toner") %>%
+      addProviderTiles( providers$Stamen.TonerLite , group = "Toner Lite") %>%
+      addProviderTiles( "Stamen.Terrain", group = "Stamen.Terrain" ) %>%
+      addProviderTiles( "Esri.WorldStreetMap", group = "Esri.WorldStreetMap" )  %>%
+      addProviderTiles( "Esri.WorldImagery", group = "Esri.WorldImagery" ) %>%
+      addTiles( group = "No Background" , options = providerTileOptions( opacity = 0 ) )
+      
+    for ( i in seq_along( admin.levels ) ){
+        base.map = base.map %>%
+          addPolygons( data = admins %>% filter( levelName == admin.levels[ i ] ) ,
+                       group = admin.levels[ i ] ,
+                       label = ~paste( name ,   
+                                       ifelse( level < 3 , '' , 
+                                               paste( 'in' ,  parentName ) )
+                       ) ,
+                       color = "black", 
+                       weight = 1, smoothFactor = 0.5,
+                       opacity = 1.0, fillOpacity = 0 , fillColor = "lightblue" ,
+                       highlightOptions = highlightOptions( color = "white", weight = 2,
+                                                            bringToFront = TRUE)
+          )  %>% hideGroup( admin.levels[ i ] )
+      }
+        
+
+        
+        
+    base.map = base.map %>%
+          # Layers control
+          addLayersControl(
+            baseGroups = c("OSM (default)", "Toner", "Toner Lite", "Stamen.Terrain", 
+                           "Esri.WorldStreetMap" , "Esri.WorldImagery", "No Background" ),
+            overlayGroups = c( admin.levels , "Facility"),
+            options = layersControlOptions( collapsed = TRUE )
+          ) 
+
+    return( base.map )
+      
+  })
+  
+  facility_map = reactive({
+    
+    cat( "\n * reporting_widget: facility map")
+    gf = geoFeatures()
+    facilities = champion_facilities()
+    avgValues = avgValues()
+    base.map = base.map()
+    
+    
+    cat( '\n - add points')
+    
+    factpal <- colorFactor( c("red4", "grey20")  , facilities$champion )
+    
+    symbols <- makeSymbolsSize(
+      # values = ifelse( is.na( facilities$medianValueRangeSize ), 0, facilities$medianValueRangeSize )  ,
+      values = ifelse( is.na( facilities$medianValue ), 0, facilities$medianValue ) ,
+      shape = 'circle' ,
+      color = factpal( facilities$champion ) ,
+      fillColor =  factpal( facilities$champion ) ,
+      fillOpacity = .8,
+      baseSize = 2
+    )
+    
+    gf.map = base.map  %>%
+        
+      #   addCircleMarkers( data = facilities , group = "Facility" ,
+      #     radius = ~ medianValueRangeSize  ,
+      #     fillColor = ~ factpal( champion )  ,
+      #     stroke = FALSE, fillOpacity = .9
+      # )
+      
+      addMarkers(data = facilities ,
+                 icon = symbols )
+  
+      
+    # size legend with library(  leaflegend )
+    
+    gf.map = gf.map %>%
+      
+      addLegendSize(
+            # values = ifelse( is.na( facilities$medianValueRangeSize ), 0, facilities$medianValueRangeSize )    ,
+            values = ifelse( is.na( facilities$medianValue ), 0, facilities$medianValue ) , 
+            color = 'black',
+            fillColor = 'black' ,
+            opacity = .5,
+            title = 'Median Value',
+            shape = 'circle',
+            # orientation = 'horizontal',
+            breaks = 4 ,
+            baseSize = 2 
+            ) %>%
+      
+      addLegend("bottomright",
+                values = facilities$champion ,
+                pal = factpal ,
+                title = 'Reporting Consistency' ,
+                opacity = 1
+  )
+    
+  #   options = popupOptions(closeButton = FALSE)
+    
+    return( gf.map )
+    
+  })
+  
+  output$facility_chart <- renderPlot({ facility_chart() })
+  
+  output$facility_map <- renderLeaflet({ facility_map()  })
+  
+  output$facility_table <- DT::renderDataTable({ 
+    champion_facilities() %>% st_drop_geometry()
+    })
+  
 
 # Return ####
   split = reactive({ input$split })

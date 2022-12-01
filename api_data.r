@@ -653,7 +653,7 @@ api_data = function(      periods = NA ,
       
       # Stop if no national data 
       if ( nrow( prev ) == 0 ){
-        cat( '\n - previous data has is missing national data' ) 
+        cat( '\n - previous data is missing national data' ) 
         return()
       } else {
         cat( '\n - previous data has:' ,  nrow( prev ), 'rows' ) 
@@ -712,6 +712,7 @@ api_data = function(      periods = NA ,
       
       
       removeModal()
+      
      showModal(
        modalDialog( title = "Checking for updated data values", 
                     easyClose = TRUE , size = 'm' , 
@@ -734,6 +735,7 @@ api_data = function(      periods = NA ,
       #TESTING
       saveRDS( current.counts, 'current.counts.rds')
       saveRDS( current.values, 'current.values.rds')
+      
       # Compare with previous data just for level-1
       ## for excel
       # prev = prev.data %>% filter( level == 1 , period %in% period_vectors ) 
@@ -818,6 +820,9 @@ api_data = function(      periods = NA ,
     # v2 <- expand_grid( period_vectors , orgUnits )
     # df of imputs for parallel mapping (pmap)
     pmap.df = expand.grid( period_vectors, orgUnits, elements$id ) 
+    
+    # Testing
+    saveRDS( pmap.df, 'pmap.df.rds' )
     
     if ( print ){
       cat( '\n Making' , 

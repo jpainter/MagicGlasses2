@@ -233,19 +233,19 @@ data_1 = function( data , formula_elements , ousTree , timing = FALSE  ){
     
     data.leaves = data_leaves( d. )
 
-  if ( timing ) toc() 
+  if ( timing ) cat( "/n - d." , toc()$callback_msg )
     
   if ( timing ) tic()
   d.. = 
     setDT(d.) %>%
     table.express::left_join( setDT( data.leaves ) , orgUnit , dataElement.id  )  %>%
     table.express::left_join( setDT( ousTree ) , orgUnit )  %>%
-    mutate( original = SUM , value = !is.na( SUM )) %>%
     as_tibble() %>%
     df_pre_ts( . , period = p  ) %>%
-    df_ts( . , period = p ) 
+    df_ts( . , period = p ) %>%
+    mutate( original = SUM , value = !is.na( SUM )) 
     
-  if ( timing ) toc()
+  if ( timing ) cat( "/n - d.." , toc()$callback_msg )
   
   return( d.. )
 }

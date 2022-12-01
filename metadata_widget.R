@@ -1360,119 +1360,87 @@ metadata_widget_server <- function( id ,
     level.colors = RColorBrewer::brewer.pal(n_levels, 'Set2')
     names( level.colors ) = levels[ not_all_empty_geo, 'levelName' ]
 
-    # Set option to display points (https://stackoverflow.com/questions/65485747/mapview-points-not-showing-in-r)
-    mapviewOptions(fgb = FALSE)
 
     split_gf = split_geofeatures[ not_all_empty_geo ]
     
-    gf.map = mapView( 
-      
-            split_gf ,
-            
-            color = level.colors ,
-            col.regions = level.colors  ,
-            
-            # zcol = "parentName"  ,
-            
-            alpha.regions = 0, cex = 1 ,
+    # Set option to display points (https://stackoverflow.com/questions/65485747/mapview-points-not-showing-in-r)
+    # mapviewOptions(fgb = FALSE)
+
+    # gf.map = mapView( 
+    #   
+    #         split_gf ,
+    #         
+    #         color = level.colors ,
+    #         col.regions = level.colors  ,
+    #         
+    #         # zcol = "parentName"  ,
+    #         
+    #         alpha.regions = 0, cex = 1 ,
+    #     
+    #         label = map( split_gf , ~paste( .x$name ,  
+    #                                         ifelse( .x$level < 3 , '' , 
+    #                                                 paste( 'in' , .x$parentName ) )
+    #                                         )
+    #                      ),
+    # 
+    #         burst = TRUE ,
+    #         hide = FALSE 
+    # )
+    # 
+    # cat('\n**geoFeatures Map prepared for output-\n')
+    # 
+    # return( gf.map@map )  # return leaflet slot of mapview object https://github.com/r-spatial/mapview/issues/58
+    # ]
+    
+    admins = gf %>% filter( st_geometry_type(.) != 'POINT') %>% filter( !st_is_empty(.) )
+    
+    gf.map =
+        leaflet( ) %>%
+          addTiles(group = "OSM (default)") %>%
+          addProviderTiles( providers$Stamen.Toner , group = "Toner") %>%
+          addProviderTiles( providers$Stamen.TonerLite , group = "Toner Lite") %>%
+          addProviderTiles( "Stamen.Terrain", group = "Stamen.Terrain" ) %>%
+          addProviderTiles( "Esri.WorldStreetMap", group = "Esri.WorldStreetMap" )  %>%
+          addProviderTiles( "Esri.WorldImagery", group = "Esri.WorldImagery" ) %>%
         
-            label = map( split_gf , ~paste( .x$name ,  
-                                            ifelse( .x$level < 3 , '' , 
-                                                    paste( 'in' , .x$parentName ) )
-                                            )
-                         ),
+        addCircleMarkers( data = gf %>%
+                            filter( st_geometry_type(.) == 'POINT') , group = "Facility" ,
+          radius = 2 ,
+          color = "blue" ,
+          stroke = FALSE, fillOpacity = .9
+      ) 
+    
+    admin.levels = admins$levelName %>% unique 
+    
+    for ( i in seq_along( admin.levels ) ){
+      gf.map = gf.map %>%
+              addPolygons( data = admins %>% filter( levelName == admin.levels[ i ] ) ,
+                     group = admin.levels[ i ] ,
+                     label = ~paste( name ,   
+                                     ifelse( level < 3 , '' , 
+                                             paste( 'in' ,  parentName ) )
+                                            ) ,
+                     color = "black", 
+                     weight = 1, smoothFactor = 0.5,
+                     opacity = 1.0, fillOpacity = 0 , fillColor = "lightblue" ,
+                     highlightOptions = highlightOptions( color = "white", weight = 2,
+                                                         bringToFront = TRUE)
+                     ) 
+    }
+    
+    gf.map = gf.map %>%
+      # Layers control
+      addLayersControl(
+        baseGroups = c("OSM (default)", "Toner", "Toner Lite", "Stamen.Terrain", 
+                       "Esri.WorldStreetMap" , "Esri.WorldImagery" ),
+        overlayGroups = c( admin.levels , "Facility"),
+        options = layersControlOptions( collapsed = FALSE )
+      )
+    
+  #   options = popupOptions(closeButton = FALSE)
+    
+    return( gf.map )
 
-            burst = TRUE ,
-            hide = FALSE 
-    )
-    
-    # Testing 
-    
-    # library( leafdown )
-    # cat( '\n - LEAFDOWN new' )
-    # adm = gf %>% filter( st_geometry_type(.) %in% c('POLYGON', 'MULTIPOLYGON') )
-    # save( gf, adm , file = 'gf.rda' )
-    # 
-    # levels = unique(adm$level)
-    # split_adm = split( adm , f = adm[['levelName']]  )[ order( levels )]
-    # split_adm = map( split_adm , ~ as( .x , "Spatial" ) ) 
-    # levelNames = names( split_adm )
-    # joinCols = rep( "'name' = 'parentName'" , length( levels) - 1) 
-    # names( joinCols ) = levelNames[ 1:length( levels) - 1 ]
-    # 
-    # my_leafdown = Leafdown$new( split_adm  ,
-    #                             join_map_levels_by =  joinCols ,
-    #                             map_output_id = "geoFeatures_map" , 
-    #                             input = input )
-    # 
-    # cat( '\n - LEAFDOWN add_data')
-    # my_leafdown$add_data( gf )
-    # 
-    # cat( '\n - LEAFDOWN map')
-    # gf.map = my_leafdown$draw_leafdown(
-    #   fillColor = ~ colors[ levels ] ) 
-    # 
-    # cat( '\n - LEAFDOWN add_legend')
-    # gf.map = gf.map %>%
-    #   addLegend( pal = colors[ levels ] )
-    # 
-    # cat( '\n - LEAFDOWN save')
-    # saveRDS( gf.map , 'gf.map.rds')
-    
-    cat('\n**geoFeatures Map prepared for output-\n')
-
-    return( gf.map@map )  # return leaflet slot of mapview object https://github.com/r-spatial/mapview/issues/58
-    
-    # mapview not working, try tmap
-    # tmap_options(check.and.fix = TRUE)
-    # chiefdom = split_geofeatures[ "Chiefdom" ][[1]] %>% tm_shape + tm_borders(col = "red")
-    # district = split_geofeatures[ "District" ][[1]] %>% tm_shape + tm_borders(col = "blue")
-    # chiefdom + district
-    # mapview( zcol = "name", split_geofeatures[ "District" ][[1]] , burst = TRUE )
-    
-    #     facets = c("coffee_production_2016", "coffee_production_2017")
-    # tm_shape(world_coffee) + tm_polygons(facets) + 
-    #   tm_facets(nrow = 1, sync = TRUE) 
-    
-    # Leaflet???
-    
-  # leaflet.map =
-  #   leaflet( ) %>% 
-  #     addTiles(group = "OSM (default)") %>%
-  #     addProviderTiles(providers$Stamen.Toner, group = "Toner") %>%
-  #     addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
-  #   
-  #   addPolygons( data = split_geofeatures[ "District" ][[1]]  , group ="District" ,
-  #                color = "black", weight = 1, smoothFactor = 0.5,
-  #                 opacity = 1.0, fillOpacity = 0 , fillColor = "lightblue" ,
-  #                highlightOptions = highlightOptions(color = "white", weight = 2,
-  #                                                    bringToFront = TRUE) 
-  #                ) %>%
-  #   addPolygons( data = split_geofeatures[ "Chiefdom" ][[1]]  , group = "Chiefdom" ,
-  #                color = "brown", weight = .5 , smoothFactor = 0.5, opacity = 1.0, 
-  #                fillOpacity = 0 , fillColor = "blue" ,
-  #                highlightOptions = highlightOptions(color = "white", weight = 2,
-  #                                                    bringToFront = TRUE) 
-  #                ) %>%
-  #   addCircleMarkers( data = split_geofeatures[ "Facility" ][[1]] %>%
-  #                       filter( st_geometry_type(.) == 'POINT'), group = "Facility" ,
-  #     radius = 1 ,
-  #     color = "grey",
-  #     stroke = FALSE, fillOpacity = .9
-  # ) %>%
-  # # Layers control
-  # addLayersControl( 
-  #   baseGroups = c("OSM (default)", "Toner", "Toner Lite"),
-  #   overlayGroups = c("District", "Chiefdom", "Facility"),
-  #   options = layersControlOptions(collapsed = FALSE)
-  # ) 
-  #   
-  # #   addPopups(-122.327298, 47.597131, content,
-  # #   options = popupOptions(closeButton = FALSE)
-  # # )
-  # 
-  # leaflet.map %>% hideGroup( c("Chiefdom" , "Facility") )
-  
   })
   
   # test map:
@@ -1691,6 +1659,7 @@ metadata_widget_server <- function( id ,
                 orgUnitLevels = orgUnitLevels ,
                 orgUnits = orgUnits ,
                 ousTree = ousTree ,
+                geoFeatures = geoFeatures ,
                 # uploaded_DataElements = uploaded_DataElements ,
                 # uploaded_DataElementGroups = uploaded_DataElementGroups ,
                 # uploaded_Categories = uploaded_Categories ,
