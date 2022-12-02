@@ -1318,10 +1318,7 @@ metadata_widget_server <- function( id ,
 
     # req( orgUnitLevels() )
     cat( '\n * gf.map():')
-    
-    cat( '\n - library(mapview) - ')
-    library( mapview )
-    cat( '- loaded \n ')
+
     
     gf = geoFeatures.ous()
     gf. = shared_geofeatures
