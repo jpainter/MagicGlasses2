@@ -419,7 +419,7 @@ Setup and Logon
 Column
 -----------------------------------
 
-```{r, echo = FALSE  }
+```{r directory_widget , echo = FALSE  }
 source( 'directory_widget.r' )
 directory_widget_ui( "directory1" )
 
@@ -431,7 +431,7 @@ Column
 -----------------------------------
 
 
-```{r, echo = FALSE  }
+```{r login_widget , echo = FALSE  }
 source( 'login_widget.r' )
 login_widget_ui( "login1" )
 
@@ -442,7 +442,7 @@ login_widget_output = login_widget_server( "login1" )
 Metadata
 ========================
 
-```{r , eval=TRUE}
+```{r metadata_widget , eval=TRUE}
 source( 'metadata_widget.r' )
 metadata_widget_ui( "metadata1" )
 
@@ -462,7 +462,7 @@ Column {data-width='30%'}
 
 ### Data (Dictionary/Formulas) {data-height='80%'}
 
-```{r, echo = FALSE  }
+```{r data_widget, echo = FALSE  }
 source( 'data_widget.r' )
 data_widget_ui( "data1" )
 
@@ -477,7 +477,7 @@ data1_Widget_output =
 
 ### Request data from server {data-height='20%'}
 
-```{r , eval=TRUE}
+```{r data_request_widget , eval=TRUE}
 source( 'data_request_widget.r' )
 data_request_widget_ui( "data_request1" )
 
@@ -496,7 +496,7 @@ Column {data-width='70%'}
 
 ### Data Elements
 
-```{r, echo = FALSE }
+```{r formula_widget , echo = FALSE }
 ### Data definitions (formulas)
 
 source( 'formula_widget.r' )
@@ -515,7 +515,7 @@ formula1_Widget_output =
 Reporting
 ========================
 
-```{r  , eval= TRUE }
+```{r reporting_widget , eval= TRUE }
 source( 'reporting_widget.r' )
 reporting_widget_ui( "reporting1" )
 
@@ -531,7 +531,7 @@ Outliers
 ========================
 
 
-```{r  , eval= TRUE } 
+```{r cleaning_widget , eval= TRUE } 
 source( 'cleaning_widget.r' )
 
 cleaning_widget_ui( "cleaning1" )
@@ -550,7 +550,7 @@ cleaning_widget_output =
 Evaluation
 ========================
 
-```{r , eval = TRUE }
+```{r evaluation_widget , eval = TRUE }
 source( 'evaluation_widget.r' )
 evaluation_widget_ui( "evaluation1" )
 

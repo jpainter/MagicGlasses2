@@ -198,8 +198,8 @@ formula_widget_server <- function( id ,
   observeEvent( formula_elements() , { 
     cat( '\n* update hasFormula' )
     
-    if ( nrow( formula_elements() ) > 0  ){
-      cat('\n - nrow( formula_elements() )', nrow( formula_elements() ))
+    if ( nrow( formulas() ) > 0  ){
+      cat('\n - nrow( formula_elements() )', nrow( formulas() ))
       hasFormula$formulas <- TRUE 
       }
     } )
@@ -207,7 +207,7 @@ formula_widget_server <- function( id ,
   originalFormula = reactive({  # the formula as read from disc
     cat( '\n* originalFormula:',   )
     
-  fe =  if( is_empty( formulas() )  ){
+    fe =  if( is_empty( formulas() )  ){
       
         dataElementDictionary()[0, ] 
 
