@@ -158,24 +158,24 @@ reporting_widget_ui = function ( id ){
                   fluidPage( 
                     
                     
-                    fluidRow( style = "height:40vh;",
+                    fluidRow( style = "height:50vh;",
                               
                             column(6, 
                                    
-                              h5( 'Number of Facilties Reporting Each Period') ,
+                              # h5( 'Number of Facilties Reporting Each Period') ,
                               
                               ### Number of Facilties Reporting each Period (plot_reporting_by_month)
                               plotOutput( ns('plot_reporting_by_month') , 
                                   click = "plot2_click" ,
                                   dblclick = "plot2_dblclick" ,
                                   hover = "plot2_hover" ,
-                                  brush = "plot2_brush" )
+                                  brush = "plot2_brush", height = "80%")
                               ) ,
                               
                              column(6,  
                               # htmlOutput("x_value") ,
                               
-                              h5( 'Histogram of Periods Reported Each Year') ,
+                              # h5( 'Histogram of Periods Reported Each Year') ,
         
                               ### Histogram of Annual Number of Months Reported (plot_reports_in_a_year)
                                   # miniContentPanel(
@@ -184,9 +184,9 @@ reporting_widget_ui = function ( id ){
                                               click = "plot1_click" ,
                                               dblclick = "plot1_dblclick" ,
                                               hover = "plot1_hover" ,
-                                              brush = "plot1_brush" ) ,
+                                              brush = "plot1_brush" , height = "80%") 
                                             
-                                            scrollable = TRUE
+                                            # , scrollable = TRUE
                                             )
                             # ) 
                             
@@ -208,7 +208,7 @@ reporting_widget_ui = function ( id ){
                           column(12, 
                             plotOutput( ns('plot_values') ,
                                 hover = "plotSelectedOusValues_hover" ,
-                                brush = "plotSelectedOusValues_brush"
+                                brush = "plotSelectedOusValues_brush" , height = "80%"
                                 )
                           )
                           )
