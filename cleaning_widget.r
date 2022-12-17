@@ -84,7 +84,7 @@ tagList(
                                   fluidRow( style = "height:50vh;",
                                     # h5( 'Select orgUnit having error')  
                                   # textOutput( ns("outlierSummaryText")) ,
-                                  plotlyOutput( ns("outlier.summary.chart") )
+                                  plotOutput( ns("outlier.summary.chart") ,  height = "auto"  )
                                   )
                                 )
                         ) ,
@@ -124,7 +124,7 @@ tagList(
                                   ) ,
                                   
                                   fluidRow( style = "height:40vh;",
-                                    plotlyOutput( ns("inspect") 
+                                    plotOutput( ns("inspect") 
                                                 # , hover = ns("plot_hover") , 
                                                 # click = ns("plot_click") ) 
                                     # , uiOutput( ns("dynamic") 
@@ -814,9 +814,18 @@ cleaning_widget_server <- function( id ,
     outlier.summary = reactive({
       req( outlier.dataset() )
       
+      cat( "\n * outlier.summary")
+      
       data1 = outlier.dataset()
       
+      cat( "\n - outlier.dataset has" , nrow( data1 ) , 'rows')
+      
+      # Testing
+      saveRDS( data1 , 'outlier.dataset.rds')
+      
+      
       # data.table? 
+      
       d = data1 %>% 
         as_tibble() %>%
         group_by( Month , seasonal3 ) %>%
@@ -831,10 +840,17 @@ cleaning_widget_server <- function( id ,
         select( - `FALSE`) %>%
         pivot_longer( cols = c(Clean, Raw) )
       
+      cat( "\n - outlier.summary has" , nrow( d ) , 'rows')
+      
+      # Testing
+      saveRDS( d , 'outlier.summary.rds')
+            
+      return( d )
+      
         
     })
     
-    output$outlier.summary.chart <- renderPlotly({
+    output$outlier.summary.chart <- renderPlot({
       req( outlier.dataset()) 
       
       d = outlier.summary()
@@ -843,11 +859,11 @@ cleaning_widget_server <- function( id ,
         
       g = d %>% 
           ggplot( aes( x = Month , y = value , group = name , color = name )) +
-          scale_color_brewer() + 
+          scale_color_brewer( type = 'qual') + 
           geom_line() +
           theme_minimal() 
         
-        ggplotly( g )
+      # ggplotly( g )
           
     })
     
@@ -1189,7 +1205,7 @@ cleaning_widget_server <- function( id ,
     
   })
   
-  output$inspect = renderPlotly({ plot.single.data.series() })
+  output$inspect = renderPlot({ plot.single.data.series() })
   
   output$dynamic <- renderUI({
     req(input$plot_hover) 
