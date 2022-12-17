@@ -153,7 +153,7 @@ reporting_widget_ui = function ( id ){
       
       mainPanel( 
         tabsetPanel( type = "tabs", 
-        tabPanel( "Charts",  style = "height:95vh;" ,
+        tabPanel( "Summary",  style = "height:95vh;" ,
       
                   fluidPage( 
                     
@@ -1840,6 +1840,7 @@ reporting_widget_server <- function( id ,
     champion_facilities = champion_facilities() %>% st_drop_geometry()
     
     summary = champion_facilities %>%
+      select( -parentGraph, groups ) %>%
       group_by( champion ) %>%
       summarise( n = n() , mean = mean( medianValue , na.rm = TRUE )) 
     
@@ -1895,7 +1896,7 @@ reporting_widget_server <- function( id ,
     admin.levels = admins$levelName %>% unique 
     
     # pal <- colorNumeric( palette = "YlGnBu", domain = avgValues$medianValue  )
-    
+    cat( "\n - base.map")
     base.map =
       leaflet( ) %>%
       addTiles(group = "OSM (default)") %>%
@@ -1924,13 +1925,13 @@ reporting_widget_server <- function( id ,
         
 
         
-        
+    cat( "\n - addLayersControls")   
     base.map = base.map %>%
           # Layers control
           addLayersControl(
             baseGroups = c("OSM (default)", "Toner", "Toner Lite", "Stamen.Terrain", 
-                           "Esri.WorldStreetMap" , "Esri.WorldImagery", "No Background" ),
-            overlayGroups = c( admin.levels , "Facility"),
+                           "Esri.WorldStreetMap" , "Esri.WorldImagery", "No Background" ) ,
+            overlayGroups = c( admin.levels , "Facility") ,
             options = layersControlOptions( collapsed = TRUE )
           ) 
 
@@ -1946,10 +1947,16 @@ reporting_widget_server <- function( id ,
     avgValues = avgValues()
     base.map = base.map()
     
+    cat( "\n - admin.levels")
+    admins = gf %>% filter( st_geometry_type(.) != 'POINT') %>% filter( !st_is_empty(.) )
+    admin.levels = admins$levelName %>% unique 
     
-    cat( '\n - add points')
+    
+    cat( '\n - factpal')
     
     factpal <- colorFactor( c("red4", "grey20")  , facilities$champion )
+    
+    cat( '\n - symbols')
     
     symbols <- makeSymbolsSize(
       # values = ifelse( is.na( facilities$medianValueRangeSize ), 0, facilities$medianValueRangeSize )  ,
@@ -1958,8 +1965,10 @@ reporting_widget_server <- function( id ,
       color = factpal( facilities$champion ) ,
       fillColor =  factpal( facilities$champion ) ,
       fillOpacity = .8,
-      baseSize = 2
+      baseSize = .5
     )
+    
+    cat( '\n - add markers')
     
     gf.map = base.map  %>%
         
@@ -1970,10 +1979,20 @@ reporting_widget_server <- function( id ,
       # )
       
       addMarkers(data = facilities ,
-                 icon = symbols )
+                 icon = symbols ,
+                 group = "Reporting" ) %>%
+      
+      addLayersControl(
+        baseGroups = c("OSM (default)", "Toner", "Toner Lite", "Stamen.Terrain", 
+                       "Esri.WorldStreetMap" , "Esri.WorldImagery", "No Background" ) ,
+        overlayGroups = c( admin.levels , "Reporting") ,
+        options = layersControlOptions( collapsed = TRUE )
+      ) 
   
       
     # size legend with library(  leaflegend )
+    
+    cat( '\n - add legend')
     
     gf.map = gf.map %>%
       
@@ -1987,17 +2006,19 @@ reporting_widget_server <- function( id ,
             shape = 'circle',
             # orientation = 'horizontal',
             breaks = 4 ,
-            baseSize = 2 
+            baseSize = .5
             ) %>%
       
       addLegend("bottomright",
                 values = facilities$champion ,
                 pal = factpal ,
                 title = 'Reporting Consistency' ,
-                opacity = 1
+                opacity = .5
   )
     
   #   options = popupOptions(closeButton = FALSE)
+    
+    cat( '\n - done')
     
     return( gf.map )
     
