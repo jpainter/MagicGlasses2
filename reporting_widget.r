@@ -1492,6 +1492,16 @@ reporting_widget_server <- function( id ,
                            )
     })
   
+  n_selected = reactive({
+    req( selected_data() )
+    
+    selected_data() %>% as_tibble %>% ungroup %>%
+      distinct( Selected , orgUnit ) %>%
+      group_by( Selected ) %>%
+      summarise( n = n())
+    
+  })
+  
   plotAgregateValue = reactive({
     
     req( aggregateselected_data() )
@@ -1501,7 +1511,7 @@ reporting_widget_server <- function( id ,
     .d = aggregateselected_data()
     
     # testing
-    saveRDS(.d, 'plot3_data.rds')
+    # saveRDS(.d, 'plot3_data.rds')
     
     data.text = paste( unique( selected_data()$data ) ,
                        collapse = " + " ) 
@@ -1534,6 +1544,7 @@ reporting_widget_server <- function( id ,
       scale_color_discrete( breaks = dataSet_breaks ,
                             labels =  datSet_labels ,
                             drop = TRUE ) +
+        
       guides(color=guide_legend(title="dataSet"))
       
     } else {
@@ -1543,13 +1554,22 @@ reporting_widget_server <- function( id ,
     # Split data
     if ( !input$split %in% 'None' ){
       g = g + 
+        
         guides(color=guide_legend(title= input$split )) 
     }
   
+    facet_labeller = function( x ){
+      
+      y = n_selected() %>% filter( Selected %in% x ) %>% pull( n )
+      
+      paste0( x , " ( n= ", comma( y ) , " )")
+      
+    } 
     
     # facet when selected > 0
     if ( length( selectedOUs() ) > 0 ) g =
     g + facet_wrap( vars( Selected ) ,
+                    labeller = as_labeller( facet_labeller ) ,
                     # scales = 'free' , 
                     ncol = 3 ) 
     
@@ -1567,7 +1587,9 @@ reporting_widget_server <- function( id ,
             , caption =  str_wrap( caption.text() , 200 )
             ) +
       theme_minimal( )  + 
-      theme( legend.position = "bottom" ) +
+      theme( legend.position = "bottom",  
+             strip.text = element_text(size = 20)  # facet label text size
+             ) +
       guides( color = guide_legend( ncol=1 ,
                                     title="Dataset" ) )
       
@@ -1830,7 +1852,8 @@ reporting_widget_server <- function( id ,
   output$facility_map <- renderLeaflet({ facility_map()  })
   
   output$facility_table <- DT::renderDataTable({ 
-    champion_facilities() %>% st_drop_geometry()
+    champion_facilities() %>% st_drop_geometry() %>% 
+      select( -parentGraph , - groups )
     })
   
 

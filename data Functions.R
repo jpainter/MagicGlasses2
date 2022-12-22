@@ -127,8 +127,8 @@ mostFrequentReportingOUs <- function(
     if ( period %in% 'Month' ){
          data = data %>% as_tibble %>%
          filter( 
-           Month >=  yearmonth( startingMonth  )  ,
-           Month <=  yearmonth( endingMonth )  
+           Month >=  yearmonth( startingMonth , format = "%Y%m" )  ,
+           Month <=  yearmonth( endingMonth , format = "%Y%m" )  
                  )
        } 
       
@@ -136,7 +136,7 @@ mostFrequentReportingOUs <- function(
          if ( .cat ) cat( '\n - selectedOUS by Week')
          data = data %>% as_tibble %>%
          filter( 
-           Week >=  yearweek( startingMonth )  ,
+           Week >=  yearweek( startingMonth  )  ,
            Week <=  yearweek( endingMonth )  
                  )
        } 
@@ -756,7 +756,7 @@ htsData = function( data = NULL ,
       
     if ( .cat ) cat('\n - end htsData(): '  ) 
   
-    if ( timing ) cat( toc() )
+    if ( timing ) cat( toc()$callback_msg )
 
     return( data.hts )
   }
