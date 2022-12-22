@@ -43,6 +43,7 @@ if ( length( needed ) > 0 ){
 ```
 
 ```{r libraries }
+options("menu.graphics" = FALSE)
 
 library(conflicted) # For diagnosing function name conflicts
 library(tidyverse)
@@ -51,23 +52,23 @@ library(data.table) # for clean install, run from clean session:
     # install.packages("data.table", type = "source",
     # repos = "https://Rdatatable.gitlab.io/data.table")
 library( flexdashboard )
-library(shiny)
-library(shinyjs)
-library(shinydashboard)
-library(shinyBS)
-library(shinyLP)
+library( shiny)
+library( shinyjs)
+library( shinydashboard)
+library( shinyBS)
+library( shinyLP)
 library( shinyFiles )
 library( rstudioapi )
-library(leaflet)
+library(  leaflet)
 library( progressr )
-library(RColorBrewer)
-library(plotly)
+library( RColorBrewer)
+library( plotly)
 library( cowplot )
 library( ggrepel )
 library( ragg )
-library(scales)
+library( scales)
 library( lemon ) # for reposition_legend() 
-# library( summarytools ) # invokes Xquartz on mac.  
+library( summarytools ) # invokes Xquartz on mac.
 # library( describer )
 
 # library( tidyfast )
@@ -75,16 +76,16 @@ library( lemon ) # for reposition_legend()
 # library(googleVis)
 
 library( zoo )
-library(knitr)
-library(rlang)
-library(stringi)
-library(tidyselect)
-library(geojsonsf)
-library(geojsonio)
-library(jsonlite)
-library(httr)
-library(curl)
-library(assertthat)
+library( knitr)
+library( rlang)
+library( stringi)
+library( tidyselect)
+library( geojsonsf)
+library( geojsonio)
+library( jsonlite)
+library( httr)
+library( curl)
+library( assertthat)
 
 library(futile.logger)
 # library(utils)

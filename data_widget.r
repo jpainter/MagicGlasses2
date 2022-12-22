@@ -1,9 +1,8 @@
 data_widget_ui = function ( id ) 
 {
-        ns <- NS(id)  
-        fillCol( height = 600, flex = c(NA ) , 
+        ns <- NS(id)
         
-tagList( 
+  tagList( 
 
       shinybusy::add_busy_spinner(
             spin = "fading-circle" , # "self-building-square",
@@ -13,7 +12,10 @@ tagList(
   
         # h5('The files here are in the directory specified in the setup section') ,
         
-        textOutput( ns("directory") ) ,
+      # fillCol( height = 600, flex = c(NA ) ,
+      # textOutput( ns("directory") ) ,
+      
+      # inputPanel(
         
         selectInput( ns("formula.file") , 
                      label = "Formula Files:" ,
@@ -56,7 +58,7 @@ tagList(
       actionButton( ns("refresh"), "Refresh")
 
 )       
-        ) # end fillColl
+        # ) # end fillColl
           
           } # ui
         

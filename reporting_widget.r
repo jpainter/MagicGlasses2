@@ -289,7 +289,6 @@ reporting_widget_server <- function( id ,
     dataset.file = reactive({ data_widget_output$dataset.file() })
     dataset = reactive({ data_widget_output$dataset() })
     data1 = reactive({ data_widget_output$data1() })
-    dt1 = reactive({ data_widget_output$dt1() })
     formula_elements = reactive({ data_widget_output$formula_elements() })
     orgUnits = reactive({ metadata_widget_output$orgUnits() })  
     orgUnitLevels = reactive({ metadata_widget_output$orgUnitLevels() })
@@ -366,9 +365,6 @@ reporting_widget_server <- function( id ,
       cat('-done\n')
       } )
 
-    observeEvent( dt1() , {
-      cat( "\n* observeEvent dt1. class:" , class( dt1() ))
-    })
 
   # Update data
   observe({
@@ -400,16 +396,16 @@ reporting_widget_server <- function( id ,
                          choices =  dataSets() ,
                          selected = NULL
       )
-      cat( '\n- done' )
+      cat( '\n - done' )
   }
 } )
 
 #   observEvent({
-#     cat( '\n- updating data_choices' )
+#     cat( '\n - updating data_choices' )
 #     updateSelectInput( session, 'data_categories' ,
 #                        choices =   unique( data1()$data ) ,
 #                        selected = 1 )
-#     cat( '\n- done' )
+#     cat( '\n - done' )
 # } )
 
   observeEvent( 'data' %in% names( data1() ) , {
@@ -424,7 +420,7 @@ reporting_widget_server <- function( id ,
       updateSelectInput( session, 'data_categories' , 
                          choices =   unique( data1()$data ) ) 
     }
-    cat( '\n- done' )
+    cat( '\n - done' )
   } )
   
   # update split
@@ -434,7 +430,7 @@ reporting_widget_server <- function( id ,
   dataSets = reactive({
     req( data1() )
     cat('\n* reporting_widget dataSets:')
-    cat('\n - data1 class:' , class( data1()) ) 
+    # cat('\n - data1 class:' , class( data1()) ) 
     
     if ( is_empty( data1() ) ){
       cat('\n - data1() is empty')
@@ -457,20 +453,19 @@ reporting_widget_server <- function( id ,
     
     cat('\n - there are' , length( x ) , 'dataSets')
     cat('\n - \n, ' , x )
+    
     return( x )
 })
 
   # Months and periods
   period = reactive({
       req( data1() )
+    
       cat('\n* reporting_widget period():')
-      cat('\n - data1 class:' , class( data1()) ) 
-      
-      weekly = any( map_lgl( data1() ,
-                             ~any(class(.x) %in% 'yearweek'  )) )
-
-      period = ifelse( weekly, "Week", "Month" )
-      #print('end period()'); #print( period )
+    
+      period = dataPeriod( data1() )
+ 
+      cat('\n - period: ' , period ) 
       return( period  )
     })
   
@@ -478,14 +473,14 @@ reporting_widget_server <- function( id ,
       req( data1() )
       req( period() )
       cat( '\n* reporting_widget Looking for most recent' , period() )
-      cat('\n - data1 class:' , class( data1()) ) 
+      # cat('\n - data1 class:' , class( data1()) ) 
       
       # data.table?
       mrp = max( data1() %>%
                    pull( !! rlang::sym( period() ) ), na.rm = TRUE )
       # mrp = max( data1()[ , 'Month'] , na.rm = TRUE )
       # mrp = max( data1()$Month , na.rm = TRUE )
-      cat( '\nmost recent ', period(),  'is', mrp )
+      cat( '\n - most recent', period(),  'is', mrp )
 
       if ( input$exclude_recent_month ){
         cat('\n - exclude most recent period')
@@ -493,10 +488,11 @@ reporting_widget_server <- function( id ,
         if ( period() == "Week" ) mrp = mrp - 1
       }
 
-      cat( '\n- mrp:' , mrp )
+      cat( '\n - mrp:' , mrp )
       return( mrp )
     })
   
+  # d Filter data1 to selected level ####
   d = reactive({
 
       req( data1() )
@@ -505,7 +501,7 @@ reporting_widget_server <- function( id ,
     
       # Testing 
       # saveRDS( data1() , 'dataset.rds' )
-      cat( "\n - reporting_widget data1() class/cols:" , class( data1() ) )
+      # cat( "\n - reporting_widget data1() class/cols:" , class( data1() ) )
       
       if ( nrow( data1() ) == 0 ){
         cat('\n - data1() has zero rows')
@@ -523,8 +519,8 @@ reporting_widget_server <- function( id ,
       data = data[ , period := base::get( .period )  , ]
       # data = data1()  %>% mutate( period = !!rlang::sym( .period ))
       
-      cat( "\n - reporting_widget data class/cols:" ,class( data ) )
-      cat( "\n - reporting_widget data1() class/cols:" , class( data1() ) )
+      # cat( "\n - reporting_widget data class/cols:" ,class( data ) )
+      # cat( "\n - reporting_widget data1() class/cols:" , class( data1() ) )
            
       if ( !is_empty( input$level2 ) ){
         cat(  '\n - filtering data by' , levelNames()[2] , "=" , input$level2 ) 
@@ -532,11 +528,11 @@ reporting_widget_server <- function( id ,
         # data = data %>% 
         #   filter( !! rlang::sym( levelNames()[2])  %in%   input$level2  )
         
-        cat(  '\n - data was' , class(data) ) 
+        # cat(  '\n - data was' , class(data) ) 
         
         data = setDT( data )[ base::get( levelNames()[2] )  %in%   input$level2 ,, ]
         
-        cat(  '\n - and now is' , class(data) ) 
+        # cat(  '\n - and now is' , class(data) ) 
         
         #print( paste( 'data filtered by level2 has' , nrow( data ), 'rows' ))
         # glimpse( data )
@@ -642,7 +638,7 @@ reporting_widget_server <- function( id ,
         
       }
       
-      cat( '\n-' , paste('cleaning changes total by', sum( data$original , na.rm = T ) - sum( data$dataCol , na.rm = T )) )
+      cat( '\n -' , paste('cleaning changes total by', sum( data$original , na.rm = T ) - sum( data$dataCol , na.rm = T )) )
     }  
     
     # #print( 'd: max period ' ); #print( max( d$period ))
@@ -652,7 +648,7 @@ reporting_widget_server <- function( id ,
     
     
     cat( '\n - end d():', nrow(data) , 'rows' )
-    cat( "\n - reporting_widget d() class/cols: \n -- " , class( data ) , "\n -- " , names( data ))
+    # cat( "\n - reporting_widget d() class/cols: \n -- " , class( data ) , "\n -- " , names( data ))
     
     # testing
     # saveRDS( data, 'reporting_widget_d.rds')
@@ -691,7 +687,7 @@ reporting_widget_server <- function( id ,
       #Testing
       # saveRDS( .period, '.period.rds')
     
-      # cat('\n-orgunit.reports--o.r.')
+      # cat('\n -orgunit.reports--o.r.')
       # o.r. =
       #   data %>% as_tibble() %>% ungroup %>%
       # 
@@ -703,7 +699,7 @@ reporting_widget_server <- function( id ,
                                                         calendar_year := year( base::get( .period ) ) , ] %>%
       rename( year =  {{ year_var }} ) 
       
-      cat('\n-orgunit.reports--o.r.(DT)')
+      cat('\n - orgunit.reports--o.r.(DT)')
       
       # Testing:
       # saveRDS( o.r. , "o.r..rds")
@@ -897,7 +893,7 @@ reporting_widget_server <- function( id ,
       req( levelNames() )
       req( data1() )
       cat('\n* reporting_widget level5:')
-      cat('\n - data1 class:' , class( data1()) ) 
+      # cat('\n - data1 class:' , class( data1()) ) 
       
       if( is_empty( data1() ) ) return( NA )
       if( is.na( levelNames()[5] ) ) return( NA ) 
@@ -930,10 +926,10 @@ reporting_widget_server <- function( id ,
   levelNames = reactive({ 
     req( orgUnits() )
     cat( '\n* reporting_widget levelNames():' )
-    l = count( orgUnits() %>% as_tibble, level, levelName ) %>% 
-      arrange( level ) %>% pull(levelName ) 
-    l = l[ !is.na(l) ]
-    cat( '\n- end levelNames():' )
+    
+    l = getLevelNames( orgUnits() )
+    
+    cat( '\n - ' , l )
     return(l)
 })
 
@@ -943,11 +939,11 @@ reporting_widget_server <- function( id ,
     levels = 
       count( orgUnits() %>% as_tibble, level, levelName ) %>% 
       arrange( level ) 
-    cat( '\n- end levels():' )
+    cat( '\n - end levels():' )
     return( levels )
 })
 
-  # selectedOus 
+  # selectedOus ####
 
   selected <- reactiveValues( x  = NULL, panel = NULL , chart = NULL )
   
@@ -981,115 +977,52 @@ reporting_widget_server <- function( id ,
   
   selectedOUs <- reactive({
     #print( 'selectedOUS()' )
-
     req( input$endingMonth )
     req( input$startingMonth  )
+    req( d() )
+    req( period() )
+    
+    cat( "\n* reporting_widget: selectedOUs" )
+    
+    # Testing
+    # d = d() 
+    # endingMonth = input$endingMonth 
+    # startingMonth = input$startingMonth 
+    # .period = period() 
+    # missing_reports = as.integer( input$missing_reports ) 
+    # count.any = input$count.any
+    # all_categories = input$all_categories 
+    # data_categories = input$data_categories 
+    # .cat = FALSE
+    # save( d , endingMonth, startingMonth, .period, missing_reports, count.any,
+    #       all_categories, data_categories, .cat, file = 'selectedOUs_data.rda')
     
     if ( input$mostReports ){
-       cat( "\ndetermining most frequently reported facilities..." ,
+       cat( "\n - determining most frequently reported facilities..." ,
             input$startingMonth  ,  input$endingMonth )
       
-      data = d()
-      
-      if ( !input$count.any & !input$all_categories  ){
-          cat( '\ninput$all_categories:' , input$all_categories  )
-          data = data %>% filter( data %in% input$data_categories )
-       }
-  
-       if ( period() %in% 'Month' ){
-         data = data %>% as_tibble %>%
-         filter( 
-           period >=  yearmonth( input$startingMonth )  ,
-           period <=  yearmonth( input$endingMonth )  
-                 )
-       } 
-      
-       if ( period() %in% 'Week' ){
-         cat( '\n - selectedOUS by Week')
-         data = data %>% as_tibble %>%
-         filter( 
-           period >=  yearweek( input$startingMonth )  ,
-           period <=  yearweek( input$endingMonth )  
-                 )
-       } 
-      
-       # mr = data %>% 
-       #   filter( !is.na( original  ) ) %>%
-       #   distinct( !! rlang::sym( period() ) , orgUnit ) %>%
-       #   group_by( orgUnit ) %>%
-       #   summarise( n = n() ) %>%
-       #   arrange( desc( n ))
-       # 
-       # #print( "mr" ); #print( summary( mr$n ) )
-       # 
-       # s = mr %>%
-       #   filter( n == max( mr$n ) ) %>%
-       #   pull( orgUnit ) %>% unique
-      
-      mr = data %>% 
-        filter( !is.na( original  ) ,   ) %>%
-        group_by( year = year( Month ) ) %>%
-        distinct( !! rlang::sym( period() ) , orgUnit ) %>%
-        group_by( year , orgUnit ) %>%
-        summarise( months = n() ) 
-      
-      periods_per_year = data %>% distinct( Month ) %>% 
-        mutate( year = year( Month )) %>%
-        count( year ) %>%
-        rename( max = n )
-      
-      missing_reports = as.integer( input$missing_reports )
-      max_years =  n_distinct( mr$year , na.rm = FALSE ) 
-      
-      s = mr %>%
-        inner_join( periods_per_year , by = "year" ) %>%
-        ungroup %>% 
-        group_by( orgUnit ) %>% 
-        summarise(  
-          years = n() , 
-          consistent = all( months >= ( max - missing_reports ) ) ,
-          champion =  ( years == max_years ) & consistent 
-        ) %>%
-        filter( champion ) %>%
-        pull( orgUnit ) 
-      
-       
-       cat( "\n*** mostReports selectedOUs:", length(s), 'orgUnits' ); toc() 
-       return( s )
+      sf = mostFrequentReportingOUs( d = d() ,
+                       endingMonth = input$endingMonth ,
+                       startingMonth = input$startingMonth ,
+                       period = period() ,
+                       missing_reports = as.integer( input$missing_reports ) ,
+                       count.any = input$count.any ,
+                       all_categories = input$all_categories ,
+                       data_categories = input$data_categories ,
+                       .cat = FALSE )
+
+      cat( "\n - mostFrequentReportingOUs:", length(sf), 'orgUnits' ); toc()
+      # return( sf )
+    } else {
+         sf = NULL
        }
     
-    if( is.null( selected$x ) ) return( NULL )
-    
-    if ( selected$chart == 1 ){
-        cat('\n*** chart1 selected$x:' , selected$x )
-        select_month =  as.numeric( orgunit.reports()$n_periods ) %in% selected$x
-        cat('\nchart1 select_month:' , sum(select_month) ) 
-        cat('\nchart1 orgunit.reports()$year:' , orgunit.reports()$year ) 
-        cat('\nchart1 selected$panel:' , selected$panel ) 
-        selectedRows = select_month &
-           orgunit.reports()$year %in% selected$panel 
-        s = orgunit.reports()[ selectedRows, ]$orgUnit %>% unique
-        
-  
-      } else {
-        cat('\n*** chart2 selected$x:' , selected$x )
-        select_month = month( orgunit.monthly.reports() %>%
-                                pull( !! rlang::sym( period() ) ) ) %in% selected$x
-        selectedRows = select_month &
-          year( orgunit.monthly.reports() %>%
-                  pull( !! rlang::sym( period() ) ) ) %in% selected$panel
-        s = orgunit.monthly.reports()[ selectedRows, ]$orgUnit %>% 
-          unique
-        
-        
-      }
-  
-        cat( "\n*** end selectedOUs:", length(s), 'orgUnits' ); toc()  # #print( selectedOUs )
+        cat( "\n - end selectedOUs:" )
         
         # Testing
         # saveRDS( s, 'selectedOUs.rds')
         
-        return( s )
+        return( sf )
       })
     
   x.annual = reactive({
@@ -1147,7 +1080,7 @@ reporting_widget_server <- function( id ,
     cat('\n - period():', .period )
     
     # save data for testing ggplot options
-    # cat('\n- saving plot2_data.rds')
+    # cat('\n - saving plot2_data.rds')
     # saveRDS( monthly.reports(), 'monthly.reports.rds' )
     
     if ( length( monthly.reports()$year) > 0  ) {
@@ -1158,7 +1091,7 @@ reporting_widget_server <- function( id ,
               .breaks = seq(2, 53, 4)
     }
   
-    cat('\n- plot2: ggplot( monthly.reports() ... ')
+    cat('\n - plot2: ggplot( monthly.reports() ... ')
     g = ggplot( monthly.reports() %>% mutate( facilities = 'All' ), 
                 aes( x =  !! rlang::sym( .period ) 
                      , y = n  
@@ -1181,7 +1114,7 @@ reporting_widget_server <- function( id ,
                                       'Selected'= 'brown' ) ) 
   
     if (!is.null( selectedOUs() ) ){
-      cat('\n- g + selected facilities ')
+      cat('\n - g + selected facilities ')
       g = g + 
         # geom_col(  data = x.months() %>% mutate( facilities = 'Selected' )  ) 
         geom_point( data = x.months() %>% mutate( facilities = 'Selected' ) ) +
@@ -1263,7 +1196,13 @@ reporting_widget_server <- function( id ,
             .breaks = seq(2, 53, 4)
   }
     
-  cat('\n- plot1: ggplot( annual.reports() ... ')
+  cat('\n - plot1: ggplot( annual.reports() ... ')
+  
+  # Testing
+  # saveRDS( annual.reports(), "annual.reports.rds" )
+  # saveRDS( selectedOUs() , "selectedOUs.rds" )
+  # saveRDS( facilities() , "facilities.rds" )
+  # saveRDS( x.annual() , "x.annual.rds" )
   
   g = ggplot( annual.reports() , 
               aes( x = n_periods , y = n ) ) +
@@ -1277,7 +1216,7 @@ reporting_widget_server <- function( id ,
     facet_wrap( ~ year , scales = 'free_x')
   
   if (!is.null( selectedOUs() ) ){
-    g = g + geom_col( data = x.annual() , fill = 'brown' ) 
+    g = g + geom_col( data = x.annual() , fill = 'brown', width = .9 ) 
   }
 
   #print( 'end plot1' )
@@ -1287,264 +1226,107 @@ reporting_widget_server <- function( id ,
 
   output$plot_reports_in_a_year <- renderPlot({  plot1()  } , height = "auto" )
   
-  # Plot values ####
+  # selected_data. select ous and data element categories ####
 
-  plotData = reactive({
-   #print( 'plotData():')
-   req( d() )
+  selected_data = reactive({
+   #print( 'selected_data():')
+   req( data1() )
    req( input$data_categories )
-   cat("\n* reporting_widget plotData():")
+   
   
-    data = setDT( d() )[ , Selected := 'All', ]
-    # data = d() %>% mutate( Selected = 'All' ) 
+   cat("\n* reporting_widget selected_data(): " , input$level2 )
     
-    
-    # filter to selected category
-    cat( '\n - plotData filtered by' , input$data_categories )
-
-    if ( !input$all_categories )  
-      
-      # data = data %>% filter( data %in% input$data_categories )
-      
-      data = setDT( data )[ data %in% input$data_categories ,, ]
-    
-    # Add var for selected ous
-    cat( '\n - plotData length( selectedOUs()): ' , length( selectedOUs())  )
-    
-   if ( length( selectedOUs()) > 0 ){
-     
-     data = setDT( data )[ , Selected := fifelse( orgUnit %in% selectedOUs() , 
-                                                      'Reporting Each Period',
-                                                      'Inconsistent Reporting') ]
-     # data  = data %>%
-     #   mutate( Selected = ifelse( 
-     #     orgUnit %in% selectedOUs() , 
-     #     'Reporting Each Period', 
-     #     'Inconsistent Reporting' )
-     #   )
-   } 
-    
-    cat( "\n - plotData cols:" ,  names( data ) ) 
-    cat( '\n- end  plotData()')  
-    # TESTING
-    # saveRDS( data , "plotData.rds" )
-    
-  return( data )
+   selected_data =  selectedData( 
+      data = data1() ,
+      levelNames = levelNames() ,
+      data_categories = input$data_categories ,
+      all_categories = input$all_categories ,
+      alwaysReporting = TRUE ,
+      selectedOUs = selectedOUs() , 
+      level2 = input$level2 ,
+      level3 = input$level3 ,
+      level4 = input$level4 , 
+      level5 = input$level5 ,
+      .cat = TRUE )
+  
+   #  data = setDT( d() )[ , Selected := 'All', ]
+   #  # data = d() %>% mutate( Selected = 'All' ) 
+   #  
+   #  
+   #  # filter to selected category
+   #  cat( '\n - selected_data filtered by' # , input$data_categories 
+   #       )
+   # 
+   #  if ( !input$all_categories )  
+   #    
+   #    # data = data %>% filter( data %in% input$data_categories )
+   #    
+   #    data = setDT( data )[ data %in% input$data_categories ,, ]
+   #  
+   #  # Add var for selected ous
+   #  cat( '\n - selected_data length( selectedOUs()): ' , length( selectedOUs())  )
+   #  
+   # if ( length( selectedOUs()) > 0 ){
+   #   
+   #   data = setDT( data )[ , Selected := fifelse( orgUnit %in% selectedOUs() , 
+   #                                                    'Reporting Each Period',
+   #                                                    'Inconsistent Reporting') ]
+   #   # data  = data %>%
+   #   #   mutate( Selected = ifelse( 
+   #   #     orgUnit %in% selectedOUs() , 
+   #   #     'Reporting Each Period', 
+   #   #     'Inconsistent Reporting' )
+   #   #   )
+   # } 
+   #  
+   #  cat( '\n - end  selected_data()')  
+   #  # TESTING
+   #  # saveRDS( data , "selected_data.rds" )
+  
+   cat("\n - end selected_data()")
+   
+  return( selected_data )
 })
 
   group_by_cols = reactive({
-    # req( input$split )
+    req( period() )
+    req( levelNames() )
+    
     cat("\n* reporting_widget group_by_cols():")
     
-    .period = period()
-    group_by_cols =  c(.period , 'orgUnit', 'Selected',
-                        'dataSet' , 'data' ) 
+    group_by_cols = groupByCols( 
+                        period = period() , 
+                        levelNames = levelNames() ,
+                        split = input$split )
     
-    group_by_cols = c( group_by_cols, levelNames() )
-  
-    cat("\n- group_by_cols():", group_by_cols )
+    cat("\n - ", group_by_cols )
     
-    if ( input$split != 'None' ) group_by_cols = c( group_by_cols , input$split )
-    
-    # if ( length( selectedOUs() > 0 ) ) 
-      # group_by_cols = c( group_by_cols , 'Facilities' )
-    
-    # # If not merge when total, show separate datsets
-    # if ( !input$merge & input$all_categories ) group_by_cols = c( group_by_cols , 'dataSet' )
-    #   
-    cat( "\n- end group_by_cols()" , unique( group_by_cols )  )
-    return( unique( group_by_cols ) )
+    return( group_by_cols )
 
 })
 
+  # data.total: merges data across multiple set ####
   data.total = reactive({
-    req( plotData() )
+    req( selected_data() )
     # req( group_by_cols() )
     req( period() )
     req( input$startDisplayMonth )
     req( input$endDisplayMonth )
     
     cat( '\n* reporting_widget data.total()' )
-  
+      
+    data.total = dataTotal(
+        data = selected_data()   , 
+        period = period() ,
+        group_by_cols = group_by_cols() ,
+        startMonth = input$startDisplayMonth ,
+        endMonth = input$endDisplayMonth ,
+        merge = input$merge ,
+        mean.merge = input$dataset_merge_average ,
+        .cat = FALSE )
     
-       .period = period()
-       cat( '\n - .period:' , .period )
-       # if ( input$merge & input$all_categories ){
-      
-      .group_by_cols =  group_by_cols()  
-      cat( '\n - data.total .group_by_cols:'  )
-      
-      # Testing
-      # saveRDS( .group_by_cols , 'group_by_cols.rds' )
-      # saveRDS( plotData() , 'plotData.rds' )
-  
-      # Total categories by facilities and datasets
-      data = plotData() 
-      cat( "\n - starting with plotData().  class/cols:\n -- " , class( plotData() ) , "\n -- " , names( plotData() ) )
-      
-      # Testing
-      # saveRDS( data , 'plotData.rds' )
-      
-      # Merge  datasets 
-      # Set all dataSets to Combined and re-summaries taking mean
-      
-      mergeDatasets = input$merge %>% str_replace_all( fixed("\n"), "") 
-      
-      cat( '\n -  mergeDatasets:' , mergeDatasets  )
-      
-      # Testing
-      # saveRDS( input$merge , 'merge.rds' )
-      
-      # cat( "\n - testing if nchar( mergeDatasets ) > 0", 
-      #      any(!is.na( mergeDatasets )) & any(nchar( mergeDatasets ) > 0 ) 
-      #      )
-      
-      if ( any(!is.na( mergeDatasets )) & any(nchar( mergeDatasets ) > 0 )  ){
-        
-        cat( "\n - combineSelectDatasets ")
-        tic()
-        
-        # cat( "\n - datasets are:" , unique( data$dataSet ) )
-        # cat( "\n - mergeDatasets are:" , mergeDatasets )
-        
-        data = 
-                # setDT( data )[ , dataSet := dataSet %>% str_replace_all( fixed("\r\n"), "")  ] %>%
-                # # mutate( dataSet = dataSet %>% str_replace_all( fixed("\r\n"), "") ) %>%
-                # 
-                # .[ ,  dataSet := dataSet %>% str_replace_all( fixed("\n"), "")   ] %>%
-                # # mutate( dataSet = dataSet %>% str_replace_all( fixed("\n"), "") ) %>%
-          
-                setDT( data )[ any(  mergeDatasets %in% dataSet ) ,  dataSet :=  'Combined'  ] %>%
-          
-                as_tibble
-                # mutate(
-                #     dataSet = ifelse( any( dataSet %in% mergeDatasets ) ,
-                #                       'Combined' ,
-                #                       dataSet) ,
-                #     # dataSet = 'Combined' ,
-                #     data = 'Total'
-                # )
-        
-        # Testing
-        # saveRDS( data, "data.rds")
-        
-        toc()
-        # data = setDT( data )[ , dataSet := dataSet %>% str_replace_all( fixed("\r\n"), "") , ]
-        # 
-        # data = setDT( data )[ , .(dataSet = fifelse( 
-        #                             any( str_replace_all( dataSet, fixed("\n"), "") %in% mergeDatasets ) , 
-        #                             'Combined' , 
-        #                             dataSet ) ,
-        #                           data = 'Total' ) , ]
-
-        
-      # if include, summarise precipitation
-      tic()
-      cat('\n -  summarising data by:' , .group_by_cols )
-      
-      if ( any( grepl( "avg_mm" , names( data ) ) ) ){
-          
-          cat( '\n - with avg_mm' )
-          data = setDT( data ) %>%
-                .[ , .( dataCol = sum( dataCol , na.rm = TRUE  ) ,
-                        avg_mm = mean( avg_mm , na.rm = TRUE  ) ) , 
-                   by =  .group_by_cols ] 
-          
-        } else {
-          
-          data = setDT( data ) %>%
-                .[ , .( dataCol = sum( dataCol , na.rm = TRUE  )) , by =  .group_by_cols ] 
-        }
-        
-      toc()
-      
-      }
-      
-      # Testing
-      # saveRDS( combineSelectDatasets , 'combineSelectDatasets.rds' )
-      
-      # data.table sum/mean 
-      mean.merge = input$dataset_merge_average 
-        
-      if ( mean.merge ) {
-            cat( '\n -  merge data.table MEAN') 
-            
-          data = data %>%
-                mutate( dataSet = 'Merged') %>%
-                setDT() %>%
-                # Mean of dataSets within orgUnit
-                .[  , .(dataCol = mean( dataCol , na.rm = TRUE  )) , by =  .group_by_cols ] 
-  
-            cat( '\n - Merge done' );  # glimpse( dataMerge )
-        
-      } 
-      
-      # Testing
-      # saveRDS( dataMerge, 'dataMerge.rds' )
-      # #print( dataMerge %>% duplicates %>% glimpse )
-  
-      key.cols = setdiff( group_by_cols() , .period ) 
-      cat('\n - key.cols:' ,  key.cols )
-      
-      if ( .period %in% 'Month' ){
-        cat( '\n -  .period %in% Month' )
-      
-      # data.total = data.total %>% 
-      #   filter( 
-      #     Month >=  yearmonth( input$startDisplayMonth )  ,
-      #     Month <=  yearmonth( input$endDisplayMonth )  
-      #   )
-      
-      data.total = setDT( data )[  which( Month >=  yearmonth( input$startDisplayMonth ) &
-                                        Month <=  yearmonth( input$endDisplayMonth ) ) , ] 
-      
-    } 
-    
-    if ( .period %in% 'Week' ){
-      cat( '\n -  .period %in% weeks' )
-      
-      # data.total = data.total %>% 
-      #   filter( 
-      #     Week >=  yearweek( input$startDisplayMonth )  ,
-      #     Week <=  yearweek( input$endDisplayMonth )  
-      #   )
-      
-      data.total = setDT( data )[ which( Week >=  yearweek( input$startDisplayMonth ) &
-                                        Week <=  yearweek( input$endDisplayMonth ) ) , ] 
-    } 
-    
-    
-    cat( "\n - data.total cols:" , names( data.total ) )
-    
-    ## NB does data.total need to be a Tsibble?--it is slow.  
-    
-    data.total = data.total[ , total := replace_na( dataCol , 0)  ,] %>%
-      
-        # dataMerge %>% 
-        # # fill_gaps( .full = TRUE  ) %>%
-        
-      # mutate( 
-        #         total = replace_na( dataCol , 0) 
-        #         )  %>% # for plotting, replace missing with zero 
-        
-        as_tibble()
-    
-        # as_tsibble( index = !! rlang::sym( .period )  , 
-        #             key =  all_of(  {{ key.cols }} ) ) 
-
-    cat( '\n - data.total class' , class( data.total ) ) 
-    cat( '\n - data.total cols' , names( data.total ) ) 
-    
-    # Filter display dates
-    # cat( '/n - data.total cols:', names( data.total ) )
-    
-
-    # testing:
-    # saveRDS( data.total, 'data.total.rds')
-    
-    cat('\n- end data.total()')
+    cat('\n - end data.total()')
     return( data.total )
-      
   
   })
   
@@ -1569,6 +1351,9 @@ reporting_widget_server <- function( id ,
   backtick <- function(x) paste0("`", x, "`")
   
   aggregateDataKey = reactive({
+    req( num_facilities() )
+    req( num_datasets() )
+    
     cat('\n* reporting_widget aggregateDataKey():' )
     
     adms = backtick( levelNames() )
@@ -1594,16 +1379,21 @@ reporting_widget_server <- function( id ,
 
   })
   
-  aggregatePlotData = reactive({
+  aggregateselected_data = reactive({
     # req( data.hts() )
     req( data.total() )
-    cat('\n* reporting_widget aggregatePlotData():' )
+    cat('\n* reporting_widget aggregateselected_data():' )
     
     # testing
     # saveRDS( data.hts() , 'data.hts.rds' )
     # saveRDS( levelNames() , 'levelNames.rds')
+    # saveRDS( data.total() , 'data.total.rds')
     
     .d = data.total()
+    cat('\n - data.total():' )
+    
+    # testing
+    # saveRDS( .d , 'agg.d.rds' )
     
     if ( !is_tsibble( .d ) ){
       cat('\n - preparing data.total as tsibble')
@@ -1618,6 +1408,11 @@ reporting_widget_server <- function( id ,
     }  
     
     cat('\n - preparing aggregate_key')
+    
+    # testing
+    # saveRDS( .d , 'agg.d1.rds' )
+    # saveRDS( key.cols , 'key.cols.rds' )
+    
     .d = .d %>%
       aggregate_key(  .spec = !!rlang::parse_expr( aggregateDataKey() ) ,
                       total = sum( total , na.rm = T )
@@ -1652,7 +1447,10 @@ reporting_widget_server <- function( id ,
          
          #print( unique(.d$Selected))
        }  
-          
+      
+    # testing
+    saveRDS( .d , 'agg.d2.rds' )
+    
       # if split, remove aggregate grouping
        if ( !input$split %in% 'None' ){
          #print( '!input split none') ; #print( input$split )
@@ -1667,6 +1465,9 @@ reporting_widget_server <- function( id ,
          
        } 
     
+    # testing
+    saveRDS( .d , 'agg.d3.rds' )
+    
     # ensure output is tbl_ts
     if ( ! 'tbl_ts' %in% class( .d )  ){
       cat( '\n - convert .d to tsibble ')
@@ -1674,7 +1475,7 @@ reporting_widget_server <- function( id ,
     }
     
        
-       cat('\n -  end aggregatePlotData()' )
+       cat('\n -  end aggregateselected_data()' )
        return( .d )
    
   })
@@ -1693,22 +1494,22 @@ reporting_widget_server <- function( id ,
   
   plotAgregateValue = reactive({
     
-    req( aggregatePlotData() )
+    req( aggregateselected_data() )
     req( input$split )
     cat('\n* reporting_widget plotAgregateValue():' )
   
-    .d = aggregatePlotData()
+    .d = aggregateselected_data()
     
     # testing
-    # saveRDS(.d, 'plot3_data.rds')
+    saveRDS(.d, 'plot3_data.rds')
     
-    data.text = paste( unique( plotData()$data ),
+    data.text = paste( unique( selected_data()$data ) ,
                        collapse = " + " ) 
     
     # #print( 'data.text'); #print( data.text )
     
     .limits = c(0, NA)
-    
+    .period = period()
        
     #print('plotting aggregate data');
     
@@ -1716,7 +1517,7 @@ reporting_widget_server <- function( id ,
     g = .d %>% 
       fill_gaps( .full = TRUE  ) %>%
       # autoplot( vars( total , grouping_var ) )
-      ggplot( aes(x = !! rlang::sym( period() ) , y = total
+      ggplot( aes(x = !! rlang::sym( .period ) , y = total
                , group = grouping_var  
                , colour =  grouping_var
               ) )  +
@@ -1782,11 +1583,11 @@ reporting_widget_server <- function( id ,
   
   # Avg Value by facility 
   avgValues = reactive({ 
-    req( plotData())  
+    req( selected_data())  
     cat( "\n * avgValues:")
     
     avgValues =
-      plotData()  %>% 
+      selected_data()  %>% 
       group_by( orgUnit, Month ) %>% 
       summarise( dataCol = sum( dataCol , na.rm = TRUE )) %>%
       group_by( orgUnit ) %>%
@@ -1808,7 +1609,7 @@ reporting_widget_server <- function( id ,
     # testing 
     # saveRDS( gf , 'gf.rds' )
     # saveRDS( sou , 'sou.rds' )
-    # saveRDS( plotData() , 'plotData.rds' )
+    # saveRDS( selected_data() , 'selected_data.rds' )
     
     cat( "\n - quartile values:")
     quartileValues = quantile( avgValues$medianValue , probs = c( 0, 0.25, 0.5, 0.75, 1) )
@@ -2045,7 +1846,7 @@ reporting_widget_server <- function( id ,
       d = d ,
       # data.hts = data.hts ,
       data.total = data.total , 
-      aggregatePlotData = aggregatePlotData , 
+      aggregateselected_data = aggregateselected_data , 
       period = period ,
       group_by_cols = group_by_cols ,
       levelNames = levelNames ,
@@ -2054,7 +1855,7 @@ reporting_widget_server <- function( id ,
       endingMonth = endingMonth ,
       num_datasets = num_datasets ,
       num_facilities = num_facilities ,
-      plotData = plotData ,
+      selected_data = selected_data ,
       caption.text = caption.text ,
       selectedOUs = selectedOUs 
     ))

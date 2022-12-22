@@ -915,8 +915,8 @@ cleaning_widget_server <- function( id ,
       
       d. = as.data.table( data1() )
    
-      cat( '\n - period():' , period()) 
-      cat( "\n - d. class/cols: \n -- ", class( d. ) , "\n -- ", names( d. ))
+      cat( '\n - period():' , period() ) 
+      # cat( "\n - d. class/cols: \n -- ", class( d. ) , "\n -- ", names( d. ))
       
       # testing
       # saveRDS( d. , "d..rds" )

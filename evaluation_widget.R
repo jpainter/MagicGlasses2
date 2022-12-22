@@ -184,10 +184,10 @@ evaluation_widget_server <- function( id ,
     endingMonth = reactive({ reporting_widget_output$endingMonth() })
     num_datasets = reactive({ reporting_widget_output$num_datasets() })
     num_facilities = reactive({ reporting_widget_output$num_facilities() })
-    plotData = reactive({ reporting_widget_output$plotData() })
+    selected_data = reactive({ reporting_widget_output$selected_data() })
     caption.text = reactive({ reporting_widget_output$caption.text() })
     data.total = reactive({ reporting_widget_output$data.total() })
-    aggregatePlotData = reactive({ reporting_widget_output$aggregatePlotData() })
+    aggregateselected_data = reactive({ reporting_widget_output$aggregateselected_data() })
     selectedOUs = reactive({ reporting_widget_output$selectedOUs() })
 
 
@@ -1226,111 +1226,100 @@ evaluation_widget_server <- function( id ,
 
 # Trend data ####
 
-  hts = reactive({
+  hts_formula = reactive({
     req( num_facilities() )
     req( num_datasets() )
     req( input$agg_level )
     req( levelNames() )
     cat("\n* evaluation_widget hts():" )
+    
+    # Testing
+    # levelNames = levelNames() 
+    # agg_level = input$agg_level  
+    # hts = input$hts 
+    # num_facilities = num_facilities() 
+    # num_datasets = num_datasets() 
+    # split = split()
+    # save( levelNames, agg_level, hts, num_facilities, num_datasets, split , file = "hts_formula_data.rda")
+    
+    hts_formula = htsFormula( 
+                levelNames = levelNames() ,
+                agg_level = input$agg_level , 
+                hts = input$hts , 
+                num_facilities = num_facilities() ,
+                num_datasets = num_datasets() ,
+                split = split() ,
+                .cat = FALSE )
+    
+    cat("\n - end hts_formula():" , hts_formula )
 
-    adms = backtick( levelNames() )
-
-    if (input$hts){
-      hts = paste( adms, collapse = "/" )
-
-    } else {
-
-      cat( '\n - adms:',  adms )
-      cat( '\n - input$agg_level:',  input$agg_level )
-
-      hts_level = which( input$agg_level == levelNames()   )
-
-      cat( '\n - hts_level:',  hts_level )
-
-      hts = paste( adms[1:( hts_level + 1 )] ,
-                   collapse = "/" )
-    }
-
-    hts = paste( "(" , hts , ")" )
-
-    # if >1 Facilities (ie. selected)
-    if ( num_facilities() > 1 )  hts = paste(
-             'Selected *' , hts
-             )
-
-    # if >1 dataset
-    if ( num_datasets() > 1 )  hts = paste(
-             'dataSet *' , hts
-             )
-
-    # # Cross by split
-    if ( !split() %in% 'None' ) hts =
-      paste( backtick( split() ) , '*' ,  hts )
-    #
-    # Cross by selected and split
-    # if ( length( selectedOUs() ) > 0  & !input$split %in% 'None' ) hts =
-    #   paste( input$split ,  ' * Facilities * (', hts , ')' )
-
-    # saveRDS( hts, 'hts.rds' )
-
-    cat("\n - end hts():" , hts )
-
-    return( hts )
+    return( hts_formula )
   })
 
   data.hts = reactive({
     req( data.total() )
-    req( hts() )
+    req( hts_formula() )
+    req( group_by_cols() )
+    
     tic()
 
     cat('\n* evaluation_widget data.hts():' )
-    cat( "\n - data.total cols:" , paste( names( data.total() ) , collapse = "," ) )
+    # cat( "\n - data.total cols:" , paste( names( data.total() ) , collapse = "," ) )
 
     # Testing
     # saveRDS( data.total(), 'data.total.rds' )
-
-    data.hts = data.total()
-    # data.hts = aggregatePlotData()
     
-    if ( !is_tsibble( data.hts ) ){
-      
-      cat('\n - preparing data.total as tsibble')
-    
-      key.cols = setdiff( group_by_cols() , period() )
-  
-      
-      data.hts = data.hts %>% 
-        as_tsibble( index = !! rlang::sym( period() )  ,
-                  key =  all_of(  {{ key.cols }} ) )
-    }
-    
+    data.hts = htsData( 
+                    data = data.total() ,  
+                    hts_formula = hts_formula() , 
+                    covariates = input$covariates , 
+                    group_by_cols = group_by_cols() ,
+                    period = period() ,
+                    .cat = FALSE , 
+                    timing = FALSE )
 
-     # if ( input$transform ) .d = .d %>% mutate( .total = fabletools::box_cox( total , lambda = .5  ) )
+    # data.hts = data.total()
+    # # data.hts = aggregateselected_data()
+    # 
+    # if ( !is_tsibble( data.hts ) ){
+    #   
+    #   cat('\n - preparing data.total as tsibble')
+    # 
+    #   key.cols = setdiff( group_by_cols() , period() )
+    # 
+    #   
+    #   data.hts = data.hts %>% 
+    #     as_tsibble( index = !! rlang::sym( period() )  ,
+    #               key =  all_of(  {{ key.cols }} ) )
+    # }
+    # 
+    # 
+    #  # if ( input$transform ) .d = .d %>% mutate( .total = fabletools::box_cox( total , lambda = .5  ) )
+    # 
+    # # if ( grepl( "avg_mm" , input$covariates ) & "avg_mm" %in% names( data.hts ) ){
+    # if ( input$covariates %in% names( data.hts ) ){
+    #   cat( "\n - ",  input$covariates , "%in% names( data.hts )" )
+    # # testing exogenous vaiables
+    # # if ( input$covariates %in% c('ipti' , 'doses' ) ){
+    #   xreg.var = input$covariates 
+    #   
+    #   data.hts = data.hts %>%
+    #   aggregate_key(  .spec = !!rlang::parse_expr( hts_formula() ) ,
+    #                   total = sum( total , na.rm = T ) ,
+    #                   # avg_mm = mean( !!rlang::parse_expr( 'avg_mm' ) , na.rm = T )
+    #                   # ipti = sum( !!rlang::parse_expr( 'ipti' ) , na.rm = T ) ,
+    #                   # doses = sum( !!rlang::parse_expr( 'doses' ) , na.rm = T )
+    #                   xreg.var := sum( !!rlang::parse_expr( xreg.var ) , na.rm = T )
+    #                   )
+    # } else {
+    #   
+    # data.hts = data.hts %>%
+    #   aggregate_key(  .spec = !!rlang::parse_expr( hts_formula() ) ,
+    #                   total = sum( total , na.rm = T )
+    #                   )
+    # }
 
-    # if ( grepl( "avg_mm" , input$covariates ) & "avg_mm" %in% names( data.hts ) ){
-    if ( input$covariates %in% names( data.hts ) ){
-      cat( "\n - ",  input$covariates , "%in% names( data.hts )" )
-    # testing exogenous vaiables
-    # if ( input$covariates %in% c('ipti' , 'doses' ) ){
-      xreg.var = input$covariates 
-      
-      data.hts = data.hts %>%
-      aggregate_key(  .spec = !!rlang::parse_expr( hts() ) ,
-                      total = sum( total , na.rm = T ) ,
-                      # avg_mm = mean( !!rlang::parse_expr( 'avg_mm' ) , na.rm = T )
-                      # ipti = sum( !!rlang::parse_expr( 'ipti' ) , na.rm = T ) ,
-                      # doses = sum( !!rlang::parse_expr( 'doses' ) , na.rm = T )
-                      xreg.var := sum( !!rlang::parse_expr( xreg.var ) , na.rm = T )
-                      )
-    } else {
-      
-    data.hts = data.hts %>%
-      aggregate_key(  .spec = !!rlang::parse_expr( hts() ) ,
-                      total = sum( total , na.rm = T )
-                      )
-    }
-
-    cat('\n- end data.hts():' ) ; toc()
+    cat('\n- end data.hts(): ' ) ; toc()
     # saveRDS( data.hts, 'data.hts.rds' )
 
     return( data.hts )
@@ -1338,7 +1327,7 @@ evaluation_widget_server <- function( id ,
 
   trendData = reactive({
       # req( data.hts() )
-      # req( aggregatePlotData() )
+      # req( aggregateselected_data() )
     cat( '\n* evaluation_widget: trendData(): ' )
 
     .d = data.hts()
@@ -1474,7 +1463,7 @@ evaluation_widget_server <- function( id ,
               c( 0 , NA )
           }
 
-          data.text = paste( unique( plotData()$data ), collapse = " + " )
+          data.text = paste( unique( selected_data()$data ), collapse = " + " )
           
           cat( '\n - ploTrends trendData():');
           .d = trendData()

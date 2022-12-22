@@ -1,14 +1,14 @@
 
-period = function( data , .cat = FALSE ){
-      if ( .cat ) cat('\n* period: ')
-      
-      weekly = any( map_lgl( data ,
-                             ~any(class(.x) %in% 'yearweek'  )) )
-
-      period = ifelse( weekly, "Week", "Month" )
-      if ( .cat ) cat( period )
-      return( period  )
-    }
+# period = function( data , .cat = FALSE ){
+#       if ( .cat ) cat('\n* period: ')
+#       
+#       weekly = any( map_lgl( data ,
+#                              ~any(class(.x) %in% 'yearweek'  )) )
+# 
+#       period = ifelse( weekly, "Week", "Month" )
+#       if ( .cat ) cat( period )
+#       return( period  )
+#     }
   
 getLevelNames = function( orgUnits, .cat = FALSE ){ 
 
@@ -21,6 +21,24 @@ getLevelNames = function( orgUnits, .cat = FALSE ){
     if ( .cat ) cat( '\n - end levelNames:', paste(l, collapse = ", " )  )
     return(l)
 }
+
+# getLevelNames = function( orgUnits = NULL , .cat = FALSE  ){
+#  
+#     if ( .cat ) cat( '\n* reporting_widget levelNames():' )
+#     
+#     if ( is.null( orgUnits ) ){
+#       cat( "\n - orgUnits missing")
+#       return()
+#     }
+#   
+#     LevelNames = count( orgUnits %>% as_tibble, level, levelName ) %>% 
+#       arrange( level ) %>% pull(levelName ) 
+#     
+#     LevelNames = LevelNames[ !is.na( LevelNames ) ]
+#     
+#     if ( .cat ) cat( '\n - :' , LevelNames  )
+#     return( LevelNames )
+# }
 
 
 # cleanedData equivalent to MG2 reactive function d()
@@ -81,15 +99,20 @@ cleanedData = function( data1 ,
     return( data )
 }
 
-selectedOUs <- function( d ,  endingMonth = NULL , startingMonth = NULL , 
-                         count.any = TRUE , all_categories = TRUE , 
-                         data_categories = NULL ,
+mostFrequentReportingOUs <- function( 
+                          data ,  
+                          endingMonth = NULL , 
+                          startingMonth = NULL ,
+                          period = NULL ,
+                          missing_reports = 0 ,
+                          count.any = TRUE , 
+                          all_categories = TRUE , 
+                          data_categories = NULL ,
                          .cat = FALSE ){
+  
     if ( .cat ) cat( '\n* selectedOUS' )
-
-    data = d
     
-    .period = period( data )
+    if ( is.null( period ) ) period = dataPeriod( data )
     
     if ( is.null( startingMonth ) ) startingMonth = min( data$period , na.rm = TRUE )
     if ( is.null( endingMonth ) ) endingMonth = max( data$period , na.rm = TRUE )
@@ -101,252 +124,523 @@ selectedOUs <- function( d ,  endingMonth = NULL , startingMonth = NULL ,
           data = data %>% filter( data %in% data_categories )
        }
   
-    if ( .period %in% 'Month' ){
+    if ( period %in% 'Month' ){
          data = data %>% as_tibble %>%
          filter( 
-           period >=  yearmonth( startingMonth )  ,
-           period <=  yearmonth( endingMonth )  
+           Month >=  yearmonth( startingMonth  )  ,
+           Month <=  yearmonth( endingMonth )  
                  )
        } 
       
-    if ( .period %in% 'Week' ){
+    if ( period %in% 'Week' ){
          if ( .cat ) cat( '\n - selectedOUS by Week')
          data = data %>% as_tibble %>%
          filter( 
-           period >=  yearweek( startingMonth )  ,
-           period <=  yearweek( endingMonth )  
+           Week >=  yearweek( startingMonth )  ,
+           Week <=  yearweek( endingMonth )  
                  )
        } 
-      
+    
+  # mr = data %>%
+       #   filter( !is.na( original  ) ) %>%
+       #   distinct( !! rlang::sym( period() ) , orgUnit ) %>%
+       #   group_by( orgUnit ) %>%
+       #   summarise( n = n() ) %>%
+       #   arrange( desc( n ))
+       #
+       # #print( "mr" ); #print( summary( mr$n ) )
+       #
+       # s = mr %>%
+       #   filter( n == max( mr$n ) ) %>%
+       #   pull( orgUnit ) %>% unique
 
-    mr = data %>% 
-         filter( !is.na( original  ) ) %>%
-         distinct( !! rlang::sym( .period ) , orgUnit ) %>%
-         group_by( orgUnit ) %>%
-         summarise( n = n() ) %>%
-         arrange( desc( n ))
+    # mr = data %>% 
+    #      filter( !is.na( original  ) ) %>%
+    #      distinct( !! rlang::sym( .period ) , orgUnit ) %>%
+    #      group_by( orgUnit ) %>%
+    #      summarise( n = n() ) %>%
+    #      arrange( desc( n ))
+    
+    mr = data %>%
+        filter( !is.na( original  ) ,   ) %>%
+        group_by( year = year( Month ) ) %>%
+        distinct( !! rlang::sym( period ) , orgUnit ) %>%
+        group_by( year , orgUnit ) %>%
+        summarise( months = n() )
+    
        
        #print( "mr" ); #print( summary( mr$n ) )
-  
+    max_years =  n_distinct( mr$year , na.rm = FALSE ) 
+    
+    periods_per_year = data %>% 
+        distinct( Month ) %>%
+        mutate( year = year( Month )) %>%
+        count( year ) %>%
+        rename( max = n )
+    
     s = mr %>%
-         filter( n == max( mr$n ) ) %>%
+      inner_join( periods_per_year , by = "year" ) %>%
+      ungroup %>%
+      group_by( orgUnit ) %>%
+      summarise(  
+          years = n() ,
+          consistent = all( months >= ( max - missing_reports ) ) ,
+          champion =  ( years == max_years ) & consistent
+        ) %>%
+         filter( champion ) %>%
          pull( orgUnit ) %>% unique
        
     if ( .cat ) cat( "\n - number selectedOUs:", length(s), 'orgUnits' ) 
     return( s )
 }  
 
+  
+# group_by_cols = function( data = NULL , levelNames = NULL, 
+#                           split = NULL, 
+#                           merge = TRUE ,
+#                           .cat = FALSE ){
+#     # req( input$split )
+#     if ( .cat ) cat("\n* group_by_cols():")
+#   
+#    .period = period( data )
+#     
+#     group_by_cols =  c(.period , 'orgUnit', 'data' ) 
+#     
+#     if ( !merge ) group_by_cols = c( group_by_cols, 'dataSet' )
+#     
+#     if (is.null( levelNames)) levelNames = getLevelNames( orgUnits = orgUnits )
+#    
+#     group_by_cols = c( group_by_cols, levelNames )
+#   
+#     if ( .cat ) cat("\n - group_by_cols():", group_by_cols )
+#     
+#     if ( !is.null( split ) ) group_by_cols = c( group_by_cols , split )
+#     
+#     # if ( length( selectedOUs() > 0 ) ) 
+#       # group_by_cols = c( group_by_cols , 'Facilities' )
+#     
+#     # # If not merge when total, show separate datsets
+#     # if ( !input$merge & input$all_categories ) group_by_cols = c( group_by_cols , 'dataSet' )
+#     #   
+#     if ( .cat ) cat( "\n- end group_by_cols()" , unique( group_by_cols )  )
+#     return( unique( group_by_cols ) )
+# 
+# }
+
+
+# data.total = function( data ,  
+#                       period = "Month" ,
+#                       .group_by_cols = NULL ,
+#                       dataSet = NULL , 
+#                       merge = FALSE ,
+#                       dataset_merge_average = FALSE ,
+#                       startDisplayMonth = NULL  , 
+#                       endDisplayMonth = NULL,
+#                       .cat = FALSE 
+#                        ){
+#     if ( .cat ) cat( '\n* data.total():' )
+#   
+#     .period = dataPeriod( data )
+#   
+#     if ( .cat ) cat( '\n - period:' , .period )
+#     
+#     .dates = data %>% pull( !!rlang::sym( .period )  )
+#     if ( is.null( startDisplayMonth ) )  startDisplayMonth = min( .dates , na.rm = TRUE  )
+#     if ( is.null( endDisplayMonth ) ) endDisplayMonth = max( .dates , na.rm = TRUE   )
+#     
+#     if ( is.null( .group_by_cols )) .group_by_cols = groupByCols( data )
+#     if ( .cat ) cat( '\n - data.total .group_by_cols:'  , .group_by_cols )
+#   
+#     # Total categories by facilities and datasets
+#     # data = plotData
+# 
+#       # Merge  datasets 
+#       # Set all dataSets to Combined and re-summaries taking mean
+#       # #print( 'data.total datasets' );  #print( dataSets() )
+#       if ( .cat ) cat( '\n - merge ', merge )
+#       if ( .cat ) cat( '\n - data datsets ' , unique( dataSet) ) 
+#       
+#       mergeDatasets = merge %>% str_replace_all( fixed("\n"), "") 
+#       if ( .cat ) cat( '\n - mergeDatasets:' , mergeDatasets )
+#       
+#      
+#       if ( merge  ){
+#   
+#       combineSelectDatasets = data %>%
+#                 mutate( dataSet = dataSet %>% str_replace_all( fixed("\r\n"), "") 
+#               ) %>%
+#                 mutate(
+#                     dataSet = ifelse( 
+#                         str_replace_all(dataSet, fixed("\n"), "") %in% 
+#                           mergeDatasets , 'Combined' , dataSet) ,
+#                     data = 'Total'
+#                 ) %>% 
+#                 setDT() %>%
+#                 .[ , .(dataCol = sum( dataCol , na.rm = TRUE  )) , by =  .group_by_cols ] 
+#       
+#       if ( .cat ) cat('\n - Combining dataSets %in% input$merge:' , mergeDatasets )
+#       
+# 
+#       } else { combineSelectDatasets = data }
+#       
+#       # Testing
+#       # saveRDS( combineSelectDatasets , 'combineSelectDatasets.rds' )
+#       
+#       # data.table sum/mean 
+#       
+#       if ( dataset_merge_average ) {
+#            if ( .cat )  cat( '\n** merge data.table MEAN') 
+#             
+#             dataMerge = combineSelectDatasets %>%
+#                 mutate( dataSet = 'Merged') %>%
+#                 setDT() %>%
+#                 # Mean of dataSets within orgUnit
+#                 .[  , .(dataCol = mean( dataCol , na.rm = TRUE  )) , by =  .group_by_cols ] 
+#   
+#             if ( .cat ) cat( '\ndataMerge done' );  # glimpse( dataMerge )
+#         
+#       } else {
+#           dataMerge = combineSelectDatasets
+#           # cat('\n glimpse( dataMerge )\n' ); #print(glimpse( dataMerge ))
+#       }
+#       
+#       # Testing
+#       # saveRDS( dataMerge, 'dataMerge.rds' )
+#       # #print( dataMerge %>% duplicates %>% glimpse )
+#   
+#     key.cols = setdiff( .group_by_cols , .period ) 
+#     if ( .cat ) cat('\n - key.cols:' ,  key.cols )
+#     
+#     data.total = 
+#         dataMerge %>% 
+#         # fill_gaps( .full = TRUE  ) %>%
+#         mutate( 
+#                 total = replace_na( dataCol , 0) 
+#                 )  %>% # for plotting, replace missing with zero 
+#         as_tsibble( index = !! rlang::sym( .period )  , 
+#                     key =  all_of(  {{ key.cols }} ) ) 
+# 
+#     if ( .cat ) cat( '\n - data.total class' , class( data.total ) ) 
+#     if ( .cat ) cat( '\n - data.total cols' , names( data.total ) ) 
+#     
+#     # Filter display dates
+#     # cat( '/n - data.total cols:' , names( data.total ) )
+#     
+#     if ( .period %in% 'Month' ){
+#       if ( .cat ) cat( '\n -  .period %in% Month' )
+#       data.total = data.total %>% 
+#         filter( 
+#           Month >=  yearmonth( startDisplayMonth )  ,
+#           Month <=  yearmonth( endDisplayMonth )  
+#         )
+#     } 
+#     
+#     if ( .period %in% 'Week' ){
+#       if ( .cat ) cat( '\n -  .period %in% weeks' )
+#       data.total = data.total %>% 
+#         filter( 
+#           Week >=  yearweek( startDisplayMonth )  ,
+#           Week <=  yearweek( endDisplayMonth )  
+#         )
+#     } 
+#     
+#   
+#     # test:
+#     # saveRDS( data.total, 'data.total.rds')
+#     
+#     if ( .cat ) cat('\n- end data.total()')
+#     return( data.total )
+#       
+#   
+# }
+
+backtick <- function(x) paste0("`", x, "`")
+
+# determine the period used in dataset (e.g. Monthly or Weekly )
+dataPeriod =   function( data1 , .cat = FALSE  ){
+  
+      if( .cat ) cat('\n* reporting_widget period():')
+      
+      search_for_weekly = any( map_lgl( data1 ,
+                             ~any( class(.x) %in% 'yearweek'  )) )
+
+      period = ifelse( search_for_weekly, "Week", "Month" )
+      
+      if ( .cat ) cat('\n - dataPeriod is ', period )
+      
+      return( period  )
+    }
+
+
+groupByCols = function( 
+                        period = NULL , 
+                        levelNames = NULL ,
+                        split = NULL , 
+                        .cat = FALSE  ){
+  
+    if( .cat ) cat('\n* groupByCols :')
+  
+    group_by_cols =  c( period , 'orgUnit', 'Selected',
+                        'dataSet' , 'data' ) 
+    
+    group_by_cols = c( group_by_cols, levelNames )
+  
+   
+    if ( !is.null( split ) && split != 'None' ) group_by_cols = c( group_by_cols , split )
+    
+    cat( "\n - end group_by_cols()" , unique( group_by_cols )  )
+    
+    return( unique( group_by_cols ) )
+
+}
+
 
 # selectedData equivalent to MG2 reactive function plotData()
-selectedData = function( d,  
+selectedData = function( data1 ,  
+                         levelNames = NULL ,
                          all_categories = TRUE , 
                          data_categories = NULL ,
                          alwaysReporting = TRUE , 
+                         missing_reports = 0 ,
+                         selectedOUs = NULL ,
+                         startingMonth = NULL , 
+                         endingMonth = NULL ,
+                         source = 'Original' ,
+                         level = 'leaf' , 
+                         level2 = NULL ,
+                         level3 = NULL ,
+                         level4 = NULL , 
+                         level5 = NULL , 
                          .cat = FALSE ,
                          ... ){
 
-   if ( .cat ) cat( "\n* plotData():" )
+   if ( .cat ) cat( "\n* selectedData:" )
   
-   data = d %>% mutate( Selected = 'All' ) 
+    if ( nrow( data1 ) == 0 ){
+        cat('\n - data1() has zero rows')
+        return()
+    }
+  
+      # NB: setting data = setDT( data1()) has side effect of changing data1() to data.table. 
+      data = as.data.table( data1  )
+      
+      if ( .cat ) cat( '\n - data (d) converted to data.table' )
+      
+      # period = dataPeriod( data1 )
+      # if (.cat ) cat('\n - period is', period )
+      # 
+      # data = data[ , period := base::get( period )  , ]
+
+      if ( !is_empty( level2 ) ){ data = data[ base::get( levelNames[2] )  %in%  level2 ,, ] }
+  
+      if ( !is_empty( level3 ) ){ data = data[ base::get( levelNames[3] )  %in%   level3 ,, ] }
+  
+      if ( !is_empty( level4 ) ){ data = data[ base::get( levelNames[4] )  %in%   level4 ,, ] }
+        
+      if ( !is_empty( level5 ) ){ data = data[ base::get( levelNames[5] )  %in%   level5  ,, ]  }
     
-   .selectedOUs  = selectedOUs( d , ... )
-   # Add var for selected ous
-    if ( .cat ) cat( '\n - selectedData length( selectedOUs()): ' , length( .selectedOUs ) )
+      if ( level %in% 'leaf' ){  
+        
+        data = data[ effectiveLeaf == TRUE , , ]
+        
+      } else {
+        
+        level. = count( orgUnits() %>% as_tibble, level, levelName ) %>% 
+          filter(levelName  %in% input$level  ) %>% pull( level )
+        
+        data = data[ level  %in% level. , , ] 
+      }
+      
+    if ( .cat ) cat( '\n - nrow( d ):' , nrow( data ))
+  
+    if ( source %in% 'Original' ){
+      if ( .cat ) cat('\n - d() source is original')
+      
+      data = data[ , dataCol := as.numeric( original ) , ] 
+    }  
+      
+    if ( .cat ) cat( '\n - nrow( d ):' , nrow( data ))
     
-    if ( length( .selectedOUs  > 0 ) ) data = setDT( data )[ , Selected := fifelse( orgUnit %in% .selectedOUs, 
-                                                      'Reporting Each Period',
-                                                      'Inconsistent Reporting') ] %>%
-      as_tibble(.)
+    if ( source %in% 'Cleaned' & 'seasonal3' %in% names(data) ){
+      if ( .cat ) cat( '\n -' , paste('cleaning removes', sum( data$value , na.rm = T ) - sum( data$seasonal3 , na.rm = T )  , 'data points' ) )
+      
+      data = setDT( data )[ , dataCol := fifelse( seasonal3, original, NA_real_  ) , ]
+      
+      # Modify variables used for cleaning data so that FALSE when NA -- meaning it failed prior cleaning step, and TRUE means data is ok
+      if ('mad15' %in% names( data )){
+        # data = data %>% mutate( mad15 = ifelse( value & is.na( mad15)|!mad15, FALSE, TRUE ) )
+        data = setDT( data )[, mad15 := fifelse( value & is.na( mad15)|!mad15, FALSE, TRUE ) , ] 
+        
+      }
+      
+      if ('mad10' %in% names( data )){ 
+        # data = data %>% mutate( mad10 = ifelse( value & is.na( mad10)|!mad10, FALSE, TRUE ) )
+        data = setDT( data )[, mad10 := fifelse( value & is.na( mad10)|!mad10, FALSE, TRUE ) , ] 
+        
+      }
+      
+      if ('mad5' %in% names( data )){ 
+        # data = data %>% mutate( mad5 = ifelse( value & is.na( mad5)|!mad5, FALSE, TRUE ) )
+        data = setDT( data )[, mad5 := fifelse( value & is.na( mad5)|!mad5, FALSE, TRUE ) , ] 
+        
+      }
+      
+      if ('seasonal5' %in% names( data )){ 
+        # data = data %>% mutate( seasonal5 = ifelse( value & is.na( seasonal5)|!seasonal5, FALSE, TRUE ) )
+        data = setDT( data )[, seasonal5 := fifelse( value & is.na( seasonal5)|!seasonal5, FALSE, TRUE ) , ] 
+      }
+      
+      if ('seasonal3' %in% names( data )){ 
+        # data = data %>% mutate( seasonal3 = ifelse( value & is.na( seasonal3)|!seasonal3, FALSE, TRUE ) )
+        data = setDT( data )[, seasonal3 := fifelse( value & is.na( seasonal3)|!seasonal3, FALSE, TRUE ) , ] 
+        
+      }
+      
+      if ( .cat ) cat( '\n -' , paste('cleaning changes total by', sum( data$original , na.rm = T ) - sum( data$dataCol , na.rm = T )) )
+    }  
     
-   if ( alwaysReporting ){
-       data = data %>% filter( Selected %in% 'Reporting Each Period' )
-   }
-   
+    if ( .cat ) cat( '\n - nrow( d ):' , nrow( data ))
+      
     # filter to selected category
     if ( .cat ) cat( '\n - selectedData filtered by' , data_categories )
 
     if ( !all_categories )  data = data %>% filter( data %in% data_categories )
+   
+    if ( .cat ) cat( '\n - nrow( d ):' , nrow( data ))
+   
+    # Consistent reporting
+    if ( alwaysReporting ){
+     
+     if ( .cat ) cat( '\n - alwaysReporting' )
+     
+     if ( is_empty( selectedOUs ) ){
+       
+       if ( .cat ) cat( "\n - finding most frequently reporting OUs")
+         
+        selectedOUs  = mostFrequentReportingOUs( data ,
+                                             all_categories = all_categories , 
+                                             data_categories = data_categories ,
+                                             startingMonth = startingMonth , 
+                                             endingMonth = endingMonth ,
+                                             
+                                             )
+     } 
+   
+     # Add var for selected ous
+      if ( .cat ) cat( '\n - selectedData length( selectedOUs()): ' , length( selectedOUs ) )
+      
+      if ( length( selectedOUs ) > 0  ) data = data[ , Selected := fifelse( orgUnit %in% selectedOUs, 
+                                                        'Reporting Each Period',
+                                                        'Inconsistent Reporting') ] %>%
+        as_tibble(.)
+      
+    # data = data %>% filter( Selected %in% 'Reporting Each Period' )
+    } else {
+         data = data[ , Selected := "All", ]
+   }
+   
         
-    
-    # if ( length( .selectedOUs  > 0 ) ) data = setDT( data )[ , Selected := ifelse(
-    #        orgUnit %in% .selectedOUs ,
-    #        'Reporting Each Period',
-    #        'Inconsistent Reporting' ) ] %>%
-    #   as_tibble()
-    
     if ( .cat ) cat( '\n - end  selectedData()' )  ; # #print( names( data )) 
     # TESTING
     # saveRDS( data , "plotData.rds" )
     
   return( data )
 }
+ 
 
+# merge datasets 
+dataTotal = function(
+    data = NULL , 
+    group_by_cols = NULL ,
+    period = NULL , 
+    startMonth = NULL ,
+    endMonth = NULL ,
+    merge = NULL ,
+    mean.merge = FALSE ,
+    .cat = FALSE ){
+    
+    if ( .cat ) cat( '\n* reporting_widget data.total()' )
   
-group_by_cols = function( data = NULL , levelNames = NULL, 
-                          split = NULL, 
-                          merge = TRUE ,
-                          .cat = FALSE ){
-    # req( input$split )
-    if ( .cat ) cat("\n* group_by_cols():")
-  
-   .period = period( data )
-    
-    group_by_cols =  c(.period , 'orgUnit', 'data' ) 
-    
-    if ( !merge ) group_by_cols = c( group_by_cols, 'dataSet' )
-    
-    if (is.null( levelNames)) levelNames = getLevelNames( orgUnits = orgUnits )
-   
-    group_by_cols = c( group_by_cols, levelNames )
-  
-    if ( .cat ) cat("\n - group_by_cols():", group_by_cols )
-    
-    if ( !is.null( split ) ) group_by_cols = c( group_by_cols , split )
-    
-    # if ( length( selectedOUs() > 0 ) ) 
-      # group_by_cols = c( group_by_cols , 'Facilities' )
-    
-    # # If not merge when total, show separate datsets
-    # if ( !input$merge & input$all_categories ) group_by_cols = c( group_by_cols , 'dataSet' )
-    #   
-    if ( .cat ) cat( "\n- end group_by_cols()" , unique( group_by_cols )  )
-    return( unique( group_by_cols ) )
-
-}
-
-
-data.total = function( data ,  
-                      period = "Month" ,
-                      .group_by_cols = NULL ,
-                      dataSet = NULL , 
-                      merge = FALSE ,
-                      dataset_merge_average = FALSE ,
-                      startDisplayMonth = NULL  , 
-                      endDisplayMonth = NULL,
-                      .cat = FALSE 
-                       ){
-    if ( .cat ) cat( '\n* data.total():' )
-  
-    .period = period( data )
-  
-    if ( .cat ) cat( '\n - period:' , .period )
-    
-    .dates = data %>% pull( !!rlang::sym( .period )  )
-    if ( is.null( startDisplayMonth ) )  startDisplayMonth = min( .dates , na.rm = TRUE  )
-    if ( is.null( endDisplayMonth ) ) endDisplayMonth = max( .dates , na.rm = TRUE   )
-    
-    if ( is.null( .group_by_cols )) .group_by_cols = group_by_cols( data )
-    if ( .cat ) cat( '\n - data.total .group_by_cols:'  , .group_by_cols )
-  
-    # Total categories by facilities and datasets
-    # data = plotData
-
-      # Merge  datasets 
-      # Set all dataSets to Combined and re-summaries taking mean
-      # #print( 'data.total datasets' );  #print( dataSets() )
-      if ( .cat ) cat( '\n - merge ', merge )
-      if ( .cat ) cat( '\n - data datsets ' , unique( dataSet) ) 
+    if ( is.null( period ) ) period = dataPeriod( data )
+      
+    if ( !is.null( merge ) && nchar( merge ) > 0 ){
+      
+      if ( .cat ) cat( "\n - combineSelectDatasets ")
       
       mergeDatasets = merge %>% str_replace_all( fixed("\n"), "") 
-      if ( .cat ) cat( '\n - mergeDatasets:' , mergeDatasets )
       
-     
-      if ( merge  ){
-  
-      combineSelectDatasets = data %>%
-                mutate( dataSet = dataSet %>% str_replace_all( fixed("\r\n"), "") 
-              ) %>%
-                mutate(
-                    dataSet = ifelse( 
-                        str_replace_all(dataSet, fixed("\n"), "") %in% 
-                          mergeDatasets , 'Combined' , dataSet) ,
-                    data = 'Total'
-                ) %>% 
-                setDT() %>%
-                .[ , .(dataCol = sum( dataCol , na.rm = TRUE  )) , by =  .group_by_cols ] 
-      
-      if ( .cat ) cat('\n - Combining dataSets %in% input$merge:' , mergeDatasets )
-      
+      if ( any(!is.na( mergeDatasets )) & any(nchar( mergeDatasets ) > 0 )  ){
+        
+               data = 
 
-      } else { combineSelectDatasets = data }
+                setDT( data )[ any(  mergeDatasets %in% dataSet ) ,  dataSet :=  'Combined'  ] %>%
+          
+                as_tibble
+      }
       
-      # Testing
-      # saveRDS( combineSelectDatasets , 'combineSelectDatasets.rds' )
+    }
+  
+      if ( any( grepl( "avg_mm" , names( data ) ) ) ){
+          
+          if ( .cat )  cat( '\n - with avg_mm' )
+        
+          data = setDT( data ) %>%
+                .[ , .( dataCol = sum( dataCol , na.rm = TRUE  ) ,
+                        avg_mm = mean( avg_mm , na.rm = TRUE  ) ) , 
+                   by =  group_by_cols ] 
+          
+        } else {
+          
+          data = setDT( data ) %>%
+                .[ , .( dataCol = sum( dataCol , na.rm = TRUE  )) , by =  group_by_cols ] 
+        }
       
-      # data.table sum/mean 
-      
-      if ( dataset_merge_average ) {
-           if ( .cat )  cat( '\n** merge data.table MEAN') 
+        
+      if ( mean.merge ) {
+          if ( .cat )   cat( '\n -  merge data.table MEAN') 
             
-            dataMerge = combineSelectDatasets %>%
+          data = data %>%
                 mutate( dataSet = 'Merged') %>%
                 setDT() %>%
                 # Mean of dataSets within orgUnit
-                .[  , .(dataCol = mean( dataCol , na.rm = TRUE  )) , by =  .group_by_cols ] 
+                .[  , .(dataCol = mean( dataCol , na.rm = TRUE  )) , by =  group_by_cols ] 
   
-            if ( .cat ) cat( '\ndataMerge done' );  # glimpse( dataMerge )
+         if ( .cat )    cat( '\n - Merge done' );  # glimpse( dataMerge )
         
-      } else {
-          dataMerge = combineSelectDatasets
-          # cat('\n glimpse( dataMerge )\n' ); #print(glimpse( dataMerge ))
-      }
-      
-      # Testing
-      # saveRDS( dataMerge, 'dataMerge.rds' )
-      # #print( dataMerge %>% duplicates %>% glimpse )
-  
-    key.cols = setdiff( .group_by_cols , .period ) 
-    if ( .cat ) cat('\n - key.cols:' ,  key.cols )
-    
-    data.total = 
-        dataMerge %>% 
-        # fill_gaps( .full = TRUE  ) %>%
-        mutate( 
-                total = replace_na( dataCol , 0) 
-                )  %>% # for plotting, replace missing with zero 
-        as_tsibble( index = !! rlang::sym( .period )  , 
-                    key =  all_of(  {{ key.cols }} ) ) 
+      } 
 
-    if ( .cat ) cat( '\n - data.total class' , class( data.total ) ) 
-    if ( .cat ) cat( '\n - data.total cols' , names( data.total ) ) 
+      key.cols = setdiff( group_by_cols , period ) 
+      
+    #   if ( period %in% 'Month' ){
+    # 
+    #   data.total = setDT( data )[  which( Month >=  yearmonth( startMonth ) &
+    #                                     Month <=  yearmonth( endMonth ) ) , ] 
+    #   
+    # } 
+    # 
+    # if ( period %in% 'Week' ){
+    # 
+    #   data.total = setDT( data )[ which( Week >=  yearweek( startMonth ) &
+    #                                     Week <=  yearweek( endMonth ) ) , ] 
+    # } 
+ 
+    ## NB does data.total need to be a Tsibble?--it is slow.  
     
-    # Filter display dates
-    # cat( '/n - data.total cols:' , names( data.total ) )
+    data.total = data[ , total := replace_na( dataCol , 0)  ,] %>%
+      as_tibble()
+
+    if ( .cat ) cat('\n - end data.total()')
     
-    if ( .period %in% 'Month' ){
-      if ( .cat ) cat( '\n -  .period %in% Month' )
-      data.total = data.total %>% 
-        filter( 
-          Month >=  yearmonth( startDisplayMonth )  ,
-          Month <=  yearmonth( endDisplayMonth )  
-        )
-    } 
-    
-    if ( .period %in% 'Week' ){
-      if ( .cat ) cat( '\n -  .period %in% weeks' )
-      data.total = data.total %>% 
-        filter( 
-          Week >=  yearweek( startDisplayMonth )  ,
-          Week <=  yearweek( endDisplayMonth )  
-        )
-    } 
-    
-  
-    # test:
-    # saveRDS( data.total, 'data.total.rds')
-    
-    if ( .cat ) cat('\n- end data.total()')
     return( data.total )
-      
+    
+  }
   
-}
-
-backtick <- function(x) paste0("`", x, "`")
-
-hts = function( agg_level = NULL , 
+htsFormula = function( 
                 levelNames = NULL , 
+                agg_level = NULL ,
                 hts = TRUE , 
-                .selectedOUs = NULL ,
+                num_facilities = NULL ,
+                num_datasets = NULL ,
                 split = 'None' ,
                 .cat = FALSE ){   
  
@@ -361,7 +655,7 @@ hts = function( agg_level = NULL ,
       
     } else {
       
-      if ( .cat ) cat( '\n - amds:',  adms )
+      if ( .cat ) cat( '\n - adms:',  adms )
       if ( .cat ) cat( '\n - input$agg_level:',  agg_level )
       
       if ( is.null( agg_level ) ) agg_level = levelNames[1] 
@@ -375,20 +669,21 @@ hts = function( agg_level = NULL ,
     }
     
     hts = paste( "(" , hts , ")" )
+    
+    # if >1 Facilities (ie. selected)
+    if ( num_facilities > 1 )  hts = paste(
+             'Selected *' , hts
+             )
 
-    # num_facilities = length( .selectedOUs )
-    # if ( num_facilities > 1 )  
-      # hts = paste( 
-      #        'Selected *' , hts 
-      #        )
-    
-    # if >1 dataset 
-    # if ( num_datasets > 1 )  
-    # hts = paste( 'dataSet *' , hts )
-    
+    # if >1 dataset
+    if ( num_datasets > 1 )  hts = paste(
+             'dataSet *' , hts
+             )
+
     # # Cross by split
     if ( !split %in% 'None' ) hts =
-      paste( split , '*' ,  hts )
+      paste( backtick( split ) , '*' ,  hts )
+    
     # 
     # Cross by selected and split
     # if ( length( selectedOUs() ) > 0  & !input$split %in% 'None' ) hts =
@@ -399,37 +694,71 @@ hts = function( agg_level = NULL ,
     return( hts )
   }
   
-data.hts = function( .d , hts = NULL, covariates = "" , 
-                     .cat = FALSE , ... ){
+htsData = function( data = NULL , 
+                    hts_formula = NULL, 
+                    covariates = "" , 
+                    group_by_cols = NULL ,
+                    period = NULL ,
+                    .cat = FALSE , 
+                    timing = FALSE , ... ){
 
-    if ( is.null( hts ) ) hts = hts()
-    if ( .cat ) cat('\n* data.hts():' )
+    if ( .cat ) cat('\n* data.hts:' )
+  
+    if ( timing ) tic() 
+  
+    if ( is.null( hts_formula ) ){
+      if ( .cat ) cat('\n - end htsData(): data is missing '  ) 
+      return( data )
+      } 
+  
+    if ( is.null( hts_formula ) ){
+      if ( .cat ) cat('\n - end htsData(): hts_formula NULL '  ) 
+      return( data )
+    } 
+    
+    if ( !is_tsibble( data ) ){
+      
+      if ( .cat ) cat('\n - preparing data.total as tsibble')
+    
+      if ( is.null( period ) ) period = dataPeriod( data )
+      key.cols = setdiff( group_by_cols , period )
+  
+      data = data %>% 
+        as_tsibble( index = !! rlang::sym( period )  ,
+                  key =  all_of(  {{ key.cols }} ) )
+    }
     
     # Testing
     # saveRDS( data.total(), 'data.total.hts.rds' )
+  
+    # exogenous vaiables
+     if ( all( covariates %in% names( data ) ) ){
+       
+      cat( "\n - ",  covariates , "%in% names( data.hts )" )
     
-   if ( grepl( "avg_mm" , covariates ) & "avg_mm" %in% names( .d ) ){
-      if ( .cat ) cat( "\n - grepl( 'avg_mm' , covariates ) & 'avg_mm' %in% names( .d )" )
+      xreg.var = covariates 
       
-     .d = .d %>%
-        aggregate_key(  .spec = !!rlang::parse_expr( hts ),
+      data.hts = data %>%
+      aggregate_key(  .spec = !!rlang::parse_expr( hts_formula ) ,
                       total = sum( total , na.rm = T ) ,
-                      avg_mm = mean( !!rlang::parse_expr( 'avg_mm' ) , na.rm = T )
+                      # avg_mm = mean( !!rlang::parse_expr( 'avg_mm' ) , na.rm = T )
+                      # ipti = sum( !!rlang::parse_expr( 'ipti' ) , na.rm = T ) ,
+                      # doses = sum( !!rlang::parse_expr( 'doses' ) , na.rm = T )
+                      xreg.var := sum( !!rlang::parse_expr( xreg.var ) , na.rm = T )
                       )
     } else {
       
-      # TODO:  Any way to speed this up???
-    .d = .d %>%
-      aggregate_key(  .spec = !!rlang::parse_expr( hts ) ,
+      data.hts = data %>%
+      aggregate_key(  .spec = !!rlang::parse_expr( hts_formula ) ,
                       total = sum( total , na.rm = T )
-                      ) 
+                      )
     }
+      
+    if ( .cat ) cat('\n - end htsData(): '  ) 
+  
+    if ( timing ) cat( toc() )
 
-    # }
-    
-    if ( .cat ) cat('\n - end data.hts():' ) 
-
-    return(.d)
+    return( data.hts )
   }
     
 trendData = function( .d = data.hts , 
