@@ -155,13 +155,15 @@ data_widget_server <- function( id ,
         })
         
         formulas =  reactive({
-          req( input$formula.file )
+          # req( input$formula.file )
           cat( '\n* formulas:' )
+          
+          if ( is.null( input$formula.file ) ) return( NULL )
           
           file = paste0( data.folder() , input$formula.file )
           cat( '\n - formula file:' , file )
           
-          if ( !any(file.exists( file ) )) return( NULL )
+          if ( !any( file.exists( file ) )) return( NULL )
           
           if ( grepl( fixed('.xlsx'), file )  ){
             cat( '\n - read xls file', file )
@@ -182,9 +184,9 @@ data_widget_server <- function( id ,
         
         formula.names = reactive({ formulas()$Formula.Name })
         
-        formulaElements =  reactive({
+        all_formula_elements =  reactive({
           req( input$formula.file )
-          cat( '\n* formulaElements:')
+          cat( '\n* all_formula_elements:')
           
           file = paste0( data.folder() , input$formula.file )
           cat( '\n - formula file' , input$formula.file )
@@ -207,13 +209,13 @@ data_widget_server <- function( id ,
         })
         
         formula_elements =  reactive({
-          req( formulaElements() )
+          req( all_formula_elements() )
           req( input$formula.file )
           req( input$indicator )
           cat( '\n* formula_elements:')
 
           cat( '\n - selecting indicator formula' )
-          formulaElements()  %>%
+          all_formula_elements()  %>%
             filter( Formula.Name %in% input$indicator ) 
         })
         
@@ -385,9 +387,13 @@ data_widget_server <- function( id ,
                 )
               
               cat( '\n -- preparing data1')
+              
               d1 = data_1( dataset() , formula_elements() , ousTree()  )
               cat( '\n - data1 names:', names( d1 ))
               cat( '\n - data1 rows:', nrow( d1 ))
+              
+              #Testing 
+              # saveRDS( d1, 'd1.rds' )
               
               removeModal()
               
@@ -452,7 +458,7 @@ data_widget_server <- function( id ,
           indicator = reactive({ input$indicator }) ,
           formulas = formulas ,
           formulaName =  reactive({ input$indicator }) ,
-          formulaElements = formulaElements ,
+          all_formula_elements = all_formula_elements ,
           formula_elements = formula_elements ,
           dataset.file = reactive({ input$dataset }) ,
           dataset =  dataset ,

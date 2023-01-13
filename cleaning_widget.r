@@ -821,7 +821,7 @@ cleaning_widget_server <- function( id ,
       cat( "\n - outlier.dataset has" , nrow( data1 ) , 'rows')
       
       # Testing
-      saveRDS( data1 , 'outlier.dataset.rds')
+      # saveRDS( data1 , 'outlier.dataset.rds')
       
       
       # data.table? 
@@ -843,7 +843,7 @@ cleaning_widget_server <- function( id ,
       cat( "\n - outlier.summary has" , nrow( d ) , 'rows')
       
       # Testing
-      saveRDS( d , 'outlier.summary.rds')
+      # saveRDS( d , 'outlier.summary.rds')
             
       return( d )
       

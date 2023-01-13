@@ -1012,7 +1012,7 @@ reporting_widget_server <- function( id ,
                        .cat = FALSE )
 
       cat( "\n - mostFrequentReportingOUs:", length(sf), 'orgUnits' ); toc()
-      # return( sf )
+
     } else {
          sf = NULL
        }
@@ -1020,7 +1020,7 @@ reporting_widget_server <- function( id ,
         cat( "\n - end selectedOUs:" )
         
         # Testing
-        # saveRDS( s, 'selectedOUs.rds')
+        # saveRDS( sf, 'selectedOUs.rds')
         
         return( sf )
       })
@@ -1241,7 +1241,7 @@ reporting_widget_server <- function( id ,
       levelNames = levelNames() ,
       data_categories = input$data_categories ,
       all_categories = input$all_categories ,
-      alwaysReporting = TRUE ,
+      alwaysReporting = input$mostReports ,
       selectedOUs = selectedOUs() , 
       level2 = input$level2 ,
       level3 = input$level3 ,
@@ -1280,10 +1280,11 @@ reporting_widget_server <- function( id ,
    # } 
    #  
    #  cat( '\n - end  selected_data()')  
-   #  # TESTING
-   #  # saveRDS( data , "selected_data.rds" )
-  
+   
    cat("\n - end selected_data()")
+   
+   # Testing 
+   # saveRDS( selected_data , 'selected_data.rds')
    
   return( selected_data )
 })
@@ -1299,7 +1300,7 @@ reporting_widget_server <- function( id ,
                         levelNames = levelNames() ,
                         split = input$split )
     
-    cat("\n - ", group_by_cols )
+    # cat("\n - ", group_by_cols )
     
     return( group_by_cols )
 
@@ -1323,9 +1324,12 @@ reporting_widget_server <- function( id ,
         endMonth = input$endDisplayMonth ,
         merge = input$merge ,
         mean.merge = input$dataset_merge_average ,
-        .cat = FALSE )
+        .cat = TRUE )
     
     cat('\n - end data.total()')
+    
+    # Testing
+    # saveRDS( data.total , 'data.total.rds')
     return( data.total )
   
   })
@@ -1385,7 +1389,6 @@ reporting_widget_server <- function( id ,
     cat('\n* reporting_widget aggregateselected_data():' )
     
     # testing
-    # saveRDS( data.hts() , 'data.hts.rds' )
     # saveRDS( levelNames() , 'levelNames.rds')
     # saveRDS( data.total() , 'data.total.rds')
     
@@ -1409,10 +1412,6 @@ reporting_widget_server <- function( id ,
     
     cat('\n - preparing aggregate_key')
     
-    # testing
-    # saveRDS( .d , 'agg.d1.rds' )
-    # saveRDS( key.cols , 'key.cols.rds' )
-    
     .d = .d %>%
       aggregate_key(  .spec = !!rlang::parse_expr( aggregateDataKey() ) ,
                       total = sum( total , na.rm = T )
@@ -1420,6 +1419,10 @@ reporting_widget_server <- function( id ,
     
     indexVar = index_var( .d )
     keyVars = key_vars( .d )
+    
+    # testing
+    # saveRDS( .d , 'agg.d1.rds' )
+    # saveRDS( key.cols , 'key.cols.rds' )
     
     .d = .d %>%
       filter(
@@ -1449,7 +1452,7 @@ reporting_widget_server <- function( id ,
        }  
       
     # testing
-    saveRDS( .d , 'agg.d2.rds' )
+    # saveRDS( .d , 'agg.d2.rds' )
     
       # if split, remove aggregate grouping
        if ( !input$split %in% 'None' ){
@@ -1466,7 +1469,7 @@ reporting_widget_server <- function( id ,
        } 
     
     # testing
-    saveRDS( .d , 'agg.d3.rds' )
+    # saveRDS( .d , 'agg.d3.rds' )
     
     # ensure output is tbl_ts
     if ( ! 'tbl_ts' %in% class( .d )  ){
@@ -1495,11 +1498,16 @@ reporting_widget_server <- function( id ,
   n_selected = reactive({
     req( selected_data() )
     
-    selected_data() %>% as_tibble %>% ungroup %>%
+    cat("\n* n_selected(): ")
+    
+    x = selected_data() %>% as_tibble %>% ungroup %>%
       distinct( Selected , orgUnit ) %>%
       group_by( Selected ) %>%
       summarise( n = n())
     
+    # cat( x )
+    return( x )
+
   })
   
   plotAgregateValue = reactive({
@@ -1511,7 +1519,7 @@ reporting_widget_server <- function( id ,
     .d = aggregateselected_data()
     
     # testing
-    # saveRDS(.d, 'plot3_data.rds')
+    saveRDS(.d, 'plot3_data.rds')
     
     data.text = paste( unique( selected_data()$data ) ,
                        collapse = " + " ) 
@@ -1567,8 +1575,11 @@ reporting_widget_server <- function( id ,
     } 
     
     # facet when selected > 0
+    # Testing
+    cat("\n - length( selectedOUs() ):" , length( selectedOUs() ) )
+    
     if ( length( selectedOUs() ) > 0 ) g =
-    g + facet_wrap( vars( Selected ) ,
+                g + facet_wrap( vars( Selected ) ,
                     labeller = as_labeller( facet_labeller ) ,
                     # scales = 'free' , 
                     ncol = 3 ) 
@@ -1576,6 +1587,7 @@ reporting_widget_server <- function( id ,
     # Time scales
     if ( period() %in% 'Month' )  g = g + 
       scale_x_yearmonth( date_breaks = "1 year" )
+    
     if ( period() %in% 'Week' )  g = g + 
       scale_x_yearweek( date_breaks = "1 year" )
     

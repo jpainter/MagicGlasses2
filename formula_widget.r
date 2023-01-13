@@ -26,6 +26,10 @@ formula_widget_ui <- function( id ) {
                         #  ) ,
                         column( 3 , 
                          downloadButton( ns( 'saveFormula' ), 'Save Formula') 
+                        ) ,
+                        
+                        column( 3 , 
+                         actionButton( ns( 'deleteRows' ), 'Delete Selected Rows') 
                         )
                         ) ,
  
@@ -86,13 +90,15 @@ formula_widget_server <- function( id ,
   indicators = reactive({ metadata_widget_output$indicators() })
   categories = reactive({ metadata_widget_output$categories() })
   formulas = reactive({ data_Widget_output$formulas() })
-  formulaElements = reactive({ data_Widget_output$formulaElements() })
+  all_formula_elements = reactive({ data_Widget_output$all_formula_elements() })
   formula_elements = reactive({ data_Widget_output$formula_elements() })
   formulaName = reactive({ data_Widget_output$formulaName() })
   dir = reactive({ directory_widget_output$directory() })
 
 ## Browse and Select Elements/Indicators Here ####
   formulaChoices = reactive({
+    req(  dataElementDictionary()  )
+    
     cat( '\n * formulaChoices ')
     
     if ( input$element_indicator_choice %in%  'data elements' ){ 
@@ -101,8 +107,8 @@ formula_widget_server <- function( id ,
       
     } else {
       # testing:
-      saveRDS( indicators()[1:5, ], "indicators.rds" )
-      saveRDS( dataElementDictionary()[0, ] , "dataElementDictionary.rds" )
+      # saveRDS( indicators()[1:5, ], "indicators.rds" )
+      # saveRDS( dataElementDictionary()[0, ] , "dataElementDictionary.rds" )
       
       # indicators() %>% bind_cols( dataElementDictionary()[0,  c( "Categories" , "categoryOptionCombo.ids" ) ] )
       
@@ -141,18 +147,16 @@ formula_widget_server <- function( id ,
           fillContainer = TRUE
         ))
       
-
-  
-    
   
   selected_elements = reactive({
-    # req( input$dataElementDictionaryTable_rows_selected  )
+    req( input$dataElementDictionaryTable_rows_selected  )
     
-    # cat('\n* formula_widget selected_elements():')
+    cat('\n* formula_widget selected_elements():')
     row_selected = input$dataElementDictionaryTable_rows_selected 
-    # cat('\n - row number selected is' ,  row_selected )
     
-    # if ( length(row_selected) ) {ÇÇ
+    cat('\n - row number selected is' ,  row_selected )
+    
+    # if ( length(row_selected) ) {
     selected = formulaChoices() %>% 
                filter( row_number() %in% row_selected ) 
       
@@ -190,97 +194,84 @@ formula_widget_server <- function( id ,
       cat( selectedElementNames() )
   })
   
-  
-  
+
 ## Selected ELements ####
-  hasFormula = reactiveValues( formulas = FALSE )
   
-  observeEvent( formula_elements() , { 
-    cat( '\n* update hasFormula' )
-    
-    if ( nrow( formulas() ) > 0  ){
-      cat('\n - nrow( formula_elements() )', nrow( formulas() ))
-      hasFormula$formulas <- TRUE 
-      }
-    } )
   
-  originalFormula = reactive({  # the formula as read from disc
-    cat( '\n* originalFormula:',   )
+  
+  updated_formula_elements = reactiveValues( df = tibble() )
+  
+  observeEvent( formula_elements() , {
     
-    fe =  if( is_empty( formulas() )  ){
+    cat( "\n* updated_formula_elements = formula_elements()")
+    
+    if ( nrow( formula_elements() ) == 0  ){
+      # Testing
+      # saveRDS( dataElementDictionary()[0, ]  , 'emptyDataDictionary.rds')
       
-        dataElementDictionary()[0, ] 
-
-    } else {
-      formulas()
-    }
-    
-    cat( '\n - ' , unique( fe ) , 'elements')
-    return( fe )
-    })
-    
-  updated_formula_elements = reactive({
-    # req( formula_elements )
-    cat( '\n* updated_formula_elements starting with formula:',  hasFormula$formulas )
-    
-    if( !hasFormula$formulas  ){
-      cat( '\n- !hasFormula$formulas')
-      saveRDS( dataElementDictionary()[0, ]  , 'emptyDataDictionary.rds')
-      ufe = dataElementDictionary()[0, ] 
+      cat( "\n - formula_elements() is empty")
+      
+      updated_formula_elements$df = dataElementDictionary()[0, ] 
       
     } else {
-      cat( '\n- hasFormula$formulas')
-      saveRDS( formula_elements()  , 'formula_elements.rds')
-      ufe =  formula_elements()
-    }
-    
-    cat('\n - updated_formula_elements has' , nrow( ufe ) , 'rows')
-    
-    if ( nrow( selected_elements() ) > 0 ){
-      cat('\n - nrow( selected_elements() ):' ,  nrow( selected_elements() ) ) 
       
-      selected_categories = selected_elements() %>%
-        separate_rows( Categories , categoryOptionCombo.ids, sep = ";" ) %>%
-        mutate( Categories = Categories %>% str_trim  ,
-                categoryOptionCombo.ids = categoryOptionCombo.ids %>% str_trim ,
-                Formula.Name = formulaName()
-                # ,zeroIsSignificant = as.logical( zeroIsSignificant )
-                )
-
-      cat('\n - adding' , nrow( selected_categories ), 'selected elements' )
-   
-    
-      if ( nrow( ufe ) == 0 ){
-        cat( '\n- ufe == 0')
-        ufe = selected_categories  %>%
-        arrange( dataElement ) %>%
-        select( Formula.Name, everything() ) %>%
-        distinct()
-                
-      } else {
-        cat( '\n- ufe > 0')
-        ufe = bind_rows( ufe , selected_categories ) %>%
-        arrange( dataElement ) %>%
-        select( Formula.Name, everything() ) %>%
-        distinct()
-      }
+      cat( "\n - setting formula_elements()")
       
-
-      # TESTING save changes
-      saveRDS( ufe %>% fill( Formula.Name, .direction =  "downup" )  ,
-               paste0( 'Formula_' , Sys.Date() , ".rds" )  )
-
+      updated_formula_elements$df = formula_elements()
     }
-    
-    cat( '\n - done')
-    return( ufe )
     
   })
   
+  observeEvent( selected_elements() , {
+    
+       cat('\n* observe selected_elements() '  ) 
+      
+        selected_categories = selected_elements() %>%
+          separate_rows( Categories , categoryOptionCombo.ids, sep = ";" ) %>%
+          mutate( Categories = Categories %>% str_trim  ,
+                  categoryOptionCombo.ids = categoryOptionCombo.ids %>% str_trim ,
+                  Formula.Name = formulaName()
+                  # ,zeroIsSignificant = as.logical( zeroIsSignificant )
+          )
+      
+      
+      if ( nrow( updated_formula_elements$df ) == 0 ){
+        
+        cat( '\n- updated_formula_elements == 0')
+        
+        updated_formula_elements$df = selected_categories  %>%
+          arrange( dataElement ) %>%
+          select( Formula.Name, everything() ) %>%
+          distinct()
+        
+      } else {
+        cat('\n - adding' , nrow( selected_categories ), 'selected elements' )
+        
+        updated_formula_elements$df = bind_rows( updated_formula_elements$df , selected_categories ) %>%
+          arrange( dataElement ) %>%
+          select( Formula.Name, everything() ) %>%
+          distinct()
+      }
+    
+  })
+  
+  observeEvent( input$deleteRows , {
+    
+    cat( "\n* delete row:")
+    
+    if ( ! is.null( input$forumlaDictionaryTable_rows_selected  ) ){
+      cat( "\n - delete row:", input$forumlaDictionaryTable_rows_selected)
+      
+      updated_formula_elements$df = updated_formula_elements$df[ -as.numeric( input$forumlaDictionaryTable_rows_selected  ) , ]
+    } 
+  })
+  
+
   output$forumlaDictionaryTable = 
     DT::renderDT( DT::datatable(
       
-      updated_formula_elements()   ,
+      updated_formula_elements$df ,
+      
       rownames = FALSE, 
       # filter = 'top' ,
       options = list(
@@ -292,8 +283,11 @@ formula_widget_server <- function( id ,
         searching = TRUE , 
         info = TRUE ,
         server = TRUE ,
+        pageLength = -1 ,
         dom = 'tirp'),
       fillContainer = TRUE
+      
+      
 )
       # options = DToptions_no_buttons()
     )
@@ -304,7 +298,7 @@ formula_widget_server <- function( id ,
   output$saveFormula <- downloadHandler(
    
     filename = function() {
-      paste0( dir() , "Formulas_", Sys.Date()  ,".xlsx"  )
+      paste0( "Formulas_", Sys.Date()  ,".xlsx"  )
     } ,
     
     content = function( file ) {
@@ -312,32 +306,44 @@ formula_widget_server <- function( id ,
  
       wb <- openxlsx::createWorkbook()
 
+      cat( "\n - create empty excelfile" )
+      
       sheet1  <- addWorksheet( wb, sheetName = "Formula" )
       sheet2  <- addWorksheet( wb, sheetName = "Formula Elements" )
       
-      if ( ! hasFormula$formulas ){
-        
+      no_existing_formulas = (  is.null( formulas() ) || nrow( formulas() ) == 0   )
+      
+      cat( "\n - test for existing formulas:" , ! no_existing_formulas )
+      
+      if (  no_existing_formulas  ){
+
         cat('\n - preparing new formula')
-        new.Formula.Name = formulaName() 
-        new.Formula = selectedElementNames() 
-        new.formula_elements = updated_formula_elements() 
-        
+        new.Formula.Name = formulaName()
+        new.Formula = selectedElementNames()
+
+        new.formula_elements = updated_formula_elements$df
+
       } else {
         
-        cat('\n - adding new formula')
+        cat('\n - adding a formula to existing formulas')
+        
         origninal_formula = formulas() %>%
             filter( ! Formula.Name %in%  formulaName() )
       
-        cat('\n* orignal formulas had', nrow( formulas()), 'formulas')
+        cat('\n - orignal formulas have', nrow( formulas() ), 'formulas')
+        
         cat('\n - new formula in original?', formulaName() %in% formulas()$Formula.Name )
       
-        orginal_formula_elements = formulaElements() %>%
-        filter( ! Formula.Name %in%  formulaName() )
-        cat('\n* orignal formulas elements had', nrow( formulaElements()), 'rows')
+        orginal_formula_elements = all_formula_elements() %>%
+          filter( ! Formula.Name %in%  formulaName() )
+        
+        cat('\n - orignal formulas elements have', nrow( all_formula_elements()), 'rows')
       
         new.Formula.Name = c( formulaName() , origninal_formula$Formula.Name )
+        
         new.Formula = c( selectedElementNames() , origninal_formula$Formula  )
-        new.formula_elements = rbind( updated_formula_elements() ,
+        
+        new.formula_elements = rbind( updated_formula_elements$df ,
                                       orginal_formula_elements 
                                         ) 
       }

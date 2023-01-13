@@ -3,10 +3,12 @@ translate_dataset = function( data , formula_elements ){
   cat('\n* translate_dataset:')
   
   # Data may contain mix of elements with and without categories. 
-  if ( any( is.na( data$categoryOptionCombo ))){
+  if ( any( is.na( data$categoryOptionCombo )) ){
     
     element_match = match( paste( data$dataElement, data$categoryOptionCombo ) , 
+                           
                        paste( formula_elements$dataElement.id , 
+                              
                               ifelse( is.na( formula_elements$n_categoryOptions ) , 
                                       NA ,  
                                       formula_elements$categoryOptionCombo.ids ) 
@@ -14,7 +16,7 @@ translate_dataset = function( data , formula_elements ){
     )
   } else {
     
-    element_match = match( paste( data$dataElement, data$categoryOptionCombo ) , 
+    element_match = match( paste( data$dataElement , data$categoryOptionCombo ) , 
                        paste( formula_elements$dataElement.id , 
                               formula_elements$categoryOptionCombo.ids )
     )

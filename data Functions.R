@@ -378,7 +378,7 @@ groupByCols = function(
                         split = NULL , 
                         .cat = FALSE  ){
   
-    if( .cat ) cat('\n* groupByCols :')
+    if ( .cat ) cat('\n* groupByCols :')
   
     group_by_cols =  c( period , 'orgUnit', 'Selected',
                         'dataSet' , 'data' ) 
@@ -388,7 +388,7 @@ groupByCols = function(
    
     if ( !is.null( split ) && split != 'None' ) group_by_cols = c( group_by_cols , split )
     
-    cat( "\n - end group_by_cols()" , unique( group_by_cols )  )
+    if ( .cat ) cat( "\n - end group_by_cols()" , unique( group_by_cols )  )
     
     return( unique( group_by_cols ) )
 
@@ -529,14 +529,14 @@ selectedData = function( data1 ,
      # Add var for selected ous
       if ( .cat ) cat( '\n - selectedData length( selectedOUs()): ' , length( selectedOUs ) )
       
-      if ( length( selectedOUs ) > 0  ) data = data[ , Selected := fifelse( orgUnit %in% selectedOUs, 
+      data = data[ , Selected := fifelse( orgUnit %in% selectedOUs, 
                                                         'Reporting Each Period',
                                                         'Inconsistent Reporting') ] %>%
         as_tibble(.)
       
     # data = data %>% filter( Selected %in% 'Reporting Each Period' )
     } else {
-         data = data[ , Selected := "All", ]
+         data = data[ , Selected := "All", ] %>% as_tibble(.)
    }
    
         
@@ -559,7 +559,7 @@ dataTotal = function(
     mean.merge = FALSE ,
     .cat = FALSE ){
     
-    if ( .cat ) cat( '\n* reporting_widget data.total()' )
+    if ( .cat ) cat( '\n* reporting_widget dataTotal()' )
   
     if ( is.null( period ) ) period = dataPeriod( data )
       
@@ -580,7 +580,7 @@ dataTotal = function(
       
     }
   
-      if ( any( grepl( "avg_mm" , names( data ) ) ) ){
+    if ( any( grepl( "avg_mm" , names( data ) ) ) ){
           
           if ( .cat )  cat( '\n - with avg_mm' )
         
@@ -590,6 +590,7 @@ dataTotal = function(
                    by =  group_by_cols ] 
           
         } else {
+          cat( "\n - createing dataCol")
           
           data = setDT( data ) %>%
                 .[ , .( dataCol = sum( dataCol , na.rm = TRUE  )) , by =  group_by_cols ] 
@@ -611,6 +612,8 @@ dataTotal = function(
 
       key.cols = setdiff( group_by_cols , period ) 
       
+      if ( .cat )    cat( '\n - key.cols' , key.cols );
+      
     #   if ( period %in% 'Month' ){
     # 
     #   data.total = setDT( data )[  which( Month >=  yearmonth( startMonth ) &
@@ -629,7 +632,7 @@ dataTotal = function(
     data.total = data[ , total := replace_na( dataCol , 0)  ,] %>%
       as_tibble()
 
-    if ( .cat ) cat('\n - end data.total()')
+    if ( .cat ) cat('\n - end dataTotal()')
     
     return( data.total )
     
@@ -644,7 +647,7 @@ htsFormula = function(
                 split = 'None' ,
                 .cat = FALSE ){   
  
-    if ( .cat ) cat("\n* hts():" )
+    if ( .cat ) cat("\n* htsFormula():" )
 
     if (is.null( levelNames)) levelNames = getLevelNames( orgUnits = orgUnits )
    
@@ -689,7 +692,7 @@ htsFormula = function(
     # if ( length( selectedOUs() ) > 0  & !input$split %in% 'None' ) hts =
     #   paste( input$split ,  ' * Facilities * (', hts , ')' )
     
-    if ( .cat ) cat("\n - end hts():" , hts )
+    if ( .cat ) cat("\n - end htsFormula():" , hts )
   
     return( hts )
   }
@@ -702,7 +705,7 @@ htsData = function( data = NULL ,
                     .cat = FALSE , 
                     timing = FALSE , ... ){
 
-    if ( .cat ) cat('\n* data.hts:' )
+    if ( .cat ) cat('\n* htsData:' )
   
     if ( timing ) tic() 
   
@@ -734,7 +737,7 @@ htsData = function( data = NULL ,
     # exogenous vaiables
      if ( all( covariates %in% names( data ) ) ){
        
-      cat( "\n - ",  covariates , "%in% names( data.hts )" )
+      cat( "\n - ",  covariates , "%in% names( data )" )
     
       xreg.var = covariates 
       

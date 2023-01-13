@@ -68,7 +68,7 @@ library( ggrepel )
 library( ragg )
 library( scales)
 library( lemon ) # for reposition_legend() 
-library( summarytools ) # invokes Xquartz on mac.
+if ( 'summarytools' %in% installed.packages() )  library( summarytools ) # invokes Xquartz on mac.
 # library( describer )
 
 # library( tidyfast )
