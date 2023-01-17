@@ -133,7 +133,10 @@ data_leaves = function( d ){
     as_tibble() %>%
     group_by( orgUnit, dataElement.id ) %>%
     summarise( 
-      n = ifelse( !all(is.na( COUNT ) ) , max( COUNT , na.rm = TRUE ) , 0 ) , .groups = 'keep'
+      n = ifelse( !all(is.na( COUNT ) ) , 
+                  max( as.integer( COUNT ) , na.rm = TRUE ) , # as integer because character value may be "1" or "1.0"
+                  0 ) , 
+      .groups = 'keep'
          ) %>%
     mutate( 
       effectiveLeaf = ifelse( n == 1, TRUE, FALSE ) ) %>%

@@ -75,11 +75,13 @@ get = function( source_url , .print = TRUE , json = TRUE , ...){
   httr::set_config(httr::config(ssl_verifypeer=0L))
   
   if ( .print ){
-    cat( paste( "\n - downloading " ,  "...") ) 
+    cat( paste( "\n - downloading " , 
+                # source_url,  
+                "...") ) 
     # print( Sys.time() )
   } 
   
-  from_url =  GET( source_url , timeout = 30 ) 
+  from_url =  GET( source_url  ) 
   
   # print( 'GET completed')
   # print( from_url )
@@ -431,9 +433,10 @@ fetch_get <- function( baseurl. , de. , periods. , orgUnits. ,
                        aggregationType. ,
                        get.print = FALSE, username. = NULL , password. = NULL ){
   
-    # cat( '\n* fetch_get:' ) 
-    url = api_url( baseurl. , de. , periods. , orgUnits. , aggregationType. )
+    if ( get.print )  cat( '\n* fetch_get:' ) 
     
+    url = api_url( baseurl. , de. , periods. , orgUnits. , aggregationType. )
+    if ( get.print )  cat( '\n - url:', url ) 
     
     fetch = retry( get( url , .print = get.print , username., password. )[[1]] ) # if time-out or other error, will retry 
     # fetch = get( url , .print = get.print )
@@ -685,7 +688,12 @@ api_data = function(      periods = NA ,
      
       prev.periods = prev.data %>% pull( period ) %>% unique %>%  paste(. , collapse = ';')
       cat( '\n - previous periods:' ,  prev.periods )
- 
+      
+      prev.periods.years = str_extract_all(prev.periods, "[0-9]+")[[1]] %>% str_sub(1,4) %>% unique()
+      prev.periods.years = prev.periods.years[ order( prev.periods.years )]
+      cat( '\n - previous periods years:' ,  prev.periods.years )
+      
+      
       ## FETCH CURRENT VALUES of previous data 
       cat( '\n - checking previous counts\n' ) 
       # current.count = fetch(  baseurl , new.elements , prev.periods , orgUnits. = "LEVEL-1" , "COUNT" )  %>%
@@ -699,18 +707,32 @@ api_data = function(      periods = NA ,
                     "Looking to see if national monthly COUNTs are the same as when last downloaded"
        )
      )
+      
+     ## NB: Some servers return null when requesting mulitple years (e.g. Malawi when data on both sides of 2020) 
+     
+        current.counts = list( length( prev.periods.years ) )
+        
+        for ( i in seq_along( prev.periods.years ) ) {
        
-                    
-      current.counts = fetch_get(  baseurl. = baseurl , username , password ,
-                                  de. = new.elements , 
-                                  periods. = prev.periods, 
-                                  orgUnits. = "LEVEL-1" , 
-                                  aggregationType. = "COUNT" ,
-                                  get.print = print ) %>%
-        mutate( current.count = as.integer( value )  )
-      
-      
-      
+          prev.periods.in.year = str_extract_all( prev.periods, 
+                                                  paste0( prev.periods.years[i] ,"[0-9][0-9]" )
+                                                  )[[1]] %>%  unique()
+          prev.periods.in.year = prev.periods.in.year[ order(prev.periods.in.year) ] %>%  paste(. , collapse = ';')
+          
+          cat( '\n - for' , prev.periods.in.year )
+          
+          current.counts[[i]] = fetch_get(  baseurl. = baseurl , username , password ,
+                                      de. = new.elements , 
+                                      periods. = prev.periods.in.year , 
+                                      orgUnits. = "LEVEL-1" , 
+                                      aggregationType. = "COUNT" ,
+                                      get.print = print ) %>%
+                                  mutate( current.count = as.integer( value )  )
+          }
+        cat( '\n - combining previous values \n' )
+        current.counts = bind_rows( current.counts )
+        cat( '\n - rows =' , nrow( current.counts ) , "\n")
+        
       removeModal()
       
      showModal(
@@ -721,21 +743,43 @@ api_data = function(      periods = NA ,
        )
      )
        
-      cat( '\n - checking previous values\n' )
-      current.values = fetch_get(  baseurl. = baseurl , username , password ,
-                                  de. = new.elements , 
-                                  periods. = prev.periods, 
-                                  orgUnits. = "LEVEL-1" , 
-                                  aggregationType. = "SUM" ,
-                                  get.print = print ) %>%
-        mutate( current.value = as.integer( value )  )
+        cat( '\n - checking previous values:' )
+      
+        for ( i in seq_along( prev.periods.years ) ) {
+       
+          current.values = list( length( prev.periods.years ) )
+          
+          prev.periods.in.year = str_extract_all( prev.periods, 
+                                                  paste0( prev.periods.years[i] ,"[0-9][0-9]" )
+                                                  )[[1]] %>%  unique()
+          prev.periods.in.year = prev.periods.in.year[ order(prev.periods.in.year) ] %>%  paste(. , collapse = ';')
+          
+          cat( '\n - for' , prev.periods.in.year )
+          
+          current.values[[i]] = fetch_get(  baseurl. = baseurl , username , password ,
+                                    de. = new.elements , 
+                                    periods. = prev.periods.in.year ,
+                                    orgUnits. = "LEVEL-1" , 
+                                    aggregationType. = "SUM" ,
+                                    get.print = print ) %>%
+                                mutate( current.value = as.integer( value )  )
+        
+        }
+        
+        cat( '\n - combining previous values \n' )
+        
+      #TESTING
+      # saveRDS( current.counts, 'current.counts.rds')
+      # saveRDS( current.values, 'current.values.rds')
+  
+        # current.values = bind_rows( current.values )
+        current.values = bind_rows( lapply( current.values, function(x) if( !is.data.frame(x) ) NULL else x) )
+        
+        cat( '\n - rows =' , nrow( current.values ) , "\n")
       
       removeModal()  
       
-      #TESTING
-      saveRDS( current.counts, 'current.counts.rds')
-      saveRDS( current.values, 'current.values.rds')
-      
+     
       # Compare with previous data just for level-1
       ## for excel
       # prev = prev.data %>% filter( level == 1 , period %in% period_vectors ) 
