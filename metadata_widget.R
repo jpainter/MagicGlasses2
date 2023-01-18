@@ -630,7 +630,7 @@ metadata_widget_server <- function( id ,
                            list( '10', '25', '100', 'All' ) ) ,
         pageLength = 10 ,
         server = TRUE ,
-        dom = 'tirp' ) ,
+        dom = 'tilrp' ) ,
       fillContainer = TRUE
   ))
   
@@ -649,9 +649,24 @@ metadata_widget_server <- function( id ,
 
     if ( !is.null( categories() ) ) categories()  ,
 
-    rownames = FALSE,
+    rownames = FALSE, 
     filter = 'top' ,
-    options = DToptions_no_buttons()
+    # options = DToptions_no_buttons()
+    options = list(
+      # bPaginate = FALSE, 
+      autoWidth = TRUE ,
+      scrollY = "60vh"  ,
+      scrollX = TRUE ,
+      scrollCollapse = TRUE ,
+      paging = TRUE ,
+      searching = TRUE , 
+      info = TRUE ,
+      lengthMenu = list( c(  10, 25, 100, -1 ) , 
+                         list( '10', '25', '100', 'All' ) ) ,
+      pageLength = 10 ,
+      server = TRUE ,
+      dom = 'tilrp' ) ,
+    fillContainer = TRUE
   ))
   
   # DataSets: remove dataSetElements...if it has it!
@@ -826,7 +841,23 @@ metadata_widget_server <- function( id ,
     
     rownames = FALSE, 
     filter = 'top' ,
-    options = DToptions_no_buttons()
+    # options = DToptions_no_buttons()
+    options = list(
+      # bPaginate = FALSE, 
+      autoWidth = TRUE ,
+      scrollY = "60vh"  ,
+      scrollX = TRUE ,
+      scrollCollapse = TRUE ,
+      paging = TRUE ,
+      searching = TRUE , 
+      info = TRUE ,
+      lengthMenu = list( c(  10, 25, 100, -1 ) , 
+                         list( '10', '25', '100', 'All' ) ) ,
+      pageLength = 10 ,
+      server = TRUE ,
+      dom = 'tilrp' ) ,
+    fillContainer = TRUE
+    
   ))
   
 ## orgUnitLevels ####

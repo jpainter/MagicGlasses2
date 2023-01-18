@@ -614,18 +614,23 @@ dataTotal = function(
       
       if ( .cat )    cat( '\n - key.cols' , key.cols );
       
-    #   if ( period %in% 'Month' ){
-    # 
-    #   data.total = setDT( data )[  which( Month >=  yearmonth( startMonth ) &
-    #                                     Month <=  yearmonth( endMonth ) ) , ] 
-    #   
-    # } 
-    # 
-    # if ( period %in% 'Week' ){
-    # 
-    #   data.total = setDT( data )[ which( Week >=  yearweek( startMonth ) &
-    #                                     Week <=  yearweek( endMonth ) ) , ] 
-    # } 
+      
+      if ( period %in% 'Month' ){
+
+        if ( .cat )    cat( '\n - period' , period , startMonth , endMonth )
+        
+      data = setDT( data )[  which( Month >=  yearmonth( startMonth ) &
+                                        Month <=  yearmonth( endMonth ) ) , ]
+
+    }
+
+    if ( period %in% 'Week' ){
+      
+      if ( .cat )    cat( '\n - period' , period , startMonth , endMonth )
+
+      data = setDT( data )[ which( Week >=  yearweek( startMonth ) &
+                                        Week <=  yearweek( endMonth ) ) , ]
+    }
  
     ## NB does data.total need to be a Tsibble?--it is slow.  
     

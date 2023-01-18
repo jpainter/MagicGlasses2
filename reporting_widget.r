@@ -153,12 +153,12 @@ reporting_widget_ui = function ( id ){
       
       mainPanel( 
         tabsetPanel( type = "tabs", 
-        tabPanel( "Summary",  style = "height:95vh;" ,
+        tabPanel( "Summary",  style = "height:90vh;" ,
       
                   fluidPage( 
                     
                     
-                    fluidRow( style = "height:50vh;",
+                    fluidRow( style = "height:40vh;",
                               
                             column(6, 
                                    
@@ -203,7 +203,7 @@ reporting_widget_ui = function ( id ){
                   #           
                   # ) , 
 
-                  fluidRow( style = "height:40vh;"  ,
+                  fluidRow( style = "height:50vh;"  ,
                           
                           column(12, 
                             plotOutput( ns('plot_values') ,
