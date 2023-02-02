@@ -42,7 +42,8 @@ if ( length( needed ) > 0 ){
 
 ```
 
-```{r libraries }
+```{r libraries , include=FALSE}
+
 options("menu.graphics" = FALSE)
 
 library(conflicted) # For diagnosing function name conflicts

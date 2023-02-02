@@ -27,7 +27,7 @@ extremely_mad = function( x , # A vector of numeric values
 
   # # Remove key entry errors
   if ( !all(is.na( key_entry_error )) ) {
-    key_error =  x>=0 & x %in% key_entry_error$original
+    key_error =  x>=0 & x %in% key_entry_error
   } else { key_error = !x>=0 }
   
   
@@ -131,8 +131,8 @@ mad_outliers = function( d ,
             group_by( orgUnit, data.id ) %>%
             mutate(
               .max = ifelse( 
-                grepl("jour|day", data ) &
-                grepl("out|rupture", data )   &
+                grepl("jour|day", data, ignore.case = TRUE  ) &
+                grepl("out|rupture", data , ignore.case = TRUE  )   &
                 effectiveLeaf
                 , 31, NA  )  
               ) %>%
@@ -145,11 +145,13 @@ mad_outliers = function( d ,
                                        logical = TRUE, .pb = NULL , 
                                        .progress = TRUE ,
                                        total = .total ) 
+                
                 , mad10 = extremely_mad( ifelse( mad15, original , NA ), 
                                          deviation = 10 , 
                                          smallThreshold = .threshold ,
                                          maximum_allowed = .max , 
                                          logical = TRUE  ) 
+                
                 , mad5 = extremely_mad( ifelse( mad10, original , NA ), 
                                         deviation = 5 , 
                                         smallThreshold = .threshold * 2 ,

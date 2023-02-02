@@ -458,8 +458,8 @@ cleaning_widget_server <- function( id ,
                    original ) %>% 
              arrange(-n) 
          
-          # Default: values where the number happens at least 3 > than 
-           # medianof the top 10 rows 
+          # Default: values where the number happens at least 3* > than 
+           # median of the top 10 rows 
            key_entry_errors = key_entry_errors %>% 
              filter(  n > 3 * median( 
                key_entry_errors %>% filter( row_number()<11 )  %>%
@@ -480,9 +480,10 @@ cleaning_widget_server <- function( id ,
                               value = 0, {
             
   
-                data.mad = mad_outliers( d , .total = .total , 
-                                .threshold = 50,
-                                key_entry_errors = key_entry_errors  )
+                data.mad = mad_outliers( d , 
+                                         .total = .total , 
+                                         .threshold = 50,
+                                         key_entry_errors = key_entry_errors  )
           })
           
          cat( '\n - scanning for Seasonal outliers')

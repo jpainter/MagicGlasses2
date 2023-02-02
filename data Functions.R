@@ -106,7 +106,7 @@ mostFrequentReportingOUs <- function(
                           period = NULL ,
                           missing_reports = 0 ,
                           count.any = TRUE , 
-                          all_categories = TRUE , 
+                          # all_categories = TRUE , 
                           data_categories = NULL ,
                          .cat = FALSE ){
   
@@ -119,8 +119,8 @@ mostFrequentReportingOUs <- function(
     
     # TODO for speed -- use data.table ....
     
-    if ( !count.any & !all_categories  ){
-          if ( .cat ) cat( '\n - input$all_categories:'  )
+    if ( !count.any   ){
+          if ( .cat ) cat( '\n - not count.any'  )
           data = data %>% filter( data %in% data_categories )
        }
   
@@ -398,7 +398,7 @@ groupByCols = function(
 # selectedData equivalent to MG2 reactive function plotData()
 selectedData = function( data1 ,  
                          levelNames = NULL ,
-                         all_categories = TRUE , 
+                         # all_categories = TRUE , 
                          data_categories = NULL ,
                          alwaysReporting = TRUE , 
                          missing_reports = 0 ,
@@ -504,7 +504,8 @@ selectedData = function( data1 ,
     # filter to selected category
     if ( .cat ) cat( '\n - selectedData filtered by' , data_categories )
 
-    if ( !all_categories )  data = data %>% filter( data %in% data_categories )
+    # if ( !all_categories )
+      data = data %>% filter( data %in% data_categories )
    
     if ( .cat ) cat( '\n - nrow( d ):' , nrow( data ))
    
@@ -518,7 +519,7 @@ selectedData = function( data1 ,
        if ( .cat ) cat( "\n - finding most frequently reporting OUs")
          
         selectedOUs  = mostFrequentReportingOUs( data ,
-                                             all_categories = all_categories , 
+                                             # all_categories = all_categories , 
                                              data_categories = data_categories ,
                                              startingMonth = startingMonth , 
                                              endingMonth = endingMonth ,
@@ -590,7 +591,7 @@ dataTotal = function(
                    by =  group_by_cols ] 
           
         } else {
-          cat( "\n - createing dataCol")
+          if ( .cat )   cat( "\n - creating dataCol")
           
           data = setDT( data ) %>%
                 .[ , .( dataCol = sum( dataCol , na.rm = TRUE  )) , by =  group_by_cols ] 

@@ -128,18 +128,19 @@ reporting_widget_ui = function ( id ){
         
         h5( "Data elements" ) , 
               
-               checkboxInput( ns("all_categories") , 
-                                      label = 'Select all dataElements/Categories',
-                                      value = TRUE )  ,
-      
-               selectInput( ns("data_categories") , 
-                                  label = "DataElement/Category" , 
-                          choices = NULL  ,
-                          selected = 1 ,
-                          width = "100%" ,
-                          multiple = TRUE ,
-                          selectize = TRUE
-                          ) ,
+               # checkboxInput( ns("all_categories") , 
+               #                        label = 'Select all dataElements/Categories',
+               #                        value = TRUE )  ,
+        
+        
+                actionButton( ns('update_data_categories') , label = "Update") ,
+        
+        
+                checkboxGroupInput( ns("data_categories") ,
+                                   label = "DataElement/Category" ,
+                           choices = NULL  ,
+                           selected = 1 ,
+                           width = "100%" ) ,
         
              h5( "By default, facility counted as reporting if the selected data was reported") ,
         
@@ -203,12 +204,13 @@ reporting_widget_ui = function ( id ){
                   #           
                   # ) , 
 
-                  fluidRow( style = "height:50vh;"  ,
+                  fluidRow( style = "height:40vh;"  ,
                           
                           column(12, 
                             plotOutput( ns('plot_values') ,
                                 hover = "plotSelectedOusValues_hover" ,
-                                brush = "plotSelectedOusValues_brush" , height = "80%"
+                                brush = "plotSelectedOusValues_brush" , 
+                                height = "80%"
                                 )
                           )
                           )
@@ -407,19 +409,24 @@ reporting_widget_server <- function( id ,
 #                        selected = 1 )
 #     cat( '\n - done' )
 # } )
+  
+  selected_data_categories = reactiveValues()
+  
+  observeEvent( input$update_data_categories , {
+    
+    selected_data_categories$elements = input$data_categories
+  })
 
   observeEvent( 'data' %in% names( data1() ) , {
     req( data1()$data )
     cat( '\n* updating data_categories to all' )
     
-    if( input$all_categories == TRUE ){
-      updateSelectInput( session, 'data_categories' , 
+    updateCheckboxGroupInput( session, 'data_categories' , 
                          choices =   unique( data1()$data ) ,
                          selected = unique( data1()$data ) ) 
-    } else {
-      updateSelectInput( session, 'data_categories' , 
-                         choices =   unique( data1()$data ) ) 
-    }
+
+    selected_data_categories$elements = unique( data1()$data )
+    
     cat( '\n - done' )
   } )
   
@@ -601,7 +608,7 @@ reporting_widget_server <- function( id ,
     }  
     
     if ( input$source %in% 'Cleaned' & 'seasonal3' %in% names(data) ){
-      cat( '\n -' , paste('cleaning removes', sum( data$value , na.rm = T ) - sum( data$seasonal3 , na.rm = T )  , 'data points' ) )
+      cat( '\n -' , paste('Cleaning removes', sum( data$value , na.rm = T ) - sum( data$seasonal3 , na.rm = T )  , 'data points' ) )
       
       # data = data %>% 
       #   mutate( dataCol = ifelse( seasonal3, original, NA  ) )
@@ -659,7 +666,7 @@ reporting_widget_server <- function( id ,
   #  Reports ####
 
   orgunit.reports = reactive({ 
-      req( input$data_categories )
+      req( selected_data_categories$elements )
       req( most_recent_period() )
       req( period() )
       
@@ -675,9 +682,10 @@ reporting_widget_server <- function( id ,
       #Testing
       # saveRDS( data, 'orgunits.reports.data.rds')
       
-      if ( !input$count.any & !input$all_categories ){
+      if ( !input$count.any  ){
+        
         # data =  data %>% filter( data %in% input$data_categories )
-        data = setDT( data )[ data %in% input$data_categories , , ]
+        data = setDT( data )[ data %in% selected_data_categories$elements , , ]
         
       }  
        
@@ -741,7 +749,7 @@ reporting_widget_server <- function( id ,
     })
     
   orgunit.monthly.reports = reactive({ 
-      req( input$data_categories )
+      req( selected_data_categories$elements )
       cat( '\n* reporting_widget orgunit.monthly.reports():' )
       
       # mrp = most_recent_period()
@@ -752,7 +760,9 @@ reporting_widget_server <- function( id ,
       data = d()
       cat( '\n - o.m.r data has' , nrow(data), 'rows' )
       
-      if ( !input$count.any & !input$all_categories   ) data = data %>% filter( data %in% input$data_categories )
+      if ( !input$count.any   ){
+        data = data %>% filter( data %in% selected_data_categories$elements )
+      } 
       
       o.m.r = 
         data %>% as_tibble() %>% ungroup %>%
@@ -981,8 +991,14 @@ reporting_widget_server <- function( id ,
     req( input$startingMonth  )
     req( d() )
     req( period() )
+    req( selected_data_categories$elements )
     
     cat( "\n* reporting_widget: selectedOUs" )
+    
+    if ( length( selected_data_categories$elements ) == 0 ){
+      cat("\n - no data elements selected")
+      return()
+    }
     
     # Testing
     # d = d() 
@@ -997,9 +1013,14 @@ reporting_widget_server <- function( id ,
     # save( d , endingMonth, startingMonth, .period, missing_reports, count.any,
     #       all_categories, data_categories, .cat, file = 'selectedOUs_data.rda')
     
+    
     if ( input$mostReports ){
        cat( "\n - determining most frequently reported facilities..." ,
             input$startingMonth  ,  input$endingMonth )
+      
+       # cat( "\n - selected_data_categories:" , 
+       #      paste( selected_data_categories$elements , collapse = ", " ) 
+       #      )
       
       sf = mostFrequentReportingOUs( d = d() ,
                        endingMonth = input$endingMonth ,
@@ -1007,8 +1028,8 @@ reporting_widget_server <- function( id ,
                        period = period() ,
                        missing_reports = as.integer( input$missing_reports ) ,
                        count.any = input$count.any ,
-                       all_categories = input$all_categories ,
-                       data_categories = input$data_categories ,
+                       # all_categories = input$all_categories ,
+                       data_categories = selected_data_categories$elements ,
                        .cat = FALSE )
 
       cat( "\n - mostFrequentReportingOUs:", length(sf), 'orgUnits' ); toc()
@@ -1231,7 +1252,7 @@ reporting_widget_server <- function( id ,
   selected_data = reactive({
    #print( 'selected_data():')
    req( data1() )
-   req( input$data_categories )
+   req( selected_data_categories$elements )
    
   
    cat("\n* reporting_widget selected_data(): " , input$level2 )
@@ -1239,10 +1260,11 @@ reporting_widget_server <- function( id ,
    selected_data =  selectedData( 
       data = data1() ,
       levelNames = levelNames() ,
-      data_categories = input$data_categories ,
-      all_categories = input$all_categories ,
+      data_categories = selected_data_categories$elements ,
+      # all_categories = input$all_categories ,
       alwaysReporting = input$mostReports ,
-      selectedOUs = selectedOUs() , 
+      selectedOUs = selectedOUs() ,
+      source = input$source ,
       level2 = input$level2 ,
       level3 = input$level3 ,
       level4 = input$level4 , 
@@ -1519,7 +1541,7 @@ reporting_widget_server <- function( id ,
     .d = aggregateselected_data()
     
     # testing
-    saveRDS(.d, 'plot3_data.rds')
+    # saveRDS(.d, 'plot3_data.rds')
     
     data.text = paste( unique( selected_data()$data ) ,
                        collapse = " + " ) 

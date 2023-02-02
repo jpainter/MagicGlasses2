@@ -15,11 +15,12 @@
 # Functions ####
 # Login ####
 loginDHIS2<-function( baseurl, username, password, timeout = 30 ) {
-  
+  cat("\n* api_data:")
   url<-paste0( baseurl, "api/me" )
   
   r <-  GET( url, authenticate( username, password) , config = httr::config(connecttimeout = timeout ) ) 
   
+  cat( "/n - status_code:", r$status_code )
   assert_that( r$status_code == 200L ) 
 }
 
@@ -636,7 +637,7 @@ api_data = function(      periods = NA ,
                            COUNT, SUM ) %>%
                   rename( dataElement = dataElement.id ,
                           categoryOptionCombo = categoryOptionCombo.ids ) %>%
-                  filter( !is.na( COUNT ) || COUNT == 0 ) %>%
+                  filter( ! is.na( COUNT ) & COUNT != 0 )  %>%
                   distinct 
         } else {
                 prev.data = prev.data %>% as_tibble %>%
@@ -728,8 +729,9 @@ api_data = function(      periods = NA ,
                                       aggregationType. = "COUNT" ,
                                       get.print = print ) %>%
                                   mutate( current.count = as.integer( value )  )
-          }
-        cat( '\n - combining previous values \n' )
+        }
+        
+        cat( '\n - combining previous counts \n' )
         current.counts = bind_rows( current.counts )
         cat( '\n - rows =' , nrow( current.counts ) , "\n")
         
@@ -744,10 +746,10 @@ api_data = function(      periods = NA ,
      )
        
         cat( '\n - checking previous values:' )
+        
+        current.values = list( length( prev.periods.years ) )
       
         for ( i in seq_along( prev.periods.years ) ) {
-       
-          current.values = list( length( prev.periods.years ) )
           
           prev.periods.in.year = str_extract_all( prev.periods, 
                                                   paste0( prev.periods.years[i] ,"[0-9][0-9]" )
@@ -767,15 +769,19 @@ api_data = function(      periods = NA ,
         }
         
         cat( '\n - combining previous values \n' )
+        saveRDS( current.values, 'current.values.rds')
+        
+        current.values = bind_rows( current.values )
+        cat( '\n - rows =' , nrow( current.values ) , "\n")
         
       #TESTING
-      # saveRDS( current.counts, 'current.counts.rds')
-      # saveRDS( current.values, 'current.values.rds')
+      saveRDS( current.counts, 'current.counts.rds')
+      saveRDS( current.values, 'current.values.rds')
   
         # current.values = bind_rows( current.values )
-        current.values = bind_rows( lapply( current.values, function(x) if( !is.data.frame(x) ) NULL else x) )
+        # current.values = bind_rows( lapply( current.values, function(x) if( !is.data.frame(x) ) NULL else x) )
         
-        cat( '\n - rows =' , nrow( current.values ) , "\n")
+        # cat( '\n - rows =' , nrow( current.values ) , "\n")
       
       removeModal()  
       
@@ -822,16 +828,18 @@ api_data = function(      periods = NA ,
         saveRDS( update_compare ,  paste0( dir, 'update_compare_', formula,"_", Sys.Date() , ".rds") )
       
         prev.periods.same.data = update_compare %>% 
-          group_by( period ) %>%
-          filter( all( same ) ) %>%
-          pull( period ) %>% unique 
-        
+          group_by( period , dataElement , categoryOptionCombo ) %>%
+          filter( all( same ) ) 
         
         cat(  '\n - prev.periods.same.data for ' , 
-              paste( prev.periods.same.data , collapse = ';') , "\n"
+              paste( prev.periods.same.data %>% 
+                       pull( period ) %>% unique , 
+                     collapse = ';') , "\n"
         )
         
-        update.periods = setdiff( period_vectors, prev.periods.same.data )
+        update.periods = setdiff( period_vectors, 
+                                  prev.periods.same.data %>% 
+                                    pull( period ) %>% unique )
         
         cat(  '\n - Need to update or get new data data for ' , 
               paste( update.periods , collapse = ';') , "\n"
@@ -1133,6 +1141,8 @@ api_data = function(      periods = NA ,
     
     cat( '\n' , nrow(d), 'records with sum and count' )
     cat( '\n' , 'of these, there was no value for' , sum( is.na(d$SUM) ), 'records \n' )
+    
+    saveRDS( d, 'data_download.rds')
     
     # update value in most_recent_data_file
     if ( update &&  nrow( prev.data ) > 0 ){

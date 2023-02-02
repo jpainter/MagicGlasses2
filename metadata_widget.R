@@ -1270,9 +1270,10 @@ metadata_widget_server <- function( id ,
       geosf. = geosf. %>%
         right_join( orgUnits() %>%
                      # filter( ! is.na( code ) ) %>%
-                     select( id, levelName, leaf, parent ) %>%
+                     select( id, name, levelName, leaf, parent ) %>%
                       rename( parentName = parent ),
-                   by = 'id' )
+                   by = c( 'id' ,  'name' )
+        )
       
       cat( "\n - rows with ous linked to orgUnits" , nrow( geosf. ) , '\n')
       

@@ -234,16 +234,16 @@ login_widget_server <- function( id ){
   # Login Status
   observeEvent( credentialsProvided() , {
 
-    print( paste( 'login' ,  baseurl() , input$username, input$password  ))
+    print( paste( 'login' ,  baseurl() , input$username,  "..." )) #input$password 
     
     if ( is_empty( baseurl() ) | is_empty( input$username ) | is_empty( input$password ) ){
 
       login( FALSE )
     }
 
-    l = try( loginDHIS2( baseurl() , input$username, input$password) )
+    l = try( loginDHIS2( baseurl() , input$username, input$password, timeout = 45 ) )
 
-    print( paste( 'try loginDHIS2 is' , l , baseurl() , input$username, input$password  ))
+    print( paste( 'try loginDHIS2 is' , l , baseurl() , input$username, "..."  )) #
     
     if ( class( l ) == "logical" ) {
 

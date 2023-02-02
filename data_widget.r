@@ -357,9 +357,9 @@ data_widget_server <- function( id ,
             cat( '\n* data_widget data1')
             
             # Testing 
-              # saveRDS( dataset() , 'dataset.rds' )
-              # saveRDS( formula_elements() , 'formula_elements.rds' )
-              # saveRDS( ousTree() , 'ousTree.rds' )
+              saveRDS( dataset() , 'dataset.rds' )
+              saveRDS( formula_elements() , 'formula_elements.rds' )
+              saveRDS( ousTree() , 'ousTree.rds' )
               
             cat( '\n -  data_widget data1() class( dataset() )', class( dataset() ))
           
