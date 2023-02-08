@@ -1039,59 +1039,21 @@ cleaning_widget_server <- function( id ,
         cat('\n* outlier.summary' )
         d = outlier.dataset()
         
-        cols = outlier.summary.cols() 
-        if ( 'expected' %in% cols ) cols = setdiff( cols, 'expected' )
-  
-        cat('\n - totals' )
         
-        # data.table? 
-        # total = d %>%
-        #   summarise( Total = sum( original , na.rm = T ) ,
-        #              # monthlyN = n() ,
-        #              N = sum( !is.na( original )))
+        # if not latest outliers set -- please re-run
+        if ( ! 'key_entry_error' %in% names( d ) ){
+          
+          modalDialog( title = "The outlier flags in the data are based on older algorithms.\n
+                       Please re-run the outlier detection.  ", 
+                       # easyClose = TRUE ,
+                       size = 'm' 
+          )
+          return()
+        }
+          
         
-        #Testing
-        # saveRDS( d, 'outlier.summary.table.d.rds')
-  
-        total = setDT( d )[ , .( Total = sum( original , na.rm = T ) ,
-                                 # monthlyN = n() ,
-                                 N = sum( !is.na( original )) ) ,  ]
+        os = outlier.summary.tibble( data = d )
         
-        cat('\n - summary' )
-        
-        # data.table 
-        os <- setDT( d )[ !is.na( mad15 ) ,
-                          .( n = sum( !is.na( original ) ) ,
-                             total = sum( original , na.rm = T )  ,
-                             max = max( original , na.rm = T ) %>% comma() ) ,
-                          cols] %>%
-          as_tibble %>%
-          arrange_at( cols ) %>%
-          bind_cols( total  ) %>%
-          mutate(
-            `%N` = percent( n / N ) ,
-            `%Total` = percent( total / Total ) ,
-            n = comma( n ) ,
-            total = comma( total )
-          )   %>%
-          select( !! cols  , n ,  `%N` ,  max , total , `%Total`  )
-        
-        # Tidy
-        # os <- setDT( d )[ !is.na( mad15 ) , 
-        #                  .( n = sum( !is.na( original ) ) , 
-        #                     total = sum( original , na.rm = T )  ,
-        #                     max = max( original , na.rm = T ) %>% comma() ) , 
-        #                  cols] %>%
-        #   as_tibble %>% 
-        #   arrange_at( cols ) %>%
-        #   bind_cols( total  ) %>%
-        #   mutate(
-        #              `%N` = percent( n / N ) ,
-        #              `%Total` = percent( total / Total ) ,
-        #              n = comma( n ) ,
-        #              total = comma( total )
-        #              )   %>%
-        #   select( !! cols  , n ,  `%N` ,  max , total , `%Total`  ) 
           
         cat('\n - summary has' , nrow(os) , 'rows')
         return( os )

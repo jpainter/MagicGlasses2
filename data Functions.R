@@ -514,7 +514,8 @@ selectedData = function( data1 ,
      
      if ( .cat ) cat( '\n - alwaysReporting' )
      
-     if ( is_empty( selectedOUs ) ){
+     selectedOUs = NULL 
+     if ( is_empty( selectedOUs ) & nrow( data ) > 0 ){
        
        if ( .cat ) cat( "\n - finding most frequently reporting OUs")
          
@@ -525,7 +526,7 @@ selectedData = function( data1 ,
                                              endingMonth = endingMonth ,
                                              
                                              )
-     } 
+     }  
    
      # Add var for selected ous
       if ( .cat ) cat( '\n - selectedData length( selectedOUs()): ' , length( selectedOUs ) )

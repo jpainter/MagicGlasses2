@@ -1014,7 +1014,7 @@ reporting_widget_server <- function( id ,
     #       all_categories, data_categories, .cat, file = 'selectedOUs_data.rda')
     
     
-    if ( input$mostReports ){
+    if ( input$mostReports & nrow( d() ) > 0 ){
        cat( "\n - determining most frequently reported facilities..." ,
             input$startingMonth  ,  input$endingMonth )
       

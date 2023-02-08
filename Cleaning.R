@@ -235,7 +235,7 @@ seasonal_outliers = function( d ,
 }
 
 
-outlier.summary = function(
+outlier.summary.tibble = function(
     data = NULL ,
     cols = c( "key_entry_error", "over_max" , 'mad15', 'mad10', 
               # 'mad5',
@@ -286,7 +286,7 @@ outlier.summary = function(
     bind_rows( os.errs , os.no.err )  %>%
     bind_cols( os.total  ) %>%
     mutate(
-      `%N` = ifelse( n>0 , percent( n / N ) , -Inf ) ,
+      `%N` = ifelse( n>0 , percent( n / N , accuracy = .01 ) , -Inf ) ,
       `%Total` = ifelse( n>0 , percent( total / Total , accuracy = .01 ) , -Inf ) ,
       n = comma( n ) ,
       total = comma( total ),
