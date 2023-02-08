@@ -450,24 +450,25 @@ cleaning_widget_server <- function( id ,
             nrow2 = nrow( u )
             cat('\n - There were', nrow1-nrow2, 'duplicates' )
           
-           cat( '\n - Scanning for repetive key entry errors')
-           key_entry_errors =
-             count( as_tibble( d %>% 
-                             filter( nchar(original)>3 , 
-                                    effectiveLeaf ) ) , 
-                   original ) %>% 
-             arrange(-n) 
-         
-          # Default: values where the number happens at least 3* > than 
-           # median of the top 10 rows 
-           key_entry_errors = key_entry_errors %>% 
-             filter(  n > 3 * median( 
-               key_entry_errors %>% filter( row_number()<11 )  %>%
-                 pull( n ) )
-               ) %>% pull( original )
-        
-           # print( head( key_entry_errors ) )
-           if ( is_empty( key_entry_errors )  ) key_entry_errors = NA
+          #### section on repetitive key erros moved to mad_outliers function in Cleaning.R
+          #  cat( '\n - Scanning for repetive key entry errors')
+          #  key_entry_errors =
+          #    count( as_tibble( d %>% 
+          #                    filter( nchar(original)>3 , 
+          #                           effectiveLeaf ) ) , 
+          #          original ) %>% 
+          #    arrange(-n) 
+          # 
+          # # Default: values where the number happens at least 3* > than 
+          #  # median of the top 10 rows 
+          #  key_entry_errors = key_entry_errors %>% 
+          #    filter(  n > 3 * median( 
+          #      key_entry_errors %>% filter( row_number()<11 )  %>%
+          #        pull( n ) )
+          #      ) %>% pull( original )
+          # 
+          #  # print( head( key_entry_errors ) )
+          #  if ( is_empty( key_entry_errors )  ) key_entry_errors = NA
              
            
           cat( '\n - scanning for MAD outliers')
@@ -475,27 +476,24 @@ cleaning_widget_server <- function( id ,
         
           .threshold = 50
       
-          withProgress(     message = "Searchng",
+          withProgress(     message = "Searchng for extreme values (MAD)",
                               detail = "starting ...",
                               value = 0, {
             
   
-                data.mad = mad_outliers( d , 
-                                         .total = .total , 
-                                         .threshold = 50,
-                                         key_entry_errors = key_entry_errors  )
+                data.mad = mad_outliers( d ,  .total = .total ,  .threshold = 50  )
           })
           
          cat( '\n - scanning for Seasonal outliers')
-         d = data.mad
-        .total = length( key_size( d ) )
+
+        .total = length( key_size( data.mad ) )
          cat( '\n - .total' , .total )
     
         withProgress(  message = "Seasonal Outliers",
                           detail = "starting ...",
                           value = 0, {
         
-                data1.seasonal = seasonal_outliers( d , .total = .total , .threshold = 50)
+                data1.seasonal = seasonal_outliers( data.mad , .total = .total , .threshold = 50)
           })  
           
           showModal(
@@ -539,24 +537,26 @@ cleaning_widget_server <- function( id ,
           nrow2 = nrow( u )
           cat('\n - There were', nrow1-nrow2, 'duplicates' )
 
-         cat( '\n - Scanning for repetive key entry errors')
-         key_entry_errors =
-           count( as_tibble( d %>%
-                           filter( nchar(original)>3 ,
-                                  effectiveLeaf ) ) ,
-                 original ) %>%
-           arrange(-n)
-
-        # Default: values where the number happens at least 3 > than
-         # median of the top 10 rows
-         key_entry_errors = key_entry_errors %>%
-           filter(  n > 3 * median(
-             key_entry_errors %>% filter( row_number()<11 )  %>%
-               pull( n ) )
-             ) %>% pull( original )
-
-         # print( head( key_entry_errors ) )
-         if ( is_empty( key_entry_errors )  ) key_entry_errors = NA
+          
+        #### This section -- repetivie key errors-- moved to mad_outliers function (Cleaning.R)
+        #  cat( '\n - Scanning for repetive key entry errors')
+        #  key_entry_errors =
+        #    count( as_tibble( d %>%
+        #                    filter( nchar(original)>3 ,
+        #                           effectiveLeaf ) ) ,
+        #          original ) %>%
+        #    arrange(-n)
+        # 
+        # # Default: values where the number happens at least 3 > than
+        #  # median of the top 10 rows
+        #  key_entry_errors = key_entry_errors %>%
+        #    filter(  n > 3 * median(
+        #      key_entry_errors %>% filter( row_number()<11 )  %>%
+        #        pull( n ) )
+        #      ) %>% pull( original )
+        # 
+        #  # print( head( key_entry_errors ) )
+        #  if ( is_empty( key_entry_errors )  ) key_entry_errors = NA
 
 
         cat( '\n - scanning for MAD outliers')
