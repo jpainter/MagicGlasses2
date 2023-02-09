@@ -76,7 +76,10 @@ tagList(
         
                         tabPanel( "Outlier Table",  
                                   textOutput( ns("outlierSummaryText")) ,
-                                  tableOutput( ns("outlier.summary.table") )  
+                                  tableOutput( ns("outlier.summary.table") )  , 
+                                  br() , 
+                                  htmltools::HTML("For information on the outlier procedure and algorithms, <br>
+                                             see the Outliers section on the About MagicGlasses2 page. ")
                         ) ,
                         
                         tabPanel( "Outlier Chart",  style = "height:60vh;" ,

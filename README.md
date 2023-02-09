@@ -85,19 +85,57 @@ This page is used to define the data for analysis (dataElements, categoryOptionC
 
 ## Outliers
 
-Several outlier algorithms are employed in succession, beginning with the most lax, *mad15*, and continuing to the most restrictive, *seasonal3*. The algorithms are applied to values entered at each orgUnit for each dataElement_category.  If there are 5 yrs of data, there will be 60 points (if complete reporting) in each time-series. If there are 1000 orgUnits and 2 dataElement_orgUnits, 
-
-- ### MAD
-
-The mean absolute deviation (MAD) [https://en.wikipedia.org/wiki/Median_absolute_deviation] is similar to a mean and standard deviation, but is more robust to outliers.  When there are multiple outliers in a series, the values may not be detected by the mean +/- standard deviation (or x times the SD), because the outliers may greatly inflate the mean and sd.  Therefore, the MAD is recommended [https://www.sciencedirect.com/science/article/abs/pii/S0022103113000668]. 
+Several outlier algorithms are employed in succession, beginning with the most lax, *mad15*, and continuing to the most restrictive, *seasonal3*. The algorithms are applied to values entered at each orgUnit for each dataElement_category.  
 
 
-- ### Seasonal outliers
+The algorithms are, in order, 
 
-Two algorithms are run to detect seasonally adjusted outliers, which are outliers when compared with values during the same time period, such as high value when value are usually low, or a low value when values usually run high. These values are not necessarily the largest or the smallest values, but their timing is incongrous with the timing of past values.  The *seasonal5* algorithm looks for values 5x greater than the difference between the observed and expected, divided by the MAD.  Values that pass the *seasonal5* are tested against *seasonal3*, which reduces the allowable range of values to 3x abs( observed - expected )/MAD
+- ### key_entry_error is a search for potential mobile phone entry codes that end up getting entered as the data.  The algorithm looks for values with at least 4 digits that occur more often than would be expected by random.  
 
-[An alternative set of outliers come from the tsoutlier function in the forecast package, which compares values to an STL model (https://robjhyndman.com/hyndsight/tsoutliers/)]
+- ### over_max is removes any values greater than a provided max value.  For monthly stock out data, we set a max of 31 (days). (Typically, no max is set for any other data element)  
 
+- ### Extreme Values (MAD) 
+
+Rather than using an algorithm base on values outside a mean +/- SD, we use the the mean absolute deviation (MAD) [https://en.wikipedia.org/wiki/Median_absolute_deviation]. The idea is similar to a mean and standard deviation approach, but is more robust to outliers.  When there are multiple outliers in a series, the values may not be detected by the mean +/- standard deviation (or x times the SD), because the outliers may greatly inflate the mean and sd.  Therefore, the MAD is recommended [https://www.sciencedirect.com/science/article/abs/pii/S0022103113000668]. 
+
+-- ### mad15 is similar to looking for values outside a mean +/- SD, but uses the median instead of the mean, and the median absolute deviation (mad), instead of the standard deviation.  The magnitude of deviation is set at 15x the mad.  
+
+
+The code is:
+deviation = 15 # for mad15 (10 for mad10)
+
+medianVal = median( y , na.rm = TRUE )
+
+medianAbsDeviation = mad( y , na.rm = TRUE )
+
+mad = y > ( medianVal + deviation * medianAbsDeviation ) |
+          y < ( medianVal - deviation * medianAbsDeviation )
+          
+The values are flagged as a potential error when mad is TRUE.  The dataset is updated with a column named mad15 (and later, mad10) and the values of mad (from code above) are inserted for each row of orgUnit, Month, data element, and category combination.  
+
+
+-- ### mad10 begins with data after removing values > mad15 , and then applies same code as mad15 but uses a deviation of 10 instead of 15.  The step-wise process is done because the occurrence of several very extreme outliers (mad15) can prevent detection of other extreme values.
+
+### Seasonal Outliers 
+
+After removing extreme values within each series, we use the date period (month or week), to look for values that may not be outside the overall range of values, but that appear unlikely given other values during the same month (or week).  
+
+Two algorithms are run to detect seasonally adjusted outliers, which are outliers when compared with values during the same time period, such as high value when value are usually low, or a low value when values usually run high. These values are not necessarily the largest or the smallest values, but their timing is incongruous with other values during the same time of the year.  
+
+
+For each value in the dataset, we calculate an expected value using the tsclean function (forecast package).  The *seasonal5* algorithm looks for values 5x greater than the difference between the observed and expected, divided by the MAD.  Values that pass the *seasonal5* algorithm are subsequently tested with the *seasonal3* algorithm, which reduces the allowable range of values to 3x abs( observed - expected )/MAD
+
+
+The code is:
+
+    x.ts = x %>% as.ts( . , frequency = 12 ) 
+    x.forecast  = tsclean( x.ts , replace.missing = interpolate ,lambda = .lambda ) %>%
+                as.integer()
+    MAD = mad( x , na.rm = TRUE )
+    outlier = abs( ( x.forecast - x.ts ) / MAD ) >= deviation
+
+
+[coming soon: An alternative set of outliers flages from the tsoutlier function in the forecast package, which compares values to an STL model (https://robjhyndman.com/hyndsight/tsoutliers/)]
 
 
 ## Evaluation

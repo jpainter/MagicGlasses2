@@ -514,7 +514,7 @@ selectedData = function( data1 ,
      
      if ( .cat ) cat( '\n - alwaysReporting' )
      
-     selectedOUs = NULL 
+     # selectedOUs = NULL 
      if ( is_empty( selectedOUs ) & nrow( data ) > 0 ){
        
        if ( .cat ) cat( "\n - finding most frequently reporting OUs")

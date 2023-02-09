@@ -410,11 +410,15 @@ reporting_widget_server <- function( id ,
 #     cat( '\n - done' )
 # } )
   
-  selected_data_categories = reactiveValues()
+  selected_data_categories = reactiveValues( )
   
   observeEvent( input$update_data_categories , {
     
+    cat('\n * update_data_categories')
+    
     selected_data_categories$elements = input$data_categories
+    
+    cat( "\n - ", paste( selected_data_categories$elements, collapse = ", " ) )
   })
 
   observeEvent( 'data' %in% names( data1() ) , {
@@ -1254,8 +1258,13 @@ reporting_widget_server <- function( id ,
    req( data1() )
    req( selected_data_categories$elements )
    
+   cat("\n* reporting_widget selected_data(): " )
   
-   cat("\n* reporting_widget selected_data(): " , input$level2 )
+   cat("\n - levels " , 
+       input$level2 , input$level3  ,input$level4  ,input$level5   )
+   
+   cat("\n -reporting_widget selected_data_categories(): " , 
+       paste( selected_data_categories$elements , collapse = ", " )   )
     
    selected_data =  selectedData( 
       data = data1() ,
@@ -1522,6 +1531,13 @@ reporting_widget_server <- function( id ,
     
     cat("\n* n_selected(): ")
     
+    # testing
+    saveRDS( selectedOUs(), "selectedOUS.rds") 
+    saveRDS( selected_data(),"selected_data.rds" ) 
+    saveRDS( data1(), "data1.rds" ) 
+    saveRDS( levelNames() , "levelNames.rds" )
+    saveRDS(  selected_data_categories$elements , "selected_data_categories.rds" )
+    
     x = selected_data() %>% as_tibble %>% ungroup %>%
       distinct( Selected , orgUnit ) %>%
       group_by( Selected ) %>%
@@ -1543,7 +1559,7 @@ reporting_widget_server <- function( id ,
     # testing
     # saveRDS(.d, 'plot3_data.rds')
     
-    data.text = paste( unique( selected_data()$data ) ,
+    data.text = paste( unique( .d$data ) ,
                        collapse = " + " ) 
     
     # #print( 'data.text'); #print( data.text )
