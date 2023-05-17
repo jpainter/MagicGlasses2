@@ -48,6 +48,7 @@ df.ts = function( df , period = "Month" , missing.value = NA ){
 
 df_pre_ts = function( df , period = "Month" , missing.value = NA  ){
   # if ( !is.null( pb )) pb()
+  cat( "\n * df_pre_ts")
    
   if ( period %in% c( "Week", "Weekly") ) .period = "Week"
   if ( period %in% c( "Month", "Monthly") ) .period = "Month"
@@ -57,43 +58,24 @@ df_pre_ts = function( df , period = "Month" , missing.value = NA  ){
    # remove rows with no count (e.g.orgUnit = LEVEL-7 COUNT = NA)
    df = filter( df , !is.na( COUNT ) )
    
+   cat( "\n - unite data and data.id")
+         
    if (  period %in% 'Month'  ){
+     
       if ( ! "data.table" %in% class( df ) ) df = data.table::as.data.table(df)
       df_pre_ts = df[ , ':=' ( Month = Month_Year( period ) ,
                        COUNT = as.integer( COUNT ) ,
                        SUM = as.numeric( SUM ) 
                        # , Categories = ifelse( is.na( Categories ), "", Categories )
-                       ) ] %>%
+                       ) ]  %>%
        as_tibble() %>%
        unite( "data" , dataElement, Categories , remove = FALSE , na.rm = TRUE ) %>%
        unite( "data.id" , dataElement.id, categoryOptionCombo.ids, remove = FALSE  , na.rm = TRUE ) 
-    
-     # df = df %>% mutate( Month =  Month_Year( period ) )
-     # df_pre_ts = df %>%
-     #   mutate( COUNT = as.integer( COUNT ) ,
-     #        SUM = as.numeric( SUM ) ,
-     #        Categories = ifelse( is.na( Categories ), "", Categories )
-     #        ) %>%
-     #   unite( "data" , dataElement, Categories , remove = FALSE ) %>%
-     #   unite( "data.id" , dataElement.id, categoryOptionCombo.ids, remove = FALSE  ) 
-     #   
-       # rename( raw = SUM ) %>%
-       # pivot_longer( c( SUM , COUNT ) )
-       # as_tsibble( key = c(orgUnit, data, name ) , index = !! .period ) %>%
-       # mutate( value  = raw ) %>% # preserve missing values
-       # set NA to missing
-       # fill_gaps( value = missing.value , .full = TRUE )
-    
+
        return( df_pre_ts )
      
      } else {
      
-     # use Tsibble yearweek instead of week_year. results identical 
-     # df = df %>% mutate( Week =  yearweek( period ) ,
-     # COUNT = as.numeric( COUNT ) ,
-     #      SUM = as.numeric( SUM )
-     #      )
-     # df = data.table::as.data.table( df )
      # convert to data.table
     if ( ! "data.table" %in% class( df ) ) df = data.table::as.data.table(df)
     df_pre_ts = df[ , ':=' ( Week = yearweek( period ) ,
@@ -104,13 +86,9 @@ df_pre_ts = function( df , period = "Month" , missing.value = NA  ){
        as_tibble()%>%
        unite( "data" , dataElement, Categories , remove = FALSE ) %>%
        unite( "data.id" , dataElement.id, categoryOptionCombo.ids, remove = FALSE  ) 
-       # rename( raw = SUM ) %>%
-       # pivot_longer( c( SUM , COUNT ) ) 
-       # as_tsibble( key = c(orgUnit, data, name ) , index = !! .period ) %>%
-       # # mutate( value  = raw ) %>% # preserve missing values
-       # # set NA to missing
-       # fill_gaps( value = missing.value , .full = TRUE )
-
+       
+     # testing
+     # saveRDS( df_pre_ts, "df_pre_ts.rds")
      
      return( df_pre_ts )
 }}
@@ -119,14 +97,8 @@ df_ts = function( df.pre.ts , period = "Month" ,
                   fill.gaps = FALSE , 
                   missing.value = NA ){
   
-  cat('\n* TS_Modeiing_Functions.R: df_ts')
+  cat('\n * TS_Modeling_Functions.R: df_ts')
 
-  
-   # weekly = any( grepl( "W", df_pre_ts$period[1:10]) )
-   # if (weekly ) period =  "Week" 
-   # 
-  # .period = rlang::enquo( period )
-   
   if ( period %in% c( "Week", "Weekly") ) .period = "Week"
   if ( period %in% c( "Month", "Monthly") ) .period = "Month"
   
@@ -134,14 +106,27 @@ df_ts = function( df.pre.ts , period = "Month" ,
   
   cat( '\n - .period is' , period )
   
-  ts = df.pre.ts %>%  
-    distinct() %>%
-    as_tsibble( key = c(orgUnit, data.id ) , index = !! .period ) 
+  # testing
+  # saveRDS( df.pre.ts, "df.pre.ts.rds")
+     
+  cat( '\n - data.table distinct' )
+  df.pre.ts = as.data.table( df.pre.ts )
+  df.pre.ts = unique( df.pre.ts , by = c("orgUnit", "data.id", period ))
+  
+  cat( '\n - as_tsibble')
+  ts = df.pre.ts %>%
+    as_tsibble( key = c(orgUnit, data.id ) , 
+                index = !! .period ,
+                validate = FALSE ) 
 
-    # set NA to missing 
-    if ( fill.gaps ) ts = ts %>% fill_gaps( value = missing.value , .full = TRUE )
-
-    return( ts )
+  # set NA to missing 
+  if ( fill.gaps ){
+      cat( '\n - fill gaps' )  
+      ts = ts %>% fill_gaps( value = missing.value , .full = TRUE )
+    } 
+  
+  cat( '\n - done' )  
+  return( ts )
     
     }
 
@@ -208,3 +193,114 @@ with.without_outliers = function( ts, out){
   
 }
 
+mable_data = function(         
+    ml.rtss.data = ml.rtss ,
+    .orgUnit = TRUE , # group by orgunit
+    .startingMonth = NULL ,
+    .endingMonth = NULL , 
+    .missing_reports = NULL ,
+    selected.only = TRUE ,
+    # .evaluation_month = NULL  ,
+    .error = NULL , 
+    covariates = NULL , 
+    .split = NULL , 
+    aggregate_by_split = TRUE ,
+    levelNames = NULL , 
+    hts = FALSE , 
+    agg_level = NULL ,
+    remove.aggregate = TRUE ,
+    .cat = NULL , 
+    testing = FALSE , ...
+){
+  
+  if (.cat) cat("\n* TS_Modeling_Functions mable_data ")
+  
+  
+  if ( testing ){
+    saveRDS( ml.rtss.data , "ml.rtss.data.rds")
+    save(.orgUnit, hts, remove.aggregate, .error, .startingMonth , .endingMonth, .missing_reports, agg_level, levelNames, .split , covariates ,
+          file = "mable_data_parameters.rda" )
+  } 
+  
+  d = ml.rtss.data %>% 
+    error_factor %>% 
+    # filter( Month >= ( yearmonth( startingMonth )   ) )  %>%
+    cleanedData( . , 
+                 error =  .error , .cat = .cat ) %>%
+    
+    selectedData(  startingMonth = .startingMonth ,
+                   # data_categories = "agegrp" , 
+                   endingMonth = .endingMonth ,
+                   missing_reports = .missing_reports ,
+                   .cat = .cat ) %>% as_tibble() 
+  
+  
+    group_by_cols = groupByCols( period = dataPeriod( d ) , 
+                               orgUnit = .orgUnit ,
+                               hts = hts , 
+                               agg_level = agg_level ,
+                               levelNames = levelNames, 
+                               split = .split , .cat = .cat )
+  
+   if (.cat) cat("\n - group_by_cols " , group_by_cols )
+    
+    num_facilities = mostFrequentReportingOUs( d ,
+                                             startingMonth = .startingMonth ,
+                                             endingMonth = .endingMonth ,
+                                             missing_reports = .missing_reports , 
+                                             .cat = .cat ) %>% length()
+  
+    .dataSets = unique( d$dataSet ) 
+    num_datasets = length( .dataSets )
+    
+    data.total = dataTotal( data = d , 
+                            group_by_cols = group_by_cols , 
+                            dataSets = .dataSets, 
+                            covariates = covariates , 
+                            .cat = .cat  )
+  
+  if ( hts ){
+    if (.cat) cat("\n - hts " )
+    
+    hts_formula = htsFormula( hts = hts , 
+                              levelNames = levelNames ,  
+                              agg_level = agg_level , 
+                              all.levels = FALSE  , 
+                              num_facilities =  num_facilities ,
+                              num_datasets = num_datasets , 
+                              split = split , .cat = .cat ) 
+    
+    data.agg.ts = htsData( data = data.total ,  
+                           hts = hts , 
+                           hts_formula = hts_formula , 
+                           covariates = covariates , 
+                           group_by_cols = group_by_cols , .cat = .cat )
+  } else {
+    if (.cat) cat("\n - aggData " )
+    data.agg.ts = aggData( data.total = data.total ,  
+                           covariates = covariates , 
+                           group_by_cols = group_by_cols , .cat = .cat )
+  }
+  
+  
+  if (.cat) cat("\n - trend.data " )
+    
+    if (.cat) cat("\n - num_datasets: " , num_datasets )
+    if (.cat) cat("\n - num_facilities: " , num_facilities )
+    
+
+  if (.cat) cat("\n - remove.aggregate: " , remove.aggregate )
+  
+  trend.data = trendData( .d = data.agg.ts , 
+                          levelNames = levelNames , 
+                          startingMonth = .startingMonth , 
+                          endingMonth = .endingMonth ,
+                          selected.only = selected.only  ,
+                          num_facilities =  num_facilities ,
+                          num_datasets = num_datasets , 
+                          split = .split ,
+                          agg_level = agg_level  , 
+                          remove.aggregate = remove.aggregate , 
+                          .cat = .cat  )
+  
+}

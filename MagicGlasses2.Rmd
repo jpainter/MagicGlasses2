@@ -6,7 +6,7 @@ output:
     vertical_layout: fill
     theme:
       version: 4
-      bootswatch: flatly
+      bootswatch: paper
 runtime: shiny
 resource_files:
 - renv.lock
@@ -21,6 +21,30 @@ resource_files:
 # renv::restore()
 # renv::repair()
 # renv::snapshot()
+
+```
+
+```{r log_file, eval=FALSE }
+# output <- system2("R","-e \"rmarkdown::render('MagicGlasses2.Rmd')\"",
+#                   stdout = TRUE, stderr = TRUE)
+
+sink( "magicGlasses.log" , type = "output", append = TRUE, split = TRUE)
+
+rmarkdown::run('MagicGlasses2.Rmd')
+
+# Restore output to console
+# sink( type = "output")
+# sink(type="message") 
+
+
+# flog <- file( "magicGlasses.log" , open = "wt")
+# sink(file = flog, split = TRUE)
+
+# sink(con, append=TRUE, type="message")
+
+# This will echo all input and not truncate 150+ character lines...
+# source("script.R", echo=TRUE, max.deparse.length=10000)
+
 
 ```
 
@@ -48,6 +72,7 @@ options("menu.graphics" = FALSE)
 
 library(conflicted) # For diagnosing function name conflicts
 library(tidyverse)
+library( stringr )
 library(data.table) # for clean install, run from clean session: 
     # remove.packages("data.table")
     # install.packages("data.table", type = "source",
@@ -69,7 +94,7 @@ library( ggrepel )
 library( ragg )
 library( scales)
 library( lemon ) # for reposition_legend() 
-if ( 'summarytools' %in% installed.packages() )  library( summarytools ) # invokes Xquartz on mac.
+# if ( 'summarytools' %in% installed.packages() )  library( summarytools ) # invokes Xquartz on mac.
 # library( describer )
 
 # library( tidyfast )
@@ -462,7 +487,7 @@ Data
 Column {data-width='30%'}
 -----------------------------------
 
-### Data (Dictionary/Formulas) {data-height='80%'}
+### Data (Dictionary/Formulas) {data-height='65%'}
 
 ```{r data_widget, echo = FALSE  }
 source( 'data_widget.r' )
@@ -477,7 +502,7 @@ data1_Widget_output =
 
 ```
 
-### Request data from server {data-height='20%'}
+### Request data from server {data-height='35%'}
 
 ```{r data_request_widget , eval=TRUE}
 source( 'data_request_widget.r' )

@@ -97,7 +97,7 @@ reporting_widget_ui = function ( id ){
                                     selected = NULL ) ,
                   
                   
-                  checkboxInput( ns("exclude_recent_month") , label ='Exclude most latest period? (e.g. current month if data expected to be incomplete)',
+                  checkboxInput( ns("exclude_recent_month") , label ='Exclude most recent period? (e.g. current month if data expected to be incomplete)',
                                  value = TRUE  ) ,
                   
                   selectizeInput( ns("missing_reports") , label = "Number of missing reports allowed/yr" , 
@@ -118,7 +118,7 @@ reporting_widget_ui = function ( id ){
               checkboxInput( ns("dataset_merge_average") , 
                              label ='When merging, average values reported by same facility to mutliple datasets', value = FALSE ) ,
               
-              selectInput( ns("merge") , 
+              selectInput( ns("dataSets") , 
                            label ='Merge selected datasets with selected dataElements/Categories', 
                            choices = NULL  ,
                            selected = 1 ,
@@ -376,7 +376,7 @@ reporting_widget_server <- function( id ,
     cat( '\n - dataSets()', dataSets() )
     
     if ( any( nchar( dataSets() > 0 ) ) ){
-      updateSelectInput( session, 'merge' ,
+      updateSelectInput( session, 'dataSets' ,
                          choices =  dataSets()
       )
     }
@@ -1029,12 +1029,12 @@ reporting_widget_server <- function( id ,
       sf = mostFrequentReportingOUs( d = d() ,
                        endingMonth = input$endingMonth ,
                        startingMonth = input$startingMonth ,
-                       period = period() ,
+                       # period = period() , 
                        missing_reports = as.integer( input$missing_reports ) ,
                        count.any = input$count.any ,
                        # all_categories = input$all_categories ,
                        data_categories = selected_data_categories$elements ,
-                       .cat = FALSE )
+                       .cat = TRUE )
 
       cat( "\n - mostFrequentReportingOUs:", length(sf), 'orgUnits' ); toc()
 
@@ -1065,11 +1065,13 @@ reporting_widget_server <- function( id ,
       as_tibble()
   
     #print('end x.annual:') ; toc();  # #print( x.a )
+    cat( '\n - x.annual done' )
     return( x.a )
     
   })
   
   x.months = reactive({
+    cat( '\n* reporting_widget x.months()' )
     # req( keeprows() )
     # tic()
     #print( 'x.months()' )
@@ -1090,6 +1092,7 @@ reporting_widget_server <- function( id ,
     #       summarise( n = n_distinct( orgUnit ) )
     
     #print('end x.months:') ; toc() ; # glimpse( x.m )
+    cat( '\n - x.months done' )
     return( x.m )
     
   })
@@ -1263,22 +1266,46 @@ reporting_widget_server <- function( id ,
    cat("\n - levels " , 
        input$level2 , input$level3  ,input$level4  ,input$level5   )
    
-   cat("\n -reporting_widget selected_data_categories(): " , 
+   cat("\n - reporting_widget selected_data_categories(): " , 
        paste( selected_data_categories$elements , collapse = ", " )   )
     
+   .cleanedData = cleanedData( 
+                        data1() ,
+                        .effectiveLeaf = TRUE ,
+                        source = input$source ,
+                        error =  NULL ,
+                        algorithm = 'seasonal3' ,
+                        .cat = TRUE )
+     
    selected_data =  selectedData( 
-      data = data1() ,
-      levelNames = levelNames() ,
-      data_categories = selected_data_categories$elements ,
-      # all_categories = input$all_categories ,
-      alwaysReporting = input$mostReports ,
-      selectedOUs = selectedOUs() ,
-      source = input$source ,
-      level2 = input$level2 ,
-      level3 = input$level3 ,
-      level4 = input$level4 , 
-      level5 = input$level5 ,
-      .cat = TRUE )
+                        data = .cleanedData , # data1() ,
+                        levelNames = levelNames() ,
+                        data_categories = selected_data_categories$elements ,
+                        # all_categories = input$all_categories ,
+                        alwaysReporting = input$mostReports ,
+                        selectedOUs = selectedOUs() ,
+                        startingMonth = NULL , 
+                        endingMonth = NULL ,
+                         # source = 'Original' ,
+                        level = 'leaf' , 
+                        level2 = input$level2 ,
+                        level3 = input$level3 ,
+                        level4 = input$level4 ,
+                        level5 = input$level5 ,
+                        .cat = TRUE  )
+     
+      # data = data1() ,
+      # levelNames = levelNames() ,
+      # data_categories = selected_data_categories$elements ,
+      # # all_categories = input$all_categories ,
+      # alwaysReporting = input$mostReports ,
+      # selectedOUs = selectedOUs() ,
+      # source = input$source ,
+      # level2 = input$level2 ,
+      # level3 = input$level3 ,
+      # level4 = input$level4 ,
+      # level5 = input$level5 ,
+      # .cat = TRUE )
   
    #  data = setDT( d() )[ , Selected := 'All', ]
    #  # data = d() %>% mutate( Selected = 'All' ) 
@@ -1326,12 +1353,17 @@ reporting_widget_server <- function( id ,
     
     cat("\n* reporting_widget group_by_cols():")
     
+    # adms = backtick( levelNames() )
+    adms = levelNames()
+    cat( "\n - adms:" , adms )
+    
     group_by_cols = groupByCols( 
                         period = period() , 
                         levelNames = levelNames() ,
+                        agg_level = adms[ 1 ] ,
                         split = input$split )
     
-    # cat("\n - ", group_by_cols )
+    cat("\n - group_by_cols:", group_by_cols )
     
     return( group_by_cols )
 
@@ -1346,14 +1378,17 @@ reporting_widget_server <- function( id ,
     req( input$endDisplayMonth )
     
     cat( '\n* reporting_widget data.total()' )
-      
+    
+    # Testing
+    saveRDS( selected_data()  , 'selected.data.rds')
+    
     data.total = dataTotal(
         data = selected_data()   , 
         period = period() ,
         group_by_cols = group_by_cols() ,
         startMonth = input$startDisplayMonth ,
         endMonth = input$endDisplayMonth ,
-        merge = input$merge ,
+        dataSets = input$dataSets ,
         mean.merge = input$dataset_merge_average ,
         .cat = TRUE )
     
@@ -1362,7 +1397,7 @@ reporting_widget_server <- function( id ,
     # Testing
     # saveRDS( data.total , 'data.total.rds')
     return( data.total )
-  
+    
   })
   
   num_facilities = reactive({
@@ -1427,14 +1462,17 @@ reporting_widget_server <- function( id ,
     cat('\n - data.total():' )
     
     # testing
-    # saveRDS( .d , 'agg.d.rds' )
+    # saveRDS( .d , 'data.total.rds' )
     
     if ( !is_tsibble( .d ) ){
       cat('\n - preparing data.total as tsibble')
       
       key.cols = setdiff( group_by_cols() , period() )
       
-      cat('\n - key.cols:',key.cols )
+      cat('\n - key.cols:', key.cols )
+          
+      # testing
+      # saveRDS( key.cols , 'key.cols.rds' )
       
       .d = .d %>% 
         as_tsibble( index = !! rlang::sym( period() )  ,
@@ -1453,7 +1491,6 @@ reporting_widget_server <- function( id ,
     
     # testing
     # saveRDS( .d , 'agg.d1.rds' )
-    # saveRDS( key.cols , 'key.cols.rds' )
     
     .d = .d %>%
       filter(
@@ -1508,6 +1545,8 @@ reporting_widget_server <- function( id ,
       .d = .d  %>% as_tsibble( key = all_of( keyVars ) , index = indexVar  )
     }
     
+      # testing
+       # saveRDS( .d, 'aggregateselected_data.rds')
        
        cat('\n -  end aggregateselected_data()' )
        return( .d )
@@ -1532,11 +1571,11 @@ reporting_widget_server <- function( id ,
     cat("\n* n_selected(): ")
     
     # testing
-    saveRDS( selectedOUs(), "selectedOUS.rds") 
-    saveRDS( selected_data(),"selected_data.rds" ) 
-    saveRDS( data1(), "data1.rds" ) 
-    saveRDS( levelNames() , "levelNames.rds" )
-    saveRDS(  selected_data_categories$elements , "selected_data_categories.rds" )
+    # saveRDS( selectedOUs(), "selectedOUS.rds") 
+    # saveRDS( selected_data(),"selected_data.rds" ) 
+    # saveRDS( data1(), "data1.rds" ) 
+    # saveRDS( levelNames() , "levelNames.rds" )
+    # saveRDS(  selected_data_categories$elements , "selected_data_categories.rds" )
     
     x = selected_data() %>% as_tibble %>% ungroup %>%
       distinct( Selected , orgUnit ) %>%
@@ -1559,8 +1598,10 @@ reporting_widget_server <- function( id ,
     # testing
     # saveRDS(.d, 'plot3_data.rds')
     
-    data.text = paste( unique( .d$data ) ,
+    
+    data.text = paste( unique( selected_data()$data ) ,
                        collapse = " + " ) 
+    cat("\n - data.text:" , data.text )
     
     # #print( 'data.text'); #print( data.text )
     
@@ -1569,9 +1610,12 @@ reporting_widget_server <- function( id ,
        
     #print('plotting aggregate data');
     
-  
+    cat('\n - fill_gaps' )
+    .d = .d %>% 
+      fill_gaps( .full = TRUE  )
+    
+    cat('\n - plot' )
     g = .d %>% 
-      fill_gaps( .full = TRUE  ) %>%
       # autoplot( vars( total , grouping_var ) )
       ggplot( aes(x = !! rlang::sym( .period ) , y = total
                , group = grouping_var  
@@ -1911,6 +1955,7 @@ reporting_widget_server <- function( id ,
   split = reactive({ input$split })
   startingMonth = reactive({ input$startingMonth })
   endingMonth = reactive({ input$endingMonth })
+  missing_reports = reactive({ as.integer( input$missing_reports ) })
 
   return( 
     list(
@@ -1926,6 +1971,7 @@ reporting_widget_server <- function( id ,
       split = split ,
       startingMonth = startingMonth ,
       endingMonth = endingMonth ,
+      missing_reports = missing_reports  ,
       num_datasets = num_datasets ,
       num_facilities = num_facilities ,
       selected_data = selected_data ,

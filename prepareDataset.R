@@ -140,7 +140,8 @@ data_leaves = function( d ){
          ) %>%
     mutate( 
       effectiveLeaf = ifelse( n == 1, TRUE, FALSE ) ) %>%
-    select( orgUnit , dataElement.id , effectiveLeaf ) 
+    select( orgUnit , dataElement.id , effectiveLeaf ) %>%
+    ungroup()
   
   return( data.leaves )
 }
@@ -250,7 +251,7 @@ data_1 = function( data , formula_elements , ousTree , timing = FALSE  ){
     df_ts( . , period = p ) %>%
     mutate( original = SUM , value = !is.na( SUM )) 
     
-  if ( timing ) cat( "/n - d.." , toc()$callback_msg )
+  if ( timing ) cat( "\n - " , toc()$callback_msg )
   
   return( d.. )
 }

@@ -173,7 +173,7 @@ data_request_widget_server <- function( id ,
       
       ) %>% unlist #nb: each case evaluated as list, otherwise alsways returns vector of max length
     
-      cat( '\ndata_request_widget orgUnits:' , ou )
+      cat( '\n - data_request_widget orgUnits:' , ou )
       return( ou )
       })
     
