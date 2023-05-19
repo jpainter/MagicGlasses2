@@ -28,7 +28,7 @@ resource_files:
 # output <- system2("R","-e \"rmarkdown::render('MagicGlasses2.Rmd')\"",
 #                   stdout = TRUE, stderr = TRUE)
 
-sink( "magicGlasses.log" , type = "output", append = TRUE, split = TRUE)
+sink( "magicGlasses.log" , type = "message", append = FALSE, split = TRUE)
 
 rmarkdown::run('MagicGlasses2.Rmd')
 
@@ -69,6 +69,7 @@ if ( length( needed ) > 0 ){
 ```{r libraries , include=FALSE}
 
 options("menu.graphics" = FALSE)
+rstudioapi::writeRStudioPreference("console_max_lines", 2000L )
 
 library(conflicted) # For diagnosing function name conflicts
 library(tidyverse)

@@ -4,36 +4,17 @@ directory_widget_ui = function ( id )
         
         fillCol( height = "100%", flex = c(NA ) , 
 
-         h3( 'Directory for data files:') ,
+        
          
          # shinyDirButton( ns('folder') , 'Folder select', 'Please select a folder', FALSE) ,
          
          # br(),
-          
-         textInput( ns("data.directory"), label = NULL , 
-                     value = path.expand("~") ,
-                     width = '95%'
-                     ) ,
-         
-         
-         
-         h4( 'Previously downloaded metadata:') ,
-        
-         selectInput( ns("metadataFiles") , label = NULL , 
-                      width = '95%',
-                      choices = NULL , 
-                      selected = NULL ,
-                      multiple = FALSE ,
-                      selectize = FALSE, 
-                      size = 4  ##needed for `selected = FALSE` to work ) 
-                     ) ,
-         
-         hr(),
          
          tags$blockquote(
            h4('MagicGlasses: an epidemiological look at DHIS2') ,
            br() , br() ,
-           
+           "The goal is to make the analysis of routine data accessible, transparent, and repeatable." ,
+           br() , br() ,
            "The layout follows a research path using the pages (at top of page) to
            understanding which data are available " ,
            tags$b("(Metadata)"), 
@@ -44,34 +25,47 @@ directory_widget_ui = function ( id )
            ", scanning for outliers " ,
            tags$b( "(Outliers)" ), 
            "applying time-series models and estimating intervention effectiveness ",
-           tags$b( "(Evaluation)" ) ,
+           tags$b( "(Evaluation)" ) 
            
-           br() , br() ,
-           "The goal is to make the analysis of routine data accessible, transparent, and repeatable."
-         )
+  
+         ) ,
          
+         hr() ,
          
-         # h4( 'Previously downloaded geofeatures (map data):') ,
-         # 
-         # selectInput( ns("geofeturesFiles") , label = NULL , 
-         #              width = '95%',
+        h3( 'Directory for data files:') ,
+          
+         textInput( ns("data.directory"), label = NULL ,
+                     value = path.expand("~") ,
+                     width = '95%'
+                     ) ,
+         
+         # selectInput(ns("data.directory"), label = NULL ,
+         #             width = '95%',
          #              choices = NULL , 
-         #              selected = FALSE,
+         #              selected = NULL ,
          #              multiple = FALSE ,
          #              selectize = FALSE, 
          #              size = 4  ##needed for `selected = FALSE` to work ) 
          #             ) ,
-         # 
-         # h4( 'Previously downloaded data:') ,
-         # 
-         # selectInput( ns("datasetFiles") , label = NULL , 
-         #      width = '95%',
-         #      choices = NULL , 
-         #      selected = FALSE,
-         #      multiple = FALSE ,
-         #      selectize = FALSE, 
-         #      size = 4  ##needed for `selected = FALSE` to work ) 
-         #     ) 
+         
+         
+         
+         h4( 'Folder Contains:') ,
+        
+         # selectInput( ns("metadataFiles") , label = NULL , 
+         #              width = '95%',
+         #              choices = NULL , 
+         #              selected = NULL ,
+         #              multiple = FALSE ,
+         #              selectize = FALSE, 
+         #              size = 4  ##needed for `selected = FALSE` to work ) 
+         #             ) ,
+         
+         # shiny::dataTableOutput( ns('folderInfo') ) , 
+        tableOutput( ns('folderInfo') ) , 
+         
+         hr()
+         
         
         ) # end fillColl
           
@@ -92,6 +86,11 @@ directory_widget_server <- function( id ) {
                    "../HMIS/Formulas/" )
               updateTextInput( session, "data.directory" ,
                                value = "../HMIS/Formulas/" )
+             
+             # updateSelectInput( session, "data.directory" ,
+             #                    choices  = "../HMIS/Formulas/" ,
+             #                    selected  = "../HMIS/Formulas/"
+             #                    )
            }
          )
         })
@@ -113,10 +112,6 @@ directory_widget_server <- function( id ) {
                           )
         
          
-        # observe({
-        #   cat( '\n input$folder:' , input$folder )
-        # })
-        
        data.folder = reactive({
                   cat( '\n* data.folder:\n' )
                   # req( input$country )
@@ -149,6 +144,35 @@ directory_widget_server <- function( id ) {
             return( dir.files )
         })
         
+    folderInfo = reactive({
+    
+        req( data.dir.files() )
+          # there are a couple forms of metadata in the api.  This code tests the format, then gets metadata
+          # if available, use resources method
+          cat( '\n folder info : \n')
+          
+         finf <- file.info( dir(data.folder()) , extra_cols = FALSE)
+        
+         metadata.files = grepl( "metadata" , data.dir.files() , ignore.case = TRUE ) 
+         formula.files = grepl( "formulas" , data.dir.files()  , ignore.case = TRUE ) 
+         data.files = grepl( "rds" , data.dir.files()  , ignore.case = TRUE ) 
+         
+         info = tibble( `File type:` = c("Metadata" , 'Formula', 'Data') ,
+                        Number = c( sum(metadata.files), sum(formula.files) , sum(data.files) ) ,
+                        `Most Recent` = c( max( finf$mtime[ metadata.files ], na.rm = T ) ,
+                                           max( finf$mtime[ formula.files ] , na.rm = T) ,
+                                           max( finf$mtime[ data.files ] , na.rm = T )
+                        )
+                        )
+          
+          cat( '\n directory widget folderInfo completed')
+          return( info )
+          
+    
+      }) 
+    
+      output$folderInfo =  renderTable( folderInfo() ) 
+    
         metadata.files = reactive({ 
           req( data.folder() )
           cat( '- looking for metadata in:' , data.folder() , '\n')

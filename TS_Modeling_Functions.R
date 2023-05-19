@@ -304,3 +304,174 @@ mable_data = function(
                           .cat = .cat  )
   
 }
+
+
+  fit_function = function( train.data , index = NULL , mixed.model = FALSE ){ 
+    
+        if (is.null( index)){
+          
+          train.data. = train.data
+        } else {
+          train.data. = train.data %>%
+                  semi_join( key_data( train.data )[ index ,], by = key_vars( train.data ) )
+                  # filter( Cluster %in% unique_clusters[ .x ] ) %>%
+                  # fill( all_of(covariates) , .direction = "down" ) 
+        }
+            
+    # transformaion parameters
+            x = train.data.[complete.cases( train.data.) ,]$total
+            x. = x[ x>0 ]
+            .lam = forecast::BoxCox.lambda( x. , method = "guerrero", lower = 0.1 )
+  
+            arima.formula = "total ~  pdq() + PDQ( period = '1 year' )"  
+        
+            arima.formula.tr = paste( "fabletools::box_cox( total, lambda = ", .lam, 
+                                      ") ~  pdq() + PDQ( period = '1 year' ) " ) 
+        
+            arima.formula.cov.tr = paste(  "fabletools::box_cox( total, lambda = ", .lam ,
+                                           " ) ~  pdq() + PDQ( period = '1 year' ) + xreg( " ,
+                                      paste( covariates , collapse = " + " ) , ")" 
+            ) 
+            
+            prophet.cov.tr = paste(  "fabletools::box_cox( total, lambda = ", .lam ,
+                                           " )  ~ growth('linear') + season( period = 12, order = 2,
+                                              type = 'multiplicative') + xreg( " ,
+                                      paste( covariates , collapse = " + " ) , ")" 
+            )
+      # cat( "\n fitting with .lam", .lam )
+            
+      fit = train.data. %>% 
+                model(
+                  # ets = ETS( total ),
+                  ets.tr = ETS( fabletools::box_cox( total , lambda = !! {{ .lam }}  ) ) 
+                  
+                  , arima.tr = ARIMA( as.formula( !! {{ arima.formula.tr }} ) ) 
+                  
+                  , arima.cov.tr = ARIMA(  as.formula( !! {{  arima.formula.cov.tr   }} ) )
+  
+                  , prophet = prophet( as.formula( !! {{  prophet.cov.tr   }} ) )
+
+                  , nnetar.tr = NNETAR( fabletools::box_cox( total , lambda = !! {{ .lam }}   ) )
+
+                  , nnetar.tr.cov = NNETAR( fabletools::box_cox( total , lambda = !! {{ .lam }}   )
+                                        , lambda = .lam
+                                        , xreg = c( .$any_stock_out , .$lag_avg_mm , .$llin )
+                                         )
+                  , .safely = TRUE ) 
+      
+              if ( mixed.model ) fit = fit %>%
+  
+                mutate( 
+                      mixed = ifelse( is_null_model( ets.tr ) , 
+                                      ( arima.tr + arima.cov.tr + prophet + nnetar.tr + nnetar.tr.cov ) / 5 , 
+                                      (ets.tr + arima.tr + arima.cov.tr + prophet + nnetar.tr + nnetar.tr.cov ) / 6 )
+                  ) 
+              
+              return( fit )
+  }
+  
+   forecast_function = function( fit, key , 
+                                 test.data ,
+                                .times = 100 ,
+                                .cat = FALSE ){
+  
+            fit. = fit %>% semi_join( key, 
+                                       by = names( key  ) )
+            
+            # correct for missing values nnetar models using data 12-mnths prior
+            for ( train_i in 1:nrow( fit )){
+              
+              if( "nnetar.tr" %in% names( fit. ) ){
+                n1 = fit.$nnetar.tr[[train_i]]
+                future.n1 = n1$fit$future
+                box_cox_var = names(n1$data)[grep('box', names(n1$data) )]
+                past.n1 = n1$data %>% pull( box_cox_var )
+                future.n1 = future.n1 %>% forecast::tsclean()
+                n1$fit$future  = future.n1
+                past.n1 = past.n1 %>% forecast::tsclean()
+                n1$data[ , box_cox_var ]  = past.n1
+                fit.$nnetar.tr[[train_i]] = n1
+              }
+                
+              if( "nnetar.tr.cov" %in% names( fit. ) ){
+                n2 = fit.$nnetar.tr.cov[[train_i]]
+                future.n2 = n2$fit$future
+                box_cox_var = names(n2$data)[grep('box', names(n2$data) )]
+                past.n2 = n2$data %>% pull( box_cox_var )
+                future.n2  = future.n2 %>% forecast::tsclean()
+                n2$fit$future  = future.n2
+                past.n2 = past.n2 %>% forecast::tsclean()
+                n2$data[ , box_cox_var ]   = past.n2
+                fit.$nnetar.tr.cov[[train_i]] = n2
+              }
+            }
+  
+        test.data.  = test.data 
+        
+        if ( ".id" %in% names( fit. )){
+          test.data.  = test.data  %>% 
+           semi_join( key, 
+                      by = names( key  ) ) %>%
+           filter( Month < eval.start[i]  )  
+        }
+        
+    
+    # if any nnetar forecast is nan, subsequent forecasts throw error, so dont continue
+    if ( .cat )  cat( "\n - check for nnetar nan")
+    
+    skip.nn = FALSE
+        
+    if ( ".id" %in% names( fit. ) ){
+    
+    ids = unique( test.data$.id )
+    
+    options( warn = -1 )
+    
+    for ( id in seq_along( ids ) ){
+      # cat( "\n id - ", id , " ")
+      test.data.i = test.data. %>% filter( .id %in% id ) 
+      
+      for ( r in seq_along( 1:nrow( test.data.i ) ) ){
+        # cat( "\n r - ", r , " ")
+        fc.nn = fit. %>% 
+            filter( .id %in% id ) %>%
+            select( key_vars( fit. ) ,  starts_with( 'nnetar' ) ) %>%
+            forecast( new_data = test.data.i %>% slice( 1:r ) , times = 1  ) 
+        
+        # fc.pr = fit. %>% 
+        #     filter( .id %in% id ) %>%
+        #     select( key_vars( fit. ) ,  starts_with( 'proph' ) ) %>%
+        #     forecast( new_data = test.data.i %>% slice( 1:r )  , times = 1  ) 
+        
+        if ( any( is.nan( fc.nn$.mean )) ){
+          skip.nn = TRUE 
+          # cat( "\n BREAK")
+          break
+        }
+    } }
+    }
+        
+    if ( .cat )  cat( "\n - skip.nn ", skip.nn )
+    
+    if ( skip.nn ){
+      fc = fit. %>% 
+          select( key_vars( fit. ) ,  ! starts_with( 'nnet' ) ) %>% 
+          forecast( new_data = test.data. , times = .times  ) 
+      
+    } else {
+      fc = fit. %>% forecast( new_data = test.data. , times = .times  ) 
+    }    
+    
+    options( warn = 0 )
+    
+    if ( "id" %in% names( fit. ) ){
+      fc = fc %>%
+          group_by(.id, .model ) %>%
+          mutate( h = row_number() ) %>%
+          ungroup() %>%
+          as_fable( response = "total", distribution = total )
+    }
+    
+    return( fc )
+  }
+

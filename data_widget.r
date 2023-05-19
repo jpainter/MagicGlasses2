@@ -308,7 +308,7 @@ data_widget_server <- function( id ,
           req( input$dataset )
           req( data.folder() )
           
-          cat('\n* data_widget  dataset.file():')
+          cat('\n* data_widget  dataset.file():', input$dataset )
           
           file = paste0( data.folder() , input$dataset  )
           
@@ -321,11 +321,11 @@ data_widget_server <- function( id ,
           # req( input$dataset ) # file name from data_widget (on Dictionary tab)
           cat('\n* data_widget  dataset():')
           
-          req( dataset.file() )
+          req( input$dataset  )
   
           file  = dataset.file()
 
-          if ( file_test("-f",  file) ){
+          if ( !is.null( input$dataset ) && file_test("-f",  file) ){
             
             showModal(
                 modalDialog( title = "Reading data", 
@@ -409,7 +409,7 @@ data_widget_server <- function( id ,
               
               # Save prepared file
               cat('\n - saving prepared file'  )
-              saveRDS( d1, file = dataset.file() )
+              saveRDS( d1, file = dataset.file() , compress = FALSE )
               removeModal()
             
             } else {

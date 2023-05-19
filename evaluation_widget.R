@@ -11,8 +11,9 @@ evaluation_widget_ui = function ( id ){
           
   tabsetPanel( type = "tabs",
   # add_busy_spinner(spin = "fading-circle", position = "bottom-right") ,
+    
 
-  tabPanel( 'Impact' ,
+  tabPanel( "" ,
         sidebarLayout(
           sidebarPanel(
             # width = "25%" ,
@@ -79,73 +80,76 @@ evaluation_widget_ui = function ( id ){
                 #  )
                 
              tabsetPanel(
-                  tabPanel( "Plot" ,
+                  tabPanel( "ggPlot" ,
                     
                     fluidPage(
                       fluidRow( style = "height:60vh;",
                                 plotOutput( ns("plotOutput") ) )
                       ) ) ,
                   tabPanel("Plotly", plotlyOutput(  ns("plotlyOutput") ) ),
-                  tabPanel("Table", plotlyOutput( ns("tableOutput" )  ) )
-                )
+                  tabPanel("Table", plotlyOutput( ns("tableOutput" )  ) ) 
+                  ) ,
+             
+            inputPanel(
+      
+            selectInput( ns( "model" ), label = "Time-series model:" , 
+                    choices = c( 
+                                # 'TSLM',
+                                 'TSLM (trend)' , 'TSLM (trend+season)' , 
+                                 'ETS' , 'ARIMA', 'SNAIVE' , 'NNETAR' ,
+                                 # 'BSTS' , 
+                                'Prophet'
+                                
+                                # , 'TSLM (trend)'
+                                # , 'TSLM (trend+season)'
+                                ) , 
+                    selected = 'ETS'  ) ,
+      
+            textInput( ns( 'covariates' ), 'Model covariates' ,
+                value =  NULL ) ,
+            
+            checkboxInput( ns( "transform" ) , label ='Transform: box_cox(lambda = .5  )',
+                         value = FALSE  ) ,
+            
+          checkboxInput( ns( "smooth" ) , label ='Show smoothed trend line (loess)',
+                         value = FALSE  ) ,
+          
+          checkboxInput( ns( "pre_evaluation") , label ='Pre-intervention model fit',
+                         value = FALSE  ) ,
+          
+          
+          checkboxInput( ns( "evaluation" ), label ='Post-intervention evaluation',
+                         value = FALSE  ) ,
+          
+          checkboxInput( ns( "scale" ) , label ='Scale values (x-mean)/sd + 1)',
+                         value = FALSE  ) ,
+          
+          checkboxInput( ns( 'components' ), label = 'Visualize trend' ,
+                      value = FALSE ) ,
+          
+          checkboxInput( ns( "forecast_ci" ) , label ='Prediction interval',
+                         value = FALSE  ) ,
+          
+          checkboxInput( ns( "bootstrap" ) , label ='Bootstrap estimate',
+                         value = FALSE  ) ,
+          
+          checkboxInput( ns( "autoModel" ) , label ='Automatic nmodel selection',
+                         value = FALSE  )
+          
+                ) ,
+          
+
+    
+    textInput( ns( 'model.formula' ) , 'Model Formula' ,
+               value =  "total ~ error() + trend() + season()" ) 
+) 
                  
              # plotOutput( ns( "plotOutput" ) , hover = "plot_hover"  )
           )
         )    
 
-,
-    
-  tabPanel( "Model",  
-    inputPanel(
-      
-      selectInput( ns( "model" ), label = "Time-series model:" , 
-              choices = c( 
-                          # 'TSLM',
-                           'TSLM (trend)' , 'TSLM (trend+season)' , 
-                           'ETS' , 'ARIMA', 'SNAIVE' , 'NNETAR' ,
-                           # 'BSTS' , 
-                          'Prophet'
-                          
-                          # , 'TSLM (trend)'
-                          # , 'TSLM (trend+season)'
-                          ) , 
-              selected = 'ETS'  ) ,
 
-      textInput( ns( 'covariates' ), 'Model covariates' ,
-          value =  NULL ) ,
-      
-      checkboxInput( ns( "transform" ) , label ='Transform: box_cox(lambda = .5  )',
-                   value = FALSE  ) ,
-      
-    checkboxInput( ns( "smooth" ) , label ='Show smoothed trend line (loess)',
-                   value = FALSE  ) ,
-    
-    checkboxInput( ns( "pre_evaluation") , label ='Pre-intervention model fit',
-                   value = FALSE  ) ,
-    
-    
-    checkboxInput( ns( "evaluation" ), label ='Post-intervention evaluation',
-                   value = FALSE  ) ,
-    
-    checkboxInput( ns( "scale" ) , label ='Scale values (x-mean)/sd + 1)',
-                   value = FALSE  ) ,
-    
-    checkboxInput( ns( 'components' ), label = 'Visualize trend' ,
-                value = FALSE ) ,
-    
-    checkboxInput( ns( "forecast_ci" ) , label ='Prediction interval',
-                   value = FALSE  ) ,
-    
-    checkboxInput( ns( "bootstrap" ) , label ='Bootstrap estimate',
-                   value = FALSE  ) 
-    
-          ) ,
-    
-    textInput( ns( 'model.formula' ) , 'Model Formula' ,
-               value =  "total ~ error() + trend() + season()" ) 
-)
 ))
-)
 
 }
         
@@ -172,6 +176,8 @@ evaluation_widget_server <- function( id ,
     dataset.file = reactive({ data_widget_output$dataset.file() })
     # dataset = reactive({ data_widget_output$data1() })
     data1 = reactive({ data_widget_output$data1() })
+    aggregateselected_data = reactive({ reporting_widget_output$aggregateselected_data() })
+    
     formula_elements = reactive({ data_widget_output$formula_elements() })
     
     orgUnits = reactive({ metadata_widget_output$orgUnits() })  
@@ -216,6 +222,8 @@ evaluation_widget_server <- function( id ,
 
       dates = data1() %>% pull( !! rlang::sym( .period )) %>%
         unique
+      
+      dates = dates[ order( dates ) ]
 
       # dates = setDT( data1() )[ , base::get( .period ) ] %>%
       #   unique
@@ -824,6 +832,7 @@ evaluation_widget_server <- function( id ,
         fit = fit.data %>%
           model(
                 nnetar = NNETAR( !! rlang::sym( model.formula  ) )
+                , times = 10 
           )
       
         
@@ -1254,6 +1263,7 @@ evaluation_widget_server <- function( id ,
       cat( "\n - mable.data" )
       
       mable.data = mable_data(      ml.rtss.data = data1() ,
+                                    # ml.rtss.data = aggregateselected_data() ,
                                     .orgUnit = FALSE ,
                                     .startingMonth = startingMonth() ,
                                     .endingMonth = endingMonth() ,
@@ -1267,8 +1277,8 @@ evaluation_widget_server <- function( id ,
                                     .cat = TRUE ,
                                     testing = FALSE )
       
-      # testing
-      if ( testing ) saveRDS( mable.data, "mable.data.rds")
+      # # testing
+      # if ( testing ) saveRDS( mable.data, "mable.data.rds")
       return( mable.data )
       
     })

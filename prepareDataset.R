@@ -183,7 +183,7 @@ data_leaves = function( d ){
 # }
 
 data_1 = function( data , formula_elements , ousTree , timing = FALSE  ){
-  cat('\n* preparing data_1:')
+  cat('\n* prepareDataset.R preparing data_1:')
   
   #   # TESTING
   # saveRDS( data , 'data.rds' )
@@ -193,8 +193,13 @@ data_1 = function( data , formula_elements , ousTree , timing = FALSE  ){
   if ( ! 'COUNT' %in% names( data )) return()
   
   ptype = min( formula_elements$periodType , na.rm = T)
-  if ( ptype == "Weekly") p = "Week"
-  if ( ptype == "Monthly") p = "Month"
+  cat( '\n - ptype is' , ptype )
+  if ( grepl( "weekly" , ptype , ignore.case = T) ){
+    p = "Week"
+  } else {
+    if ( grepl( "monthly" , ptype , ignore.case = T)  ) p = "Month"
+  }
+  
   cat( '\n - periodType is' , p )
   
   cat('\n - translate_dataset:')

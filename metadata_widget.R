@@ -1542,7 +1542,7 @@ metadata_widget_server <- function( id ,
                    geoFeatures = geoFeatures() 
       ) 
       
-      saveRDS( meta , "metadata.RDS" )
+      saveRDS( meta , paste0( dir() , "metadata.RDS" ) )
       
     }
     

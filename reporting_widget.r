@@ -15,7 +15,7 @@ reporting_widget_ui = function ( id ){
           tabPanel( "Org Levels",  
                     
 
-            h5( 'Filter Org Units') ,
+            h5( 'Filter Org Units (press update button to change display') ,
  
             inputPanel(
             
@@ -49,7 +49,9 @@ reporting_widget_ui = function ( id ){
                           selected = "None" )
               
       
-        ) ,
+        ) , 
+        
+        actionButton( ns('update_reporting_org_levels') , label = "Update orgUnits ") ,
         
         
         
@@ -420,6 +422,20 @@ reporting_widget_server <- function( id ,
     
     cat( "\n - ", paste( selected_data_categories$elements, collapse = ", " ) )
   })
+  
+  selected_org_levels = reactiveValues( 
+    level2 = NULL , level3 = NULL , level4 = NULL , level5 = NULL )
+  
+  observeEvent( input$update_reporting_org_levels , {
+    
+    cat('\n * update_reporting_org_levels')
+    
+    selected_org_levels$level2 = input$level2
+    selected_org_levels$level3 = input$level3
+    selected_org_levels$level4 = input$level4
+    selected_org_levels$level5 = input$level5
+    
+  })
 
   observeEvent( 'data' %in% names( data1() ) , {
     req( data1()$data )
@@ -533,15 +549,15 @@ reporting_widget_server <- function( id ,
       # cat( "\n - reporting_widget data class/cols:" ,class( data ) )
       # cat( "\n - reporting_widget data1() class/cols:" , class( data1() ) )
            
-      if ( !is_empty( input$level2 ) ){
-        cat(  '\n - filtering data by' , levelNames()[2] , "=" , input$level2 ) 
+      if ( !is_empty( selected_org_levels$level2 ) ){
+        cat(  '\n - filtering data by' , levelNames()[2] , "=" , selected_org_levels$level2 ) 
         
         # data = data %>% 
         #   filter( !! rlang::sym( levelNames()[2])  %in%   input$level2  )
         
         # cat(  '\n - data was' , class(data) ) 
         
-        data = setDT( data )[ base::get( levelNames()[2] )  %in%   input$level2 ,, ]
+        data = setDT( data )[ base::get( levelNames()[2] )  %in%   selected_org_levels$level2 ,, ]
         
         # cat(  '\n - and now is' , class(data) ) 
         
@@ -549,10 +565,10 @@ reporting_widget_server <- function( id ,
         # glimpse( data )
       }
   
-      if ( !is_empty( input$level3 ) ){
-      cat(  '\n - filtering data by' , levelNames()[3] , "=" , input$level3 ) 
+      if ( !is_empty( selected_org_levels$level3 ) ){
+      cat(  '\n - filtering data by' , levelNames()[3] , "=" , selected_org_levels$level3 ) 
         
-      data = setDT( data )[ base::get( levelNames()[3] )  %in%   input$level3 ,, ]
+      data = setDT( data )[ base::get( levelNames()[3] )  %in%   selected_org_levels$level3 ,, ]
       
       # data = data %>% 
       #   filter( !! rlang::sym( levelNames()[3])  %in%   input$level3  )
@@ -561,10 +577,10 @@ reporting_widget_server <- function( id ,
       # glimpse( data )
       }
   
-      if ( !is_empty( input$level4 ) ){
-          cat(  '\n - filtering data by' , levelNames()[4] , "=" , input$level4 )
+      if ( !is_empty( selected_org_levels$level4 ) ){
+          cat(  '\n - filtering data by' , levelNames()[4] , "=" , selected_org_levels$level4 )
         
-          data = setDT( data )[ base::get( levelNames()[4] )  %in%   input$level4 ,, ]
+          data = setDT( data )[ base::get( levelNames()[4] )  %in%   selected_org_levels$level4 ,, ]
           
           # data = data %>% 
           #   filter( !! rlang::sym( levelNames()[4])  %in%   input$level4  )
@@ -573,10 +589,10 @@ reporting_widget_server <- function( id ,
           # glimpse( data )
       }
         
-      if ( !is_empty( input$level5 ) ){
-          cat(  '\n - filtering data by' , levelNames()[5] , "=" , input$level5 ) 
+      if ( !is_empty( selected_org_levels$level5 ) ){
+          cat(  '\n - filtering data by' , levelNames()[5] , "=" , selected_org_levels$level5 ) 
         
-          data = setDT( data )[ base::get( levelNames()[5] )  %in%   input$level5  ,, ]
+          data = setDT( data )[ base::get( levelNames()[5] )  %in%   selected_org_levels$level5  ,, ]
         
           # data = data %>% 
           #   filter( !! rlang::sym( levelNames()[5])  %in%   input$level5  )
@@ -851,11 +867,11 @@ reporting_widget_server <- function( id ,
 
   # level 3
   observe({ #Event( data1()  , {  
-    req( input$level2 )
+    req( selected_org_levels$level2 )
     if( nrow( data1() ) > 0 && 'level' %in% names( data1() )){
               cat( '\n* reporting_widget updating level3' )
       
-              ls = setDT( data1() )[ base::get( levelNames()[2] ) %in% input$level2 , 
+              ls = setDT( data1() )[ base::get( levelNames()[2] ) %in% selected_org_levels$level2 , 
                                      base::get( levelNames()[3]  ), 
               ] %>%
                 unique %>% str_sort()
@@ -1264,7 +1280,7 @@ reporting_widget_server <- function( id ,
    cat("\n* reporting_widget selected_data(): " )
   
    cat("\n - levels " , 
-       input$level2 , input$level3  ,input$level4  ,input$level5   )
+       selected_org_levels$level2 , selected_org_levels$level3  ,selected_org_levels$level4  ,selected_org_levels$level5   )
    
    cat("\n - reporting_widget selected_data_categories(): " , 
        paste( selected_data_categories$elements , collapse = ", " )   )
@@ -1288,10 +1304,10 @@ reporting_widget_server <- function( id ,
                         endingMonth = NULL ,
                          # source = 'Original' ,
                         level = 'leaf' , 
-                        level2 = input$level2 ,
-                        level3 = input$level3 ,
-                        level4 = input$level4 ,
-                        level5 = input$level5 ,
+                        level2 = selected_org_levels$level2 ,
+                        level3 = selected_org_levels$level3 ,
+                        level4 = selected_org_levels$level4 ,
+                        level5 = selected_org_levels$level5 ,
                         .cat = TRUE  )
      
       # data = data1() ,
@@ -1380,7 +1396,7 @@ reporting_widget_server <- function( id ,
     cat( '\n* reporting_widget data.total()' )
     
     # Testing
-    saveRDS( selected_data()  , 'selected.data.rds')
+    # saveRDS( selected_data()  , 'selected.data.rds')
     
     data.total = dataTotal(
         data = selected_data()   , 
@@ -1558,10 +1574,10 @@ reporting_widget_server <- function( id ,
         ifelse( selectedOUs() > 0 , 
              paste( comma( length( selectedOUs() ) ), 'facilities' ) ,
              "" ) ,
-      ifelse( nchar( input$level2 ) > 0, paste( input$level2 , collapse = "+" ) ) ,
-      ifelse( nchar( input$level3 ) > 0, paste(  "/" , input$level3 , collapse = "+" ) ) ,
-      ifelse( nchar( input$level4 ) > 0, paste(  "/" , input$level4, collapse = "+"   ) ) ,
-      ifelse( nchar( input$level5 ) > 0, paste(  "/" , input$level5, collapse = "+"   ) )
+      ifelse( nchar( selected_org_levels$level2 ) > 0, paste( selected_org_levels$level2 , collapse = "+" ) ) ,
+      ifelse( nchar( selected_org_levels$level3 ) > 0, paste(  "/" , selected_org_levels$level3 , collapse = "+" ) ) ,
+      ifelse( nchar( selected_org_levels$level4 ) > 0, paste(  "/" , selected_org_levels$level4, collapse = "+"   ) ) ,
+      ifelse( nchar( selected_org_levels$level5 ) > 0, paste(  "/" , selected_org_levels$level5, collapse = "+"   ) )
                            )
     })
   
@@ -1748,7 +1764,6 @@ reporting_widget_server <- function( id ,
     cat( "\n - done facilities:")
     return( champion_facilities )
   })
-  
   
   facility_chart = reactive({
     req( champion_facilities() )
