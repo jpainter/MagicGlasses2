@@ -146,22 +146,27 @@ directory_widget_server <- function( id ) {
         
     folderInfo = reactive({
     
-        req( data.dir.files() )
+        req( data.folder() )
           # there are a couple forms of metadata in the api.  This code tests the format, then gets metadata
           # if available, use resources method
-          cat( '\n folder info : \n')
-          
-         finf <- file.info( dir(data.folder()) , extra_cols = FALSE)
+          cat( '\n folder info : ' , data.folder() )
+         
+         d = data.folder() # d = "../HMIS/Formulas/DRC/"
+         data.dir.files = base::dir(d)
+         finf = map_df( data.dir.files, ~file.info( paste( d, .x , sep = "/") ))
+         
+         # Testing
+         # save(d, data.dir.files, finf, file = "finf.rda")
         
-         metadata.files = grepl( "metadata" , data.dir.files() , ignore.case = TRUE ) 
-         formula.files = grepl( "formulas" , data.dir.files()  , ignore.case = TRUE ) 
-         data.files = grepl( "rds" , data.dir.files()  , ignore.case = TRUE ) 
+         metadata.files = grepl( "metadata" , data.dir.files , ignore.case = TRUE ) 
+         formula.files = grepl( "formulas" , data.dir.files  , ignore.case = TRUE ) 
+         data.files = grepl( "rds" , data.dir.files  , ignore.case = TRUE ) 
          
          info = tibble( `File type:` = c("Metadata" , 'Formula', 'Data') ,
                         Number = c( sum(metadata.files), sum(formula.files) , sum(data.files) ) ,
-                        `Most Recent` = c( max( finf$mtime[ metadata.files ], na.rm = T ) ,
-                                           max( finf$mtime[ formula.files ] , na.rm = T) ,
-                                           max( finf$mtime[ data.files ] , na.rm = T )
+                        `Most Recent` = c( max( finf$mtime[ metadata.files ], na.rm = T ) %>% date %>% as.character(),
+                                           max( finf$mtime[ formula.files ] , na.rm = T) %>% date %>% as.character(),
+                                           max( finf$mtime[ data.files ] , na.rm = T )%>% date %>% as.character()
                         )
                         )
           

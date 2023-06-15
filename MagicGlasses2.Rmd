@@ -177,7 +177,7 @@ conflict_prefer("month", "lubridate")
 conflict_prefer("week", "lubridate")
 conflict_prefer("runExample", "shiny")
 conflict_prefer(":=", "rlang")
-conflict_prefer("validate", "jsonlite")
+conflict_prefer( "validate", "jsonlite" )
 
 # home = getActiveProject()
 # cat('\n ## getActiveProject():' , getActiveProject() )

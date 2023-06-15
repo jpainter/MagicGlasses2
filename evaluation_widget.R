@@ -15,7 +15,7 @@ evaluation_widget_ui = function ( id ){
 
   tabPanel( "" ,
         sidebarLayout(
-          sidebarPanel(
+          sidebarPanel( width = 3 , 
             # width = "25%" ,
             
             selectizeInput( ns("evaluation_month") , label = "Intervention Start", 
@@ -68,7 +68,7 @@ evaluation_widget_ui = function ( id ){
               #                value = FALSE  ) 
           ),
           
-          mainPanel( 
+          mainPanel( width = 9 , 
                # width = "75%" ,
                 # conditionalPanel( "input.plotly == 1" , ns = ns ,
                 #     plotlyOutput( ns("plotlyOutput") , height = "100%" )
@@ -175,9 +175,15 @@ evaluation_widget_server <- function( id ,
     formulas = reactive({ data_widget_output$formulas() })
     dataset.file = reactive({ data_widget_output$dataset.file() })
     # dataset = reactive({ data_widget_output$data1() })
-    data1 = reactive({ data_widget_output$data1() })
-    aggregateselected_data = reactive({ reporting_widget_output$aggregateselected_data() })
     
+    data1 = reactive({ data_widget_output$data1() })
+    
+    aggregateselected_data = reactive({ reporting_widget_output$aggregateselected_data() })
+    data.total = reactive({ reporting_widget_output$data.total() })
+    selected_data = reactive({ reporting_widget_output$selected_data() })
+    
+    data2 = reactive({ cleaning_widget_output$data2() })
+   
     formula_elements = reactive({ data_widget_output$formula_elements() })
     
     orgUnits = reactive({ metadata_widget_output$orgUnits() })  
@@ -195,11 +201,11 @@ evaluation_widget_server <- function( id ,
     missing_reports = reactive({ reporting_widget_output$missing_reports() })
     num_datasets = reactive({ reporting_widget_output$num_datasets() })
     num_facilities = reactive({ reporting_widget_output$num_facilities() })
-    selected_data = reactive({ reporting_widget_output$selected_data() })
+    
     caption.text = reactive({ reporting_widget_output$caption.text() })
-    data.total = reactive({ reporting_widget_output$data.total() })
+    
     aggregateselected_data = reactive({ reporting_widget_output$aggregateselected_data() })
-    selectedOUs = reactive({ reporting_widget_output$selectedOUs() })
+    reportingSelectedOUs = reactive({ reporting_widget_output$reportingSelectedOUs() })
 
 
     # see https://stackoverflow.com/questions/54438495/shift-legend-into-empty-facets-of-a-faceted-plot-in-ggplot2
@@ -1262,20 +1268,25 @@ evaluation_widget_server <- function( id ,
       
       cat( "\n - mable.data" )
       
-      mable.data = mable_data(      ml.rtss.data = data1() ,
+      mable.data = mable_data(      
+                                    ml.rtss.data = selected_data() ,
+                                    # ml.rtss.data = data1() ,
                                     # ml.rtss.data = aggregateselected_data() ,
-                                    .orgUnit = FALSE ,
                                     .startingMonth = startingMonth() ,
                                     .endingMonth = endingMonth() ,
                                     .missing_reports = missing_reports() ,
+                                    alwaysReporting = input$selected , 
+                                    reportingSelectedOUs = reportingSelectedOUs() ,
                                     covariates =  input$covariates , 
                                     .split = split() , 
                                     .error = error ,
+                                    .orgUnit = FALSE ,
                                     agg_level = input$agg_level ,
                                     levelNames = levelNames ,
                                     remove.aggregate = TRUE ,
                                     .cat = TRUE ,
                                     testing = FALSE )
+
       
       # # testing
       # if ( testing ) saveRDS( mable.data, "mable.data.rds")
@@ -1391,7 +1402,7 @@ evaluation_widget_server <- function( id ,
 #     cat( '\n* evaluation_widget: trend_Data(): ' )
 #     
 #     # t = trend_Data( .d = data.hts() , 
-#     #                   selectedOUs = selectedOUs() , 
+#     #                   reportingSelectedOUs = reportingSelectedOUs() , 
 #     #                   period = "Month" ,
 #     #                   selected = input$selected ,
 #     #                   num_selected = num_facilities()  , 
@@ -1407,7 +1418,7 @@ evaluation_widget_server <- function( id ,
 #     saveRDS( data.hts() , "data.hts.rds")
 #     
 #     t = trendData( .d = data.hts() , 
-#                           selectedOUs =  selectedOUs() , 
+#                           reportingSelectedOUs =  reportingSelectedOUs() , 
 #                           period = "Month" ,
 #                           startingMonth = NULL ,
 #                           endingMonth = NULL , 

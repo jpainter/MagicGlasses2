@@ -10,7 +10,7 @@ reporting_widget_ui = function ( id ){
           ) ,
 
     sidebarLayout(
-      sidebarPanel(
+      sidebarPanel( width = 3, 
           tabsetPanel( type = "tabs",
           tabPanel( "Org Levels",  
                     
@@ -154,7 +154,7 @@ reporting_widget_ui = function ( id ){
       ) # end tabset panel
       ) , # end sidebar panel 
       
-      mainPanel( 
+      mainPanel(  width = 9, 
         tabsetPanel( type = "tabs", 
         tabPanel( "Summary",  style = "height:90vh;" ,
       
@@ -210,8 +210,8 @@ reporting_widget_ui = function ( id ){
                           
                           column(12, 
                             plotOutput( ns('plot_values') ,
-                                hover = "plotSelectedOusValues_hover" ,
-                                brush = "plotSelectedOusValues_brush" , 
+                                hover = "plotreportingSelectedOUsValues_hover" ,
+                                brush = "plotreportingSelectedOUsValues_brush" , 
                                 height = "80%"
                                 )
                           )
@@ -973,7 +973,7 @@ reporting_widget_server <- function( id ,
     return( levels )
 })
 
-  # selectedOus ####
+  # reportingSelectedOUs ####
 
   selected <- reactiveValues( x  = NULL, panel = NULL , chart = NULL )
   
@@ -1005,15 +1005,15 @@ reporting_widget_server <- function( id ,
     return( selected )
   })
   
-  selectedOUs <- reactive({
-    #print( 'selectedOUS()' )
+  reportingSelectedOUs <- reactive({
+    #print( 'reportingSelectedOUs()' )
     req( input$endingMonth )
     req( input$startingMonth  )
     req( d() )
     req( period() )
     req( selected_data_categories$elements )
     
-    cat( "\n* reporting_widget: selectedOUs" )
+    cat( "\n* reporting_widget: reportingSelectedOUs" )
     
     if ( length( selected_data_categories$elements ) == 0 ){
       cat("\n - no data elements selected")
@@ -1031,7 +1031,7 @@ reporting_widget_server <- function( id ,
     # data_categories = input$data_categories 
     # .cat = FALSE
     # save( d , endingMonth, startingMonth, .period, missing_reports, count.any,
-    #       all_categories, data_categories, .cat, file = 'selectedOUs_data.rda')
+    #       all_categories, data_categories, .cat, file = 'reportingSelectedOUs_data.rda')
     
     
     if ( input$mostReports & nrow( d() ) > 0 ){
@@ -1058,10 +1058,10 @@ reporting_widget_server <- function( id ,
          sf = NULL
        }
     
-        cat( "\n - end selectedOUs:" )
+        cat( "\n - end reportingSelectedOUs:" )
         
         # Testing
-        # saveRDS( sf, 'selectedOUs.rds')
+        # saveRDS( sf, 'reportingSelectedOUs.rds')
         
         return( sf )
       })
@@ -1070,12 +1070,12 @@ reporting_widget_server <- function( id ,
     cat( '\n* reporting_widget x.annual()' )
    
     # x.a = orgunit.reports() %>% 
-    #       filter( orgUnit %in% selectedOUs() )   # %>%  
+    #       filter( orgUnit %in% reportingSelectedOUs() )   # %>%  
           # group_by( year , n_periods ) %>%
           #   summarise( n =  n_distinct( orgUnit ) )
     
     # data.table speed up over dplyr
-    x.a = setDT( orgunit.reports() )[ orgUnit %in% selectedOUs() , 
+    x.a = setDT( orgunit.reports() )[ orgUnit %in% reportingSelectedOUs() , 
                                       .( n = uniqueN( orgUnit ) ), 
                                       by = c( 'year' , 'n_periods' ) ]  %>%
       as_tibble()
@@ -1095,9 +1095,9 @@ reporting_widget_server <- function( id ,
     .period = period()
     
     # x.m = orgunit.monthly.reports() %>% 
-    #       filter( orgUnit %in% selectedOUs() ) 
+    #       filter( orgUnit %in% reportingSelectedOUs() ) 
     
-    x.m = setDT( orgunit.monthly.reports() )[  orgUnit %in% selectedOUs(), 
+    x.m = setDT( orgunit.monthly.reports() )[  orgUnit %in% reportingSelectedOUs(), 
                                                .( n = uniqueN( orgUnit ) ) , 
                                                by = c( 'year' , .period )   ]  %>%
       as_tibble()
@@ -1157,7 +1157,7 @@ reporting_widget_server <- function( id ,
       scale_fill_manual( values = c( 'All' = 'black' , 
                                       'Selected'= 'brown' ) ) 
   
-    if (!is.null( selectedOUs() ) ){
+    if (!is.null( reportingSelectedOUs() ) ){
       cat('\n - g + selected facilities ')
       g = g + 
         # geom_col(  data = x.months() %>% mutate( facilities = 'Selected' )  ) 
@@ -1200,7 +1200,7 @@ reporting_widget_server <- function( id ,
   output$x_value <- renderText({
     
     if ( input$mostReports ){ 
-      HTML("You've selected <code>" , comma( length( selectedOUs() ) ), "facilities" , 
+      HTML("You've selected <code>" , comma( length( reportingSelectedOUs() ) ), "facilities" , 
            "</code>" )
     }
     
@@ -1211,7 +1211,7 @@ reporting_widget_server <- function( id ,
       panel = selected$panel
       
       name <- lvls[ round( selected$x ) ]
-      HTML("You've selected <code>" , comma( length( selectedOUs() ) ) , 
+      HTML("You've selected <code>" , comma( length( reportingSelectedOUs() ) ) , 
            "</code>" ,
            "facilities that submitted data for <code>", 
            paste( name, collapse = "," ) , 
@@ -1223,49 +1223,49 @@ reporting_widget_server <- function( id ,
   # Histogram of Annual Number of Months Reported (plot_reports_in_a_year) ####
   
   plot1 = reactive({
-  #print( 'plot1():' )
-  req( annual.reports() )
-  req( period() )
-  .period = period()
-  
-  # save data for testing ggplot options
-  # saveRDS( annual.reports() , 'plot1_data.rds' )
-  
-  
-  if ( length( annual.reports()$year) > 0  ) {
+      #print( 'plot1():' )
+      req( annual.reports() )
+      req( period() )
+      .period = period()
+      
+      # save data for testing ggplot options
+      # saveRDS( annual.reports() , 'plot1_data.rds' )
+      
+      
+      if ( length( annual.reports()$year) > 0  ) {
+        
+      if ( .period == "Month" ){
+                .breaks = 1:12
+      } else {
+                .breaks = seq(2, 53, 4)
+      }
+        
+      cat('\n - plot1: ggplot( annual.reports() ... ')
+      
+      # Testing
+      # saveRDS( annual.reports(), "annual.reports.rds" )
+      # saveRDS( reportingSelectedOUs() , "reportingSelectedOUs.rds" )
+      # saveRDS( facilities() , "facilities.rds" )
+      # saveRDS( x.annual() , "x.annual.rds" )
+      
+      g = ggplot( annual.reports() , 
+                  aes( x = n_periods , y = n ) ) +
+        geom_col() + 
+        scale_x_discrete( 'Number Months Reported' 
+                          , breaks = .breaks   
+                          , labels  =  .breaks ,
+                          drop = FALSE 
+                          )  +
+        geom_hline( yintercept = facilities() ) +
+        facet_wrap( ~ year , scales = 'free_x')
+      
+      if (!is.null( reportingSelectedOUs() ) ){
+        g = g + geom_col( data = x.annual() , fill = 'brown', width = .9 ) 
+      }
     
-  if ( .period == "Month" ){
-            .breaks = 1:12
-  } else {
-            .breaks = seq(2, 53, 4)
-  }
-    
-  cat('\n - plot1: ggplot( annual.reports() ... ')
-  
-  # Testing
-  # saveRDS( annual.reports(), "annual.reports.rds" )
-  # saveRDS( selectedOUs() , "selectedOUs.rds" )
-  # saveRDS( facilities() , "facilities.rds" )
-  # saveRDS( x.annual() , "x.annual.rds" )
-  
-  g = ggplot( annual.reports() , 
-              aes( x = n_periods , y = n ) ) +
-    geom_col() + 
-    scale_x_discrete( 'Number Months Reported' 
-                      , breaks = .breaks   
-                      , labels  =  .breaks ,
-                      drop = FALSE 
-                      )  +
-    geom_hline( yintercept = facilities() ) +
-    facet_wrap( ~ year , scales = 'free_x')
-  
-  if (!is.null( selectedOUs() ) ){
-    g = g + geom_col( data = x.annual() , fill = 'brown', width = .9 ) 
-  }
-
-  #print( 'end plot1' )
-  return(g)
-  }
+      #print( 'end plot1' )
+      return(g)
+      }
 })
 
   output$plot_reports_in_a_year <- renderPlot({  plot1()  } , height = "auto" )
@@ -1292,6 +1292,8 @@ reporting_widget_server <- function( id ,
                         error =  NULL ,
                         algorithm = 'seasonal3' ,
                         .cat = TRUE )
+   
+   # testing
      
    selected_data =  selectedData( 
                         data = .cleanedData , # data1() ,
@@ -1299,7 +1301,7 @@ reporting_widget_server <- function( id ,
                         data_categories = selected_data_categories$elements ,
                         # all_categories = input$all_categories ,
                         alwaysReporting = input$mostReports ,
-                        selectedOUs = selectedOUs() ,
+                        reportingSelectedOUs = reportingSelectedOUs() ,
                         startingMonth = NULL , 
                         endingMonth = NULL ,
                          # source = 'Original' ,
@@ -1309,13 +1311,14 @@ reporting_widget_server <- function( id ,
                         level4 = selected_org_levels$level4 ,
                         level5 = selected_org_levels$level5 ,
                         .cat = TRUE  )
-     
+   
+   
       # data = data1() ,
       # levelNames = levelNames() ,
       # data_categories = selected_data_categories$elements ,
       # # all_categories = input$all_categories ,
       # alwaysReporting = input$mostReports ,
-      # selectedOUs = selectedOUs() ,
+      # reportingSelectedOUs = reportingSelectedOUs() ,
       # source = input$source ,
       # level2 = input$level2 ,
       # level3 = input$level3 ,
@@ -1338,16 +1341,16 @@ reporting_widget_server <- function( id ,
    #    data = setDT( data )[ data %in% input$data_categories ,, ]
    #  
    #  # Add var for selected ous
-   #  cat( '\n - selected_data length( selectedOUs()): ' , length( selectedOUs())  )
+   #  cat( '\n - selected_data length( reportingSelectedOUs()): ' , length( reportingSelectedOUs())  )
    #  
-   # if ( length( selectedOUs()) > 0 ){
+   # if ( length( reportingSelectedOUs()) > 0 ){
    #   
-   #   data = setDT( data )[ , Selected := fifelse( orgUnit %in% selectedOUs() , 
+   #   data = setDT( data )[ , Selected := fifelse( orgUnit %in% reportingSelectedOUs() , 
    #                                                    'Reporting Each Period',
    #                                                    'Inconsistent Reporting') ]
    #   # data  = data %>%
    #   #   mutate( Selected = ifelse( 
-   #   #     orgUnit %in% selectedOUs() , 
+   #   #     orgUnit %in% reportingSelectedOUs() , 
    #   #     'Reporting Each Period', 
    #   #     'Inconsistent Reporting' )
    #   #   )
@@ -1396,7 +1399,8 @@ reporting_widget_server <- function( id ,
     cat( '\n* reporting_widget data.total()' )
     
     # Testing
-    # saveRDS( selected_data()  , 'selected.data.rds')
+    saveRDS( selected_data()  , 'selected.data.rds')
+    saveRDS( group_by_cols()  , 'group_by_cols.rds')
     
     data.total = dataTotal(
         data = selected_data()   , 
@@ -1471,14 +1475,14 @@ reporting_widget_server <- function( id ,
     cat('\n* reporting_widget aggregateselected_data():' )
     
     # testing
-    # saveRDS( levelNames() , 'levelNames.rds')
-    # saveRDS( data.total() , 'data.total.rds')
+    saveRDS( levelNames() , 'levelNames.rds')
+    saveRDS( aggregateDataKey() , 'aggregateDataKey.rds')
     
     .d = data.total()
     cat('\n - data.total():' )
     
     # testing
-    # saveRDS( .d , 'data.total.rds' )
+    saveRDS( .d , 'data.total.rds' )
     
     if ( !is_tsibble( .d ) ){
       cat('\n - preparing data.total as tsibble')
@@ -1571,8 +1575,8 @@ reporting_widget_server <- function( id ,
   
   caption.text =  reactive({
       paste( 
-        ifelse( selectedOUs() > 0 , 
-             paste( comma( length( selectedOUs() ) ), 'facilities' ) ,
+        ifelse( reportingSelectedOUs() > 0 , 
+             paste( comma( length( reportingSelectedOUs() ) ), 'facilities' ) ,
              "" ) ,
       ifelse( nchar( selected_org_levels$level2 ) > 0, paste( selected_org_levels$level2 , collapse = "+" ) ) ,
       ifelse( nchar( selected_org_levels$level3 ) > 0, paste(  "/" , selected_org_levels$level3 , collapse = "+" ) ) ,
@@ -1587,7 +1591,7 @@ reporting_widget_server <- function( id ,
     cat("\n* n_selected(): ")
     
     # testing
-    # saveRDS( selectedOUs(), "selectedOUS.rds") 
+    # saveRDS( reportingSelectedOUs(), "reportingSelectedOUs.rds") 
     # saveRDS( selected_data(),"selected_data.rds" ) 
     # saveRDS( data1(), "data1.rds" ) 
     # saveRDS( levelNames() , "levelNames.rds" )
@@ -1612,7 +1616,7 @@ reporting_widget_server <- function( id ,
     .d = aggregateselected_data()
     
     # testing
-    # saveRDS(.d, 'plot3_data.rds')
+    saveRDS(.d, 'plot3_data.rds')
     
     
     data.text = paste( unique( selected_data()$data ) ,
@@ -1674,9 +1678,9 @@ reporting_widget_server <- function( id ,
     
     # facet when selected > 0
     # Testing
-    cat("\n - length( selectedOUs() ):" , length( selectedOUs() ) )
+    cat("\n - length( reportingSelectedOUs() ):" , length( reportingSelectedOUs() ) )
     
-    if ( length( selectedOUs() ) > 0 ) g =
+    if ( length( reportingSelectedOUs() ) > 0 ) g =
                 g + facet_wrap( vars( Selected ) ,
                     labeller = as_labeller( facet_labeller ) ,
                     # scales = 'free' , 
@@ -1731,10 +1735,10 @@ reporting_widget_server <- function( id ,
   
   champion_facilities = reactive({
     req( avgValues()) 
-    req( selectedOUs() )
+    req( reportingSelectedOUs() )
     cat( "\n * champion_facilities:")
     
-    sou = selectedOUs()
+    sou = reportingSelectedOUs()
     gf = geoFeatures()
     avgValues = avgValues()
     
@@ -1991,7 +1995,7 @@ reporting_widget_server <- function( id ,
       num_facilities = num_facilities ,
       selected_data = selected_data ,
       caption.text = caption.text ,
-      selectedOUs = selectedOUs 
+      reportingSelectedOUs = reportingSelectedOUs 
     ))
 } )
 }

@@ -182,7 +182,7 @@ mostFrequentReportingOUs <- function(
        }
   
     if ( period %in% 'Month' ){
-         if ( .cat ) cat( '\n - selectedOUS by Month, between ', startingMonth, endingMonth )
+         if ( .cat ) cat( '\n - reportingSelectedOUs by Month, between ', startingMonth, endingMonth )
          data = data %>% as_tibble %>%
          filter( 
            Month >=   startingMonth   ,
@@ -191,7 +191,7 @@ mostFrequentReportingOUs <- function(
        } 
       
     if ( period %in% 'Week' ){
-         if ( .cat ) cat( '\n - selectedOUS by Week')
+         if ( .cat ) cat( '\n - reportingSelectedOUs by Week')
          data = data %>% as_tibble %>%
          filter( 
            Week >=  yearweek( startingMonth  )  ,
@@ -252,7 +252,7 @@ mostFrequentReportingOUs <- function(
          filter( champion ) %>%
          pull( orgUnit ) %>% unique
        
-    if ( .cat ) cat( "\n - number selectedOUs:", length(s), 'orgUnits' ) 
+    if ( .cat ) cat( "\n - number reportingSelectedOUs:", length(s), 'orgUnits' ) 
     return( s )
 }  
 
@@ -279,7 +279,7 @@ mostFrequentReportingOUs <- function(
 #     
 #     if ( !is.null( split ) ) group_by_cols = c( group_by_cols , split )
 #     
-#     # if ( length( selectedOUs() > 0 ) ) 
+#     # if ( length( reportingSelectedOUs() > 0 ) ) 
 #       # group_by_cols = c( group_by_cols , 'Facilities' )
 #     
 #     # # If not merge when total, show separate datsets
@@ -482,7 +482,7 @@ selectedData = function( data1 ,
                          data_categories = NULL ,
                          alwaysReporting = TRUE , 
                          missing_reports = 0 ,
-                         selectedOUs = NULL ,
+                         reportingSelectedOUs = NULL ,
                          startingMonth = NULL , 
                          endingMonth = NULL ,
                          period = NULL ,
@@ -610,12 +610,12 @@ selectedData = function( data1 ,
      
      if ( .cat ) cat( '\n - alwaysReporting' )
      
-     # selectedOUs = NULL 
-     if ( is_empty( selectedOUs ) & nrow( data ) > 0 ){
+     # reportingSelectedOUs = NULL 
+     if ( is_empty( reportingSelectedOUs ) & nrow( data ) > 0 ){
        
         if ( .cat ) cat( "\n - finding most frequently reporting OUs")
          
-        selectedOUs  = mostFrequentReportingOUs( data ,
+        reportingSelectedOUs  = mostFrequentReportingOUs( data ,
                                              # all_categories = all_categories , 
                                              data_categories = data_categories ,
                                              startingMonth = startingMonth , 
@@ -627,11 +627,11 @@ selectedData = function( data1 ,
    
         # Add var for selected ous
         if ( .cat ){
-          cat( '\n - selectedData length( selectedOUs()): ' , length( selectedOUs ) )
+          cat( '\n - selectedData length( reportingSelectedOUs()): ' , length( reportingSelectedOUs ) )
           cat( '\n - starting - ending: ' , startingMonth,  endingMonth ) 
         
         } 
-        data = setDT(data)[ , Selected := fifelse( orgUnit %in% selectedOUs, 
+        data = setDT(data)[ , Selected := fifelse( orgUnit %in% reportingSelectedOUs, 
                                                           'Reporting Each Period',
                                                           'Inconsistent Reporting') ] %>%
           as_tibble(.) 
@@ -891,7 +891,7 @@ htsFormula = function(
              '*' ,  htsFormula )
     # 
     # Cross by selected and split
-    # if ( length( selectedOUs() ) > 0  & !input$split %in% 'None' ) hts =
+    # if ( length( reportingSelectedOUs() ) > 0  & !input$split %in% 'None' ) hts =
     #   paste( input$split ,  ' * Facilities * (', hts , ')' )
     
     # remove a trailing * ...
@@ -1072,7 +1072,7 @@ aggData = function( data.total = NULL ,
 
 
 trendData = function( .d = data.hts , 
-                      selectedOUs = NULL , 
+                      reportingSelectedOUs = NULL , 
                       period = NULL ,
                       startingMonth = NULL ,
                       endingMonth = NULL , 
@@ -1090,7 +1090,7 @@ trendData = function( .d = data.hts ,
       if ( .cat ) cat( '\n* data Functions.R: trendData(): ' )
   
       # Testing
-      saveRDS( .d, "trendData.d.rds")
+      # saveRDS( .d, "trendData.d.rds")
 
       if (  is.null( period ) ) period = dataPeriod( .d )
       
@@ -1256,7 +1256,7 @@ trendData = function( .d = data.hts ,
       if ( .cat ) cat( '\n - end trend data():'); # print( glimpse( .d ) ); # print(.d)
       
       # Testing
-      saveRDS( .d , 'trendData.rds' )
+      # saveRDS( .d , 'trendData.rds' )
   
   return( .d. )
 }

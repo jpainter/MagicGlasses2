@@ -82,7 +82,7 @@ data_widget_server <- function( id ,
         
       formula.files = reactive({ 
           req( data.folder() )
-          cat( '\n* looking for formula files in' , data.folder() , '\n')
+          cat( '\n* data_widget looking for formula files in' , data.folder() , '\n')
         
           ff = files( search = 'Formulas_' , dir = data.folder() , type = 'xlsx|rds' )  
           if ( is_empty( ff ) ){
@@ -94,7 +94,7 @@ data_widget_server <- function( id ,
           formula_file.mdate = file.info( paste0( data.folder() , ff  ) )$mtime
           ff = ff[ rev(order( formula_file.mdate )) ]
           
-          cat( '\n - formula.files:' , ff  )
+          # cat( '\n - formula.files:' , ff  )
           if ( !any(file.exists( paste0( data.folder() , ff  ) ) )) return()
           
           return( ff )
