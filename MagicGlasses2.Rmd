@@ -187,15 +187,15 @@ conflict_prefer( "validate", "jsonlite" )
 # Functions ####
 # source( "data_time_libraries.r")
 # source( "outlier.r" )
-source( "ingest_formula_data.r")
-source( 'TS_Modeling_Functions.r')
+source( "ingest_formula_data.R")
+source( 'TS_Modeling_Functions.R')
 source( "Summary_TS.R") # new version of summary_ts()
 source( 'TS_model_outlier_impute.R') # model_ts()
 source( 'Deviation_Expected_Functions.R')
 # source( 'theme_ppt.R')
 # source( 'clean_ts.r' )
 source( 'DToptions.R')
-source( 'model_ts2.r' )
+source( 'model_ts2.R' )
 source( 'api_data.r' )
 source( 'dqa.r' )
 source( 'Cleaning.R' )
@@ -448,7 +448,7 @@ Column
 -----------------------------------
 
 ```{r directory_widget , echo = FALSE  }
-source( 'directory_widget.r' )
+source( 'directory_widget.R' )
 directory_widget_ui( "directory1" )
 
 directory_widget_output = directory_widget_server( "directory1" )
@@ -460,7 +460,7 @@ Column
 
 
 ```{r login_widget , echo = FALSE  }
-source( 'login_widget.r' )
+source( 'login_widget.R' )
 login_widget_ui( "login1" )
 
 login_widget_output = login_widget_server( "login1" )
@@ -471,7 +471,7 @@ Metadata
 ========================
 
 ```{r metadata_widget , eval=TRUE}
-source( 'metadata_widget.r' )
+source( 'metadata_widget.R' )
 metadata_widget_ui( "metadata1" )
 
 metadata_widget_output =
@@ -506,7 +506,7 @@ data1_Widget_output =
 ### Request data from server {data-height='35%'}
 
 ```{r data_request_widget , eval=TRUE}
-source( 'data_request_widget.r' )
+source( 'data_request_widget.R' )
 data_request_widget_ui( "data_request1" )
 
 data_request_output =
@@ -579,7 +579,7 @@ Evaluation
 ========================
 
 ```{r evaluation_widget , eval = TRUE }
-source( 'evaluation_widget.r' )
+source( 'evaluation_widget.R' )
 evaluation_widget_ui( "evaluation1" )
 
 evaluation_widget_output =

@@ -3240,7 +3240,7 @@
     },
     "terra": {
       "Package": "terra",
-      "Version": "1.7-29",
+      "Version": "1.7-37",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
