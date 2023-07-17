@@ -475,7 +475,8 @@ metadata_widget_server <- function( id ,
       cat( "\n - cc.coc " )
       
       cc. = cc %>% select( id, name, categoryOptionCombos ) %>%  
-        rename( categoryCombo.id = id , categoryCombo = name ) %>%
+        rename( categoryCombo.id = id
+                , categoryCombo = name ) %>%
         unnest( categoryOptionCombos )  %>% rename( categoryOptionCombo.id = id )
       
       coc. = coc %>%  
@@ -1521,7 +1522,7 @@ metadata_widget_server <- function( id ,
   output$downloadInfo <- downloadHandler(
 
     filename = function() {
-      paste0( dir() , "MetaData_", Sys.Date()  ,".xlsx"  )
+      paste0( "MetaData_", Sys.Date()  ,".xlsx"  )
     } ,
     
     content = function( file ) {

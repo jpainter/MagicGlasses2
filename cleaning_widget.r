@@ -395,8 +395,8 @@ cleaning_widget_server <- function( id ,
       # if ( 'mad15' %in% names( outlierData$df_data ) ){
       if ( 'mad15' %in% names( x ) ){
 
-        showModal( rerunMadModal() )
-        cat('\n - reRun extreme values button:' , searchForMAD() )
+        # showModal( rerunMadModal() )
+        # cat('\n - reRun extreme values button:' , searchForMAD() )
         
       } else {
           searchForMAD( FALSE )
@@ -749,6 +749,10 @@ cleaning_widget_server <- function( id ,
         }
         
       reportingSelectedOUs = reportingSelectedOUs()
+      
+      # Testing
+      saveRDS( d , 'd.rds')
+      saveRDS( reportingSelectedOUs,  'reportingSelectedOUs.rds' )
       
       data_mase = d.mase( d  , reportingSelectedOUs )       
       
