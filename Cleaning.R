@@ -224,6 +224,15 @@ unseasonal = function( x ,
         # standard_dev = sd( x, na.rm = TRUE )
             
         outlier = abs( ( x.forecast - x.ts ) / MAD ) >= deviation
+        
+        # WHO
+        outlier.sd = abs( (x.ts - mean( x.ts , na.rm = T) ) / sd( x.ts , na.rm = T) ) >= deviation
+        
+        # MAD/JP
+        outlier.mad = abs( (x.ts - median( x.ts , na.rm = T) ) / mad( x.ts , na.rm = T) ) >= deviation
+        
+        # MASE/ROb Hyndeman
+        outlier.mase= abs( (x.ts - median( x.ts , na.rm = T) ) / mad( x.ts , na.rm = T) ) >= deviation
             
         x.ts[ which( outlier ) ] =  NA
         # value[ outlier ] =  FALSE 
