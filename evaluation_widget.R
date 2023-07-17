@@ -8,7 +8,7 @@ evaluation_widget_ui = function ( id ){
             position = 'bottom-right'
             # , margins = c(70, 1200)
           ) ,
-          
+  fillPage(       
   tabsetPanel( type = "tabs",
   # add_busy_spinner(spin = "fading-circle", position = "bottom-right") ,
     
@@ -18,15 +18,54 @@ evaluation_widget_ui = function ( id ){
           sidebarPanel( width = 3 , 
             # width = "25%" ,
             
-            selectizeInput( ns("evaluation_month") , label = "Intervention Start", 
-                    choices = NULL ,
-                    selected = NULL ) ,
-            
-            # div(id = "expr-container",
-              selectInput( ns("horizon") , label = "Number periods after intervention:" , 
-                            choices = c(3,6,12,18,24,36) , 
-                            selected = 12  ) ,
-
+            tabsetPanel(
+              tabPanel( "Models" , 
+                        inputPanel(
+      
+                selectInput( ns( "model" ), label = "Time-series model:" , 
+                        choices = c( 
+                                    # 'TSLM',
+                                     'TSLM (trend)' , 'TSLM (trend+season)' , 
+                                     'ETS' , 'ARIMA', 'SNAIVE' , 'NNETAR' ,
+                                     # 'BSTS' , 
+                                    'Prophet'
+                                    
+                                    # , 'TSLM (trend)'
+                                    # , 'TSLM (trend+season)'
+                                    ) , 
+                        selected = 'ETS'  ) ,
+                
+              textInput( ns( 'model.formula' ) , 'Model Formula' ,
+                value =  "total ~ error() + trend() + season()" ) ,
+          
+          
+                textInput( ns( 'covariates' ), 'Model covariates' ,
+                    value =  NULL ) ,
+                
+                  checkboxInput( ns( "transform" ) , label ='Transform: box_cox(auto)',
+                               value = FALSE  ) ,
+                  
+                checkboxInput( ns( "smooth" ) , label ='Show smoothed trend line (loess)',
+                               value = FALSE  ) ,
+                
+       
+                checkboxInput( ns( "scale" ) , label ='Scale values (x-mean)/sd + 1)',
+                               value = FALSE  ) ,
+                
+                checkboxInput( ns( 'components' ), label = 'Visualize trend' ,
+                            value = FALSE ) ,
+                
+                checkboxInput( ns( "forecast_ci" ) , label ='Prediction interval',
+                               value = FALSE  ) ,
+                
+                checkboxInput( ns( "bootstrap" ) , label ='Bootstrap estimate',
+                               value = FALSE  ) ,
+                
+                checkboxInput( ns( "autoModel" ) , label ='Automatic nmodel selection',
+                               value = FALSE  ) 
+                ) ) ,
+              
+              tabPanel( "Stratifications" ,
               checkboxInput( ns('hts'), label = "hts across full admin hierarchy", 
                      value = FALSE ) ,
        
@@ -46,7 +85,7 @@ evaluation_widget_ui = function ( id ){
                              value = TRUE  ) ,
               
               checkboxInput( ns( "facet_split" ) , label ="Facet by split",
-                             value = FALSE  ) ,
+                             value = TRUE  ) ,
               
               checkboxInput( ns( "selected" ) , label ='Selected facilities only',
                              value = TRUE  ) ,
@@ -66,7 +105,8 @@ evaluation_widget_ui = function ( id ){
               
               # checkboxInput( ns( "plotly" ) , label ='Plotly Chart',
               #                value = FALSE  ) 
-          ),
+              )
+          ) ) ,
           
           mainPanel( width = 9 , 
                # width = "75%" ,
@@ -79,8 +119,29 @@ evaluation_widget_ui = function ( id ){
                 #              hover = "plot_hover"  )
                 #  )
                 
-             tabsetPanel(
-                  tabPanel( "ggPlot" ,
+          tabsetPanel(
+               
+            inputPanel(  
+              
+              selectizeInput( ns("evaluation_month") , label = "Intervention Start", 
+                    choices = NULL ,
+                    selected = NULL ) ,
+            
+            # div(id = "expr-container",
+              selectInput( ns("horizon") , label = "Number periods after intervention:" , 
+                            choices = c(3,6,12,18,24,36) , 
+                            selected = 12  ) ,
+            
+              checkboxInput( ns( "pre_evaluation") , label ='Pre-intervention model fit',
+                               value = FALSE  ) ,
+                
+                
+              checkboxInput( ns( "evaluation" ), label ='Post-intervention evaluation',
+                               value = FALSE  ) 
+                
+            ) ,
+          
+          tabPanel( "ggPlot" ,
                     
                     fluidPage(
                       fluidRow( style = "height:60vh;",
@@ -88,60 +149,7 @@ evaluation_widget_ui = function ( id ){
                       ) ) ,
                   tabPanel("Plotly", plotlyOutput(  ns("plotlyOutput") ) ),
                   tabPanel("Table", plotlyOutput( ns("tableOutput" )  ) ) 
-                  ) ,
-             
-            inputPanel(
-      
-            selectInput( ns( "model" ), label = "Time-series model:" , 
-                    choices = c( 
-                                # 'TSLM',
-                                 'TSLM (trend)' , 'TSLM (trend+season)' , 
-                                 'ETS' , 'ARIMA', 'SNAIVE' , 'NNETAR' ,
-                                 # 'BSTS' , 
-                                'Prophet'
-                                
-                                # , 'TSLM (trend)'
-                                # , 'TSLM (trend+season)'
-                                ) , 
-                    selected = 'ETS'  ) ,
-      
-            textInput( ns( 'covariates' ), 'Model covariates' ,
-                value =  NULL ) ,
-            
-            checkboxInput( ns( "transform" ) , label ='Transform: box_cox(lambda = .5  )',
-                         value = FALSE  ) ,
-            
-          checkboxInput( ns( "smooth" ) , label ='Show smoothed trend line (loess)',
-                         value = FALSE  ) ,
-          
-          checkboxInput( ns( "pre_evaluation") , label ='Pre-intervention model fit',
-                         value = FALSE  ) ,
-          
-          
-          checkboxInput( ns( "evaluation" ), label ='Post-intervention evaluation',
-                         value = FALSE  ) ,
-          
-          checkboxInput( ns( "scale" ) , label ='Scale values (x-mean)/sd + 1)',
-                         value = FALSE  ) ,
-          
-          checkboxInput( ns( 'components' ), label = 'Visualize trend' ,
-                      value = FALSE ) ,
-          
-          checkboxInput( ns( "forecast_ci" ) , label ='Prediction interval',
-                         value = FALSE  ) ,
-          
-          checkboxInput( ns( "bootstrap" ) , label ='Bootstrap estimate',
-                         value = FALSE  ) ,
-          
-          checkboxInput( ns( "autoModel" ) , label ='Automatic nmodel selection',
-                         value = FALSE  )
-          
-                ) ,
-          
-
-    
-    textInput( ns( 'model.formula' ) , 'Model Formula' ,
-               value =  "total ~ error() + trend() + season()" ) 
+                  ) 
 ) 
                  
              # plotOutput( ns( "plotOutput" ) , hover = "plot_hover"  )
@@ -149,7 +157,7 @@ evaluation_widget_ui = function ( id ){
         )    
 
 
-))
+)))
 
 }
         
