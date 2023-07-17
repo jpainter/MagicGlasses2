@@ -5,19 +5,19 @@ monthly.outlier.summary = function( df.ts ){
   
     cat( "\n - errors" )
     errors = 
-    df.ts %>%
-    ungroup %>%
-    filter( effectiveLeaf ) %>%
-    select( Month ,  data.id , data ,value,  mad15, mad10, mad5, seasonal5, seasonal3 , original ) %>%
-    mutate( Combined = pmin( mad15, mad10, mad5, seasonal5, seasonal3 , na.rm = T ) %>% as.logical() ) %>%
-    pivot_longer( cols = c(  mad15, mad10, mad5, seasonal5, seasonal3 , Combined ) ,
-                  names_to = "Alg" , values_to = "val"  ) %>%
-    filter( val == FALSE 
-            # ,  ( value & Alg %in% "seasonal3" & is.na( val ) )  
-            ) %>%
-    group_by( data, Alg ) %>% 
-    summarise( e = sum( original ) ,
-               n.e = n() )
+        df.ts %>%
+        ungroup %>%
+        filter( effectiveLeaf ) %>%
+        select( Month ,  data.id , data ,value,  mad15, mad10, seasonal5, seasonal3 , original ) %>%
+        mutate( Combined = pmin( mad15, mad10,seasonal5, seasonal3 , na.rm = T ) %>% as.logical() ) %>%
+        pivot_longer( cols = c(  mad15, mad10, seasonal5, seasonal3 , Combined ) ,
+                      names_to = "Alg" , values_to = "val"  ) %>%
+        filter( val == FALSE 
+                # ,  ( value & Alg %in% "seasonal3" & is.na( val ) )  
+                ) %>%
+        group_by( data, Alg ) %>% 
+        summarise( e = sum( original ) ,
+                   n.e = n() )
   
   cat( "\n - data.totals" )
   data.totals = 

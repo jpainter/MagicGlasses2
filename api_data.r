@@ -425,7 +425,7 @@ api_url = function( baseurl, de ,  periods, orgUnits , aggregationType ){
                  # "&displayProperty=NAME",
                  "&aggregationType=" , aggregationType )
   
-  cat( '\n* api_url:' , url )
+  # cat( '\n* api_url:' , url )
   return( url )
 }
 
@@ -690,7 +690,8 @@ api_data = function(      periods = NA ,
       prev.periods = prev.data %>% pull( period ) %>% unique %>%  paste(. , collapse = ';')
       cat( '\n - previous periods:' ,  prev.periods )
       
-      prev.periods.years = str_extract_all(prev.periods, "[0-9]+")[[1]] %>% str_sub(1,4) %>% unique()
+      prev.periods.vector = str_split_1( prev.periods, ";")
+      prev.periods.years = prev.periods.vector %>% str_sub(1,4) %>% unique()
       prev.periods.years = prev.periods.years[ order( prev.periods.years )]
       cat( '\n - previous periods years:' ,  prev.periods.years )
       
@@ -715,9 +716,7 @@ api_data = function(      periods = NA ,
         
         for ( i in seq_along( prev.periods.years ) ) {
        
-          prev.periods.in.year = str_extract_all( prev.periods, 
-                                                  paste0( prev.periods.years[i] ,"[0-9][0-9]" )
-                                                  )[[1]] %>%  unique()
+          prev.periods.in.year = prev.periods.vector[grepl( prev.periods.years[i] , prev.periods.vector )] %>%  unique()
           prev.periods.in.year = prev.periods.in.year[ order(prev.periods.in.year) ] %>%  paste(. , collapse = ';')
           
           cat( '\n - for' , prev.periods.in.year )
@@ -751,12 +750,15 @@ api_data = function(      periods = NA ,
       
         for ( i in seq_along( prev.periods.years ) ) {
           
-          prev.periods.in.year = str_extract_all( prev.periods, 
-                                                  paste0( prev.periods.years[i] ,"[0-9][0-9]" )
-                                                  )[[1]] %>%  unique()
+          # prev.periods.in.year = str_extract_all( prev.periods, 
+          #                                         paste0( prev.periods.years[i] ,"[0-9][0-9]" )
+          #                                         )[[1]] %>%  unique()
+          # prev.periods.in.year = prev.periods.in.year[ order(prev.periods.in.year) ] %>%  paste(. , collapse = ';')
+          # 
+          # cat( '\n - for' , prev.periods.in.year )
+          prev.periods.in.year = prev.periods.vector[grepl( prev.periods.years[i] , prev.periods.vector )] %>%  unique()
           prev.periods.in.year = prev.periods.in.year[ order(prev.periods.in.year) ] %>%  paste(. , collapse = ';')
           
-          cat( '\n - for' , prev.periods.in.year )
           
           current.values[[i]] = fetch_get(  baseurl. = baseurl , username , password ,
                                     de. = new.elements , 
@@ -1159,7 +1161,7 @@ api_data = function(      periods = NA ,
        d = d %>% mutate_all( as.character )
        
        updated.data  = bind_rows( good.prev.data , d ) %>% 
-         filter( !is.na( COUNT ) || COUNT == "0.0" ) %>%
+         filter( !is.na( COUNT ) | ! COUNT %in% "0.0" ) %>%
          arrange( period , orgUnit, dataElement , categoryOptionCombo  ) 
        
         cat("\n - glimpse updated.data:\n") ; glimpse( updated.data )

@@ -8,24 +8,64 @@ evaluation_widget_ui = function ( id ){
             position = 'bottom-right'
             # , margins = c(70, 1200)
           ) ,
-          
+  fillPage(       
   tabsetPanel( type = "tabs",
   # add_busy_spinner(spin = "fading-circle", position = "bottom-right") ,
+    
 
-  tabPanel( 'Impact' ,
+  tabPanel( "" ,
         sidebarLayout(
-          sidebarPanel(
+          sidebarPanel( width = 3 , 
             # width = "25%" ,
             
-            selectizeInput( ns("evaluation_month") , label = "Intervention Start", 
-                    choices = NULL ,
-                    selected = NULL ) ,
-            
-            # div(id = "expr-container",
-              selectInput( ns("horizon") , label = "Number periods after intervention:" , 
-                            choices = c(3,6,12,18,24,36) , 
-                            selected = 12  ) ,
-
+            tabsetPanel(
+              tabPanel( "Models" , 
+                        inputPanel(
+      
+                selectInput( ns( "model" ), label = "Time-series model:" , 
+                        choices = c( 
+                                    # 'TSLM',
+                                     'TSLM (trend)' , 'TSLM (trend+season)' , 
+                                     'ETS' , 'ARIMA', 'SNAIVE' , 'NNETAR' ,
+                                     # 'BSTS' , 
+                                    'Prophet'
+                                    
+                                    # , 'TSLM (trend)'
+                                    # , 'TSLM (trend+season)'
+                                    ) , 
+                        selected = 'ETS'  ) ,
+                
+              textInput( ns( 'model.formula' ) , 'Model Formula' ,
+                value =  "total ~ error() + trend() + season()" ) ,
+          
+          
+                textInput( ns( 'covariates' ), 'Model covariates' ,
+                    value =  NULL ) ,
+                
+                  checkboxInput( ns( "transform" ) , label ='Transform: box_cox(auto)',
+                               value = FALSE  ) ,
+                  
+                checkboxInput( ns( "smooth" ) , label ='Show smoothed trend line (loess)',
+                               value = FALSE  ) ,
+                
+       
+                checkboxInput( ns( "scale" ) , label ='Scale values (x-mean)/sd + 1)',
+                               value = FALSE  ) ,
+                
+                checkboxInput( ns( 'components' ), label = 'Visualize trend' ,
+                            value = FALSE ) ,
+                
+                checkboxInput( ns( "forecast_ci" ) , label ='Prediction interval',
+                               value = FALSE  ) ,
+                
+                checkboxInput( ns( "bootstrap" ) , label ='Bootstrap estimate',
+                               value = FALSE  ) ,
+                
+                checkboxInput( ns( "autoModel" ) , label ='Automatic nmodel selection',
+                               value = FALSE  ) 
+                ) ) ,
+              
+              tabPanel( "Stratifications" ,
               checkboxInput( ns('hts'), label = "hts across full admin hierarchy", 
                      value = FALSE ) ,
        
@@ -45,10 +85,14 @@ evaluation_widget_ui = function ( id ){
                              value = TRUE  ) ,
               
               checkboxInput( ns( "facet_split" ) , label ="Facet by split",
-                             value = FALSE  ) ,
+                             value = TRUE  ) ,
               
               checkboxInput( ns( "selected" ) , label ='Selected facilities only',
                              value = TRUE  ) ,
+            
+             selectInput( ns( "error") , label = "Keep original data or remove data with following error flags:" , 
+                choices = c( "Original", "mad15", "mad10" , "seasonal5" , "seasonal3" ) , 
+                selected = 1  ) ,
               
               checkboxInput( ns( "label" ) , label ='Show labels',
                              value = FALSE  ) ,
@@ -61,9 +105,10 @@ evaluation_widget_ui = function ( id ){
               
               # checkboxInput( ns( "plotly" ) , label ='Plotly Chart',
               #                value = FALSE  ) 
-          ),
+              )
+          ) ) ,
           
-          mainPanel( 
+          mainPanel( width = 9 , 
                # width = "75%" ,
                 # conditionalPanel( "input.plotly == 1" , ns = ns ,
                 #     plotlyOutput( ns("plotlyOutput") , height = "100%" )
@@ -74,74 +119,45 @@ evaluation_widget_ui = function ( id ){
                 #              hover = "plot_hover"  )
                 #  )
                 
-             tabsetPanel(
-                  tabPanel( "Plot" ,
+          tabsetPanel(
+               
+            inputPanel(  
+              
+              selectizeInput( ns("evaluation_month") , label = "Intervention Start", 
+                    choices = NULL ,
+                    selected = NULL ) ,
+            
+            # div(id = "expr-container",
+              selectInput( ns("horizon") , label = "Number periods after intervention:" , 
+                            choices = c(3,6,12,18,24,36) , 
+                            selected = 12  ) ,
+            
+              checkboxInput( ns( "pre_evaluation") , label ='Pre-intervention model fit',
+                               value = FALSE  ) ,
+                
+                
+              checkboxInput( ns( "evaluation" ), label ='Post-intervention evaluation',
+                               value = FALSE  ) 
+                
+            ) ,
+          
+          tabPanel( "ggPlot" ,
                     
                     fluidPage(
                       fluidRow( style = "height:60vh;",
                                 plotOutput( ns("plotOutput") ) )
                       ) ) ,
                   tabPanel("Plotly", plotlyOutput(  ns("plotlyOutput") ) ),
-                  tabPanel("Table", plotlyOutput( ns("tableOutput" )  ) )
-                )
+                  tabPanel("Table", plotlyOutput( ns("tableOutput" )  ) ) 
+                  ) 
+) 
                  
              # plotOutput( ns( "plotOutput" ) , hover = "plot_hover"  )
           )
         )    
 
-,
-    
-  tabPanel( "Model",  
-    inputPanel(
-      
-      selectInput( ns( "model" ), label = "Time-series model:" , 
-              choices = c( 
-                          # 'TSLM',
-                           'TSLM (trend)' , 'TSLM (trend+season)' , 
-                           'ETS' , 'ARIMA', 'SNAIVE' , 'NNETAR' ,
-                           # 'BSTS' , 
-                          'Prophet'
-                          
-                          # , 'TSLM (trend)'
-                          # , 'TSLM (trend+season)'
-                          ) , 
-              selected = 'ETS'  ) ,
 
-      textInput( ns( 'covariates' ), 'Model covariates' ,
-          value =  NULL ) ,
-      
-      checkboxInput( ns( "transform" ) , label ='Transform: box_cox(lambda = .5  )',
-                   value = FALSE  ) ,
-      
-    checkboxInput( ns( "smooth" ) , label ='Show smoothed trend line (loess)',
-                   value = FALSE  ) ,
-    
-    checkboxInput( ns( "pre_evaluation") , label ='Pre-intervention model fit',
-                   value = FALSE  ) ,
-    
-    
-    checkboxInput( ns( "evaluation" ), label ='Post-intervention evaluation',
-                   value = FALSE  ) ,
-    
-    checkboxInput( ns( "scale" ) , label ='Scale values (x-mean)/sd + 1)',
-                   value = FALSE  ) ,
-    
-    checkboxInput( ns( 'components' ), label = 'Visualize trend' ,
-                value = FALSE ) ,
-    
-    checkboxInput( ns( "forecast_ci" ) , label ='Prediction interval',
-                   value = FALSE  ) ,
-    
-    checkboxInput( ns( "bootstrap" ) , label ='Bootstrap estimate',
-                   value = FALSE  ) 
-    
-          ) ,
-    
-    textInput( ns( 'model.formula' ) , 'Model Formula' ,
-               value =  "total ~ error() + trend() + season()" ) 
-)
-))
-)
+)))
 
 }
         
@@ -167,7 +183,15 @@ evaluation_widget_server <- function( id ,
     formulas = reactive({ data_widget_output$formulas() })
     dataset.file = reactive({ data_widget_output$dataset.file() })
     # dataset = reactive({ data_widget_output$data1() })
+    
     data1 = reactive({ data_widget_output$data1() })
+    
+    aggregateselected_data = reactive({ reporting_widget_output$aggregateselected_data() })
+    data.total = reactive({ reporting_widget_output$data.total() })
+    selected_data = reactive({ reporting_widget_output$selected_data() })
+    
+    data2 = reactive({ cleaning_widget_output$data2() })
+   
     formula_elements = reactive({ data_widget_output$formula_elements() })
     
     orgUnits = reactive({ metadata_widget_output$orgUnits() })  
@@ -182,13 +206,14 @@ evaluation_widget_server <- function( id ,
     split = reactive({ reporting_widget_output$split() })
     startingMonth = reactive({ reporting_widget_output$startingMonth() })
     endingMonth = reactive({ reporting_widget_output$endingMonth() })
+    missing_reports = reactive({ reporting_widget_output$missing_reports() })
     num_datasets = reactive({ reporting_widget_output$num_datasets() })
     num_facilities = reactive({ reporting_widget_output$num_facilities() })
-    selected_data = reactive({ reporting_widget_output$selected_data() })
+    
     caption.text = reactive({ reporting_widget_output$caption.text() })
-    data.total = reactive({ reporting_widget_output$data.total() })
+    
     aggregateselected_data = reactive({ reporting_widget_output$aggregateselected_data() })
-    selectedOUs = reactive({ reporting_widget_output$selectedOUs() })
+    reportingSelectedOUs = reactive({ reporting_widget_output$reportingSelectedOUs() })
 
 
     # see https://stackoverflow.com/questions/54438495/shift-legend-into-empty-facets-of-a-faceted-plot-in-ggplot2
@@ -211,6 +236,8 @@ evaluation_widget_server <- function( id ,
 
       dates = data1() %>% pull( !! rlang::sym( .period )) %>%
         unique
+      
+      dates = dates[ order( dates ) ]
 
       # dates = setDT( data1() )[ , base::get( .period ) ] %>%
       #   unique
@@ -237,8 +264,8 @@ evaluation_widget_server <- function( id ,
     } )
 
 
-    # Model ####
-
+# Model ####
+    # level names
     observeEvent(
       levelNames() ,{
 
@@ -337,6 +364,8 @@ evaluation_widget_server <- function( id ,
   # } )
 
 # Impact ####
+    
+      # Var_y
       observeEvent(
         data.total() , {
         cat('\n* evaluation_widget update var_y:');
@@ -345,6 +374,7 @@ evaluation_widget_server <- function( id ,
                 )
         } )
 
+      # evaluation date
       observeEvent(
         dates() , {
         cat('\n* evaluation_widget update evaluation_month:');
@@ -359,6 +389,7 @@ evaluation_widget_server <- function( id ,
                                    )
         } )
 
+      # Split plot
       observeEvent(
         split()  ,
         {
@@ -427,7 +458,7 @@ evaluation_widget_server <- function( id ,
         cat('\n* evaluation_widget MAPE()')
 
         predicted = tsPreForecast() %>% as_tibble() %>% select(-total)
-        actual =  trendData()
+        actual =  trend_Data()
         d = predicted %>%
            inner_join( actual , by = period() )
 
@@ -447,14 +478,14 @@ evaluation_widget_server <- function( id ,
 
       key.mape = reactive({
         req( tsPreForecast() )
-        req( trendData() )
+        req( trend_Data() )
 
         cat('\n* evaluation_widget key.mape()')
 
         predicted = tsPreForecast() %>%
           rename( pred = .mean )
 
-        actual =  trendData() %>%
+        actual =  trend_Data() %>%
           rename( actual = total )
 
         keyvars = key_vars( actual )
@@ -508,7 +539,7 @@ evaluation_widget_server <- function( id ,
         cat('\n* evaluation_widget MPE()')
 
         predicted = tsForecast() %>% as_tibble() %>% select(-total)
-        actual =  trendData()
+        actual =  trend_Data()
 
         d = predicted %>%
            inner_join( actual , by = period() )
@@ -529,14 +560,14 @@ evaluation_widget_server <- function( id ,
 
       key.mpe = reactive({
         req( tsForecast() )
-        req( trendData() )
+        req( trend_Data() )
 
         cat('\n* evaluation_widget key.mpe()')
 
         predicted = tsForecast() %>%
           rename( pred = .mean )
 
-        actual =  trendData() %>%
+        actual =  trend_Data() %>%
           rename( actual = total )
 
         keyvars = key_vars( actual )
@@ -744,14 +775,14 @@ evaluation_widget_server <- function( id ,
     })
 
     tsModel = reactive({
-      req( trendData() )
+      req( trend_Data() )
       req( model_formula() )
       req( input$evaluation_month )
 
       if ( !input$evaluation ) return( NULL )
       cat( '\n* evaluation_widget tsModel():' )
       cat( '\n - ' , paste('available vars:',
-                   paste( names(trendData()), collapse = ',')
+                   paste( names(trend_Data()), collapse = ',')
                    )
       )
       
@@ -760,7 +791,7 @@ evaluation_widget_server <- function( id ,
       # Dickey-Fuller test for stationary series
       # Null hypothese is non-stationary.
       # Evidence that series is stationary when p-v < .05
-      # dickeyFuller = tseries::adf.test( trendData()$total )
+      # dickeyFuller = tseries::adf.test( trend_Data()$total )
       # print( dickeyFuller )
 
       # Filter data to period just before evaluation start
@@ -769,7 +800,7 @@ evaluation_widget_server <- function( id ,
       if ( period() %in% "Month" ) time_period = yearmonth( eval_month  ) # - month(1)
       if ( period() %in% "Week" ) time_period = yearweek( eval_month  )
 
-      fit.data  = trendData() %>%
+      fit.data  = trend_Data() %>%
         filter_index( ~ as.character( time_period ) ,
                       .preserve = TRUE )
       
@@ -815,6 +846,7 @@ evaluation_widget_server <- function( id ,
         fit = fit.data %>%
           model(
                 nnetar = NNETAR( !! rlang::sym( model.formula  ) )
+                , times = 10 
           )
       
         
@@ -915,7 +947,7 @@ evaluation_widget_server <- function( id ,
 
     tsPreModel = reactive({
 
-      req( trendData() )
+      req( trend_Data() )
       req( input$evaluation_month )
       req( model_formula() )
 
@@ -928,15 +960,15 @@ evaluation_widget_server <- function( id ,
 
       cat("\n - time_period:" , time_period )
 
-      fit.data  = trendData() %>%
+      fit.data  = trend_Data() %>%
         filter_index( ~ as.character( time_period ) ,
                       .preserve = TRUE )
 
-      cat("\n - nrow(trendData()):" , nrow( trendData() )  )
+      cat("\n - nrow(trend_Data()):" , nrow( trend_Data() )  )
       cat("\n - nrow(fit.data:" , nrow( fit.data )  )
       
       # Testing:
-      # saveRDS( trendData() , 'trendData.rds' )
+      # saveRDS( trend_Data() , 'trend_Data.rds' )
       # saveRDS( fit.data , 'fit.data.rds' )
 
       model.formula = model_formula()
@@ -1087,7 +1119,7 @@ evaluation_widget_server <- function( id ,
           if ( period() %in% "Month" ) time_period = yearmonth( input$evaluation_month  ) # - month(1)
           if ( period() %in% "Week" ) time_period = yearweek( input$evaluation_month  )
  
-          forecast.fit.data  = trendData() %>%
+          forecast.fit.data  = trend_Data() %>%
             select( - total ) %>%
             filter_index( as.character( time_period ) ~ . ,
                         .preserve = TRUE ) %>%
@@ -1162,7 +1194,7 @@ evaluation_widget_server <- function( id ,
       cat( '\n* evaluation_widget tsPreForecast' )
       # if ( input$covariates %in% "avg_mm"){
 
-        test.data  = trendData() %>%
+        test.data  = trend_Data() %>%
           select( - total ) %>%
           filter_index( as.character( time_period ) ~ as.character( time_period + as.integer( input$horizon ) ) ,
                       .preserve = TRUE )
@@ -1225,236 +1257,315 @@ evaluation_widget_server <- function( id ,
       })
 
 # Trend data ####
-
-  hts_formula = reactive({
-    req( num_facilities() )
-    req( num_datasets() )
-    req( input$agg_level )
-    req( levelNames() )
-    cat("\n* evaluation_widget hts():" )
     
-    # Testing
-    # levelNames = levelNames() 
-    # agg_level = input$agg_level  
-    # hts = input$hts 
-    # num_facilities = num_facilities() 
-    # num_datasets = num_datasets() 
-    # split = split()
-    # save( levelNames, agg_level, hts, num_facilities, num_datasets, split , file = "hts_formula_data.rda")
+    trend_Data = reactive({
+      
+      cat( "\n * evaluation_widget trend_Data")
+      
+      cat( "\n missing_reports: " , missing_reports() )
+      cat( "\n covariates: " , input$covariates )
+      cat( "\n split: " , split()  )
+      cat( "\n agg_level: " , input$agg_level  )
+      
+      error = NULL
+      if ( ! input$error == "Original" ) error = input$error 
+      cat( "\n error: " , error  )
+      
+      levelNames = orgUnitLevels()$levelName
+      cat( "\n - levelNames" , levelNames )
+      
+      cat( "\n - mable.data" )
+      
+      mable.data = mable_data(      
+                                    ml.rtss.data = selected_data() ,
+                                    # ml.rtss.data = data1() ,
+                                    # ml.rtss.data = aggregateselected_data() ,
+                                    .startingMonth = startingMonth() ,
+                                    .endingMonth = endingMonth() ,
+                                    .missing_reports = missing_reports() ,
+                                    alwaysReporting = input$selected , 
+                                    reportingSelectedOUs = reportingSelectedOUs() ,
+                                    covariates =  input$covariates , 
+                                    .split = split() , 
+                                    .error = error ,
+                                    .orgUnit = FALSE ,
+                                    agg_level = input$agg_level ,
+                                    levelNames = levelNames ,
+                                    remove.aggregate = TRUE ,
+                                    .cat = TRUE ,
+                                    testing = FALSE )
+
+      
+      # # testing
+      # if ( testing ) saveRDS( mable.data, "mable.data.rds")
+      return( mable.data )
+      
+    })
     
-    hts_formula = htsFormula( 
-                levelNames = levelNames() ,
-                agg_level = input$agg_level , 
-                hts = input$hts , 
-                num_facilities = num_facilities() ,
-                num_datasets = num_datasets() ,
-                split = split() ,
-                .cat = FALSE )
-    
-    cat("\n - end hts_formula():" , hts_formula )
 
-    return( hts_formula )
-  })
+  # hts_formula = reactive({
+  #   req( num_facilities() )
+  #   req( num_datasets() )
+  #   req( input$agg_level )
+  #   req( levelNames() )
+  #   cat("\n* evaluation_widget hts():" )
+  #   
+  #   # Testing
+  #   # levelNames = levelNames() 
+  #   # agg_level = input$agg_level  
+  #   # hts = input$hts 
+  #   # num_facilities = num_facilities() 
+  #   # num_datasets = num_datasets() 
+  #   # split = split()
+  #   # save( levelNames, agg_level, hts, num_facilities, num_datasets, split , file = "hts_formula_data.rda")
+  #   
+  #   hts_formula = htsFormula( 
+  #               levelNames = levelNames() ,
+  #               agg_level = input$agg_level , 
+  #               all.levels = input$hts , 
+  #               num_facilities = num_facilities() ,
+  #               num_datasets = num_datasets() ,
+  #               split = split() ,
+  #               .cat = FALSE )
+  #   
+  #   cat("\n - end hts_formula():" , hts_formula )
+  # 
+  #   return( hts_formula )
+  # })
 
-  data.hts = reactive({
-    req( data.total() )
-    req( hts_formula() )
-    req( group_by_cols() )
-    
-    tic()
+  # data.hts = reactive({
+  #   req( data.total() )
+  #   req( hts_formula() )
+  #   req( group_by_cols() )
+  #   
+  #   tic()
+  # 
+  #   cat('\n* evaluation_widget data.hts():' )
+  #   # cat( "\n - data.total cols:" , paste( names( data.total() ) , collapse = "," ) )
+  # 
+  #   # Testing
+  #   # saveRDS( data.total(), 'data.total.rds' )
+  #   
+  #   data.hts = htsData( 
+  #                   data = data.total() ,  
+  #                   hts_formula = hts_formula() , 
+  #                   covariates = input$covariates , 
+  #                   group_by_cols = group_by_cols() ,
+  #                   period = period() ,
+  #                   .cat = FALSE , 
+  #                   timing = FALSE )
+  # 
+  #   # data.hts = data.total()
+  #   # # data.hts = aggregateselected_data()
+  #   # 
+  #   # if ( !is_tsibble( data.hts ) ){
+  #   #   
+  #   #   cat('\n - preparing data.total as tsibble')
+  #   # 
+  #   #   key.cols = setdiff( group_by_cols() , period() )
+  #   # 
+  #   #   
+  #   #   data.hts = data.hts %>% 
+  #   #     as_tsibble( index = !! rlang::sym( period() )  ,
+  #   #               key =  all_of(  {{ key.cols }} ) )
+  #   # }
+  #   # 
+  #   # 
+  #   #  # if ( input$transform ) .d = .d %>% mutate( .total = fabletools::box_cox( total , lambda = .5  ) )
+  #   # 
+  #   # # if ( grepl( "avg_mm" , input$covariates ) & "avg_mm" %in% names( data.hts ) ){
+  #   # if ( input$covariates %in% names( data.hts ) ){
+  #   #   cat( "\n - ",  input$covariates , "%in% names( data.hts )" )
+  #   # # testing exogenous vaiables
+  #   # # if ( input$covariates %in% c('ipti' , 'doses' ) ){
+  #   #   xreg.var = input$covariates 
+  #   #   
+  #   #   data.hts = data.hts %>%
+  #   #   aggregate_key(  .spec = !!rlang::parse_expr( hts_formula() ) ,
+  #   #                   total = sum( total , na.rm = T ) ,
+  #   #                   # avg_mm = mean( !!rlang::parse_expr( 'avg_mm' ) , na.rm = T )
+  #   #                   # ipti = sum( !!rlang::parse_expr( 'ipti' ) , na.rm = T ) ,
+  #   #                   # doses = sum( !!rlang::parse_expr( 'doses' ) , na.rm = T )
+  #   #                   xreg.var := sum( !!rlang::parse_expr( xreg.var ) , na.rm = T )
+  #   #                   )
+  #   # } else {
+  #   #   
+  #   # data.hts = data.hts %>%
+  #   #   aggregate_key(  .spec = !!rlang::parse_expr( hts_formula() ) ,
+  #   #                   total = sum( total , na.rm = T )
+  #   #                   )
+  #   # }
+  # 
+  #   cat('\n- end data.hts(): ' ) ; toc()
+  #   # saveRDS( data.hts, 'data.hts.rds' )
+  # 
+  #   return( data.hts )
+  # })
+  
+  
 
-    cat('\n* evaluation_widget data.hts():' )
-    # cat( "\n - data.total cols:" , paste( names( data.total() ) , collapse = "," ) )
+#   trend_Data = reactive({
+#       req( data.hts() )
+#       # req( aggregateselected_data() )
+#     cat( '\n* evaluation_widget: trend_Data(): ' )
+#     
+#     # t = trend_Data( .d = data.hts() , 
+#     #                   reportingSelectedOUs = reportingSelectedOUs() , 
+#     #                   period = "Month" ,
+#     #                   selected = input$selected ,
+#     #                   num_selected = num_facilities()  , 
+#     #                   num_datasets = num_datasets() , 
+#     #                   levelNames = levelNames() , 
+#     #                   agg_level = input$agg_level ,
+#     #                   split = split() ,
+#     #                   remove.aggregate = TRUE , 
+#     #                   scale = input$scale ,
+#     #                   .cat = FALSE )
+#     
+#     # Testing
+#     saveRDS( data.hts() , "data.hts.rds")
+#     
+#     t = trendData( .d = data.hts() , 
+#                           reportingSelectedOUs =  reportingSelectedOUs() , 
+#                           period = "Month" ,
+#                           startingMonth = NULL ,
+#                           endingMonth = NULL , 
+#                           selected.only = input$selected ,
+#                           num_facilities = num_facilities()  , 
+#                           num_datasets = num_datasets()  , 
+#                           levelNames = levelNames() , 
+#                           agg_level = input$agg_level ,
+#                           split =  split() ,
+#                           remove.aggregate = TRUE , 
+#                           scale =input$scale ,
+#                           .cat = TRUE )
+#     return( t )
+#   #   .d = data.hts()
+#   #   # cat( '\n - data.hts datasets:' , unique( .d$dataSet ) )
+#   # 
+#   #    if ( input$selected  & num_facilities() > 1 ){
+#   # 
+#   #     cat( '\n - input$selected TRUE' )
+#   # 
+#   #     .d = .d %>% filter(
+#   #       Selected ==  'Reporting Each Period' )
+#   #    }
+#   #   
+#   #     if ( period() %in% 'Month' ){
+#   #       .d = .d %>% filter(
+#   #         Month >=  yearmonth( startingMonth() )   ,
+#   #         Month <= yearmonth( endingMonth() )  )
+#   #     }
+#   # 
+#   #     if ( period() %in% 'Week' ){
+#   #       .d = .d %>% filter(
+#   #         Week >=  yearweek( startingMonth() )   ,
+#   #         Week <= yearweek( endingMonth() )  )
+#   #     }
+#   # 
+#   # 
+#   #   cat( "\n - input$agg_level:", input$agg_level )
+#   # 
+#   #   sub_agg = sub_agg_level()
+#   #   cat( "\n- sub agg level" , sub_agg )
+#   # 
+#   #   .d = .d %>%
+#   #       filter(
+#   #         ! is_empty( !! rlang::sym( input$agg_level   ) ) ,
+#   #         ! is.na( !! rlang::sym( input$agg_level   ) ) ,
+#   #         # next line is good for level 0
+#   #         ! is_aggregated(  !! rlang::sym( input$agg_level   ) )
+#   #       )
+#   # 
+#   #   cat( '\n - !is_empty(sub_agg)' , sub_agg , !is_empty(sub_agg) )
+#   # 
+#   #   if ( !is_empty( sub_agg ) ){
+#   #     cat( '\n - filtering by sub_agg' )
+#   #     .d = .d %>% filter(
+#   #           is_aggregated( !! rlang::sym( sub_agg  ) )
+#   #     )
+#   #   }
+#   # 
+#   #      # preserve tsibble key and index,
+#   #      indexVar = index_var( .d )
+#   #      keyVars = key_vars( .d )
+#   # 
+#   #     .d = .d %>%
+#   #        mutate(
+#   #          grouping_var = 'Total' ) %>%
+#   #          # ensure tsibble before using fill_gaps
+#   #          as_tsibble( key = all_of(keyVars) , index = indexVar  ) %>%
+#   #          fill_gaps( .full = TRUE  )
+#   # 
+#   # 
+#   #      cat( '\n - .d in trend_Data' ); # glimpse(.d)
+#   # 
+#   #      if ( num_datasets() > 1 ){
+#   #        .d = .d %>%
+#   #        filter( !is_aggregated( dataSet ) ) %>%
+#   #        mutate( dataSet = as.character( dataSet ) %>%
+#   #            str_remove_all( "<aggregated>" ) ,
+#   #            grouping_var = dataSet )
+#   # 
+#   #      }
+#   # 
+#   #      if ( num_facilities() > 1 ){
+#   #        .d = .d %>%
+#   #        filter( !is_aggregated( Selected )  ) %>%
+#   #        mutate( Selected = as.character( Selected ) %>%
+#   #            str_remove_all( "<aggregated>" )  )
+#   # 
+#   #        cat( '\n - Facilities:' ,  unique(.d$Selected) )
+#   #      }
+#   # 
+#   #     # if split, remove aggregate grouping
+#   #      if ( !split() %in% 'None' ){
+#   #        cat( '\n - input split:' , split() )
+#   #        .d = .d %>%
+#   #          filter( !is_aggregated( !! rlang::sym( split() ) )
+#   #          ) %>%
+#   #          mutate( grouping_var = as.character(
+#   #            !! rlang::sym( split() ) )
+#   #          )
+#   #        cat( '\n - .d  aggregated split' , unique(.d$grouping_var) )
+#   #        # print( glimpse( .d ))
+#   # 
+#   #      }
+#   # 
+#   #   cat( '\n - nrow(.d)' , nrow(.d))
+#   # 
+#   #     # if ( !split() %in% 'None' & !input$filter_data %in% 'All' ){
+#   #     #     print( 'filter_data is not null' )
+#   #     #     .d = .d %>%
+#   #     #       filter( .data[[ split() ]] %in% input$filter_data )
+#   #     # }
+#   # 
+#   #   if ( input$scale ) .d = .d %>%
+#   #       ungroup() %>%
+#   #       group_by( grouping_var ) %>%
+#   #       mutate(
+#   #         total = scale( total ) + 1
+#   #     )
+#   # 
+#   # 
+#   #   # ensure tsibble before using fill_gaps
+#   #   .d = .d %>% as_tsibble( key = all_of( keyVars ) , index = indexVar  )
+#   # 
+#   #     cat( '\n - end trend data():'); # print( glimpse( .d ) ); # print(.d)
+#   #     # saveRDS( .d , 'trend_Data.rds' )
+#   # 
+#   # return( .d )
+# })
+  
+  
 
-    # Testing
-    # saveRDS( data.total(), 'data.total.rds' )
-    
-    data.hts = htsData( 
-                    data = data.total() ,  
-                    hts_formula = hts_formula() , 
-                    covariates = input$covariates , 
-                    group_by_cols = group_by_cols() ,
-                    period = period() ,
-                    .cat = FALSE , 
-                    timing = FALSE )
-
-    # data.hts = data.total()
-    # # data.hts = aggregateselected_data()
-    # 
-    # if ( !is_tsibble( data.hts ) ){
-    #   
-    #   cat('\n - preparing data.total as tsibble')
-    # 
-    #   key.cols = setdiff( group_by_cols() , period() )
-    # 
-    #   
-    #   data.hts = data.hts %>% 
-    #     as_tsibble( index = !! rlang::sym( period() )  ,
-    #               key =  all_of(  {{ key.cols }} ) )
-    # }
-    # 
-    # 
-    #  # if ( input$transform ) .d = .d %>% mutate( .total = fabletools::box_cox( total , lambda = .5  ) )
-    # 
-    # # if ( grepl( "avg_mm" , input$covariates ) & "avg_mm" %in% names( data.hts ) ){
-    # if ( input$covariates %in% names( data.hts ) ){
-    #   cat( "\n - ",  input$covariates , "%in% names( data.hts )" )
-    # # testing exogenous vaiables
-    # # if ( input$covariates %in% c('ipti' , 'doses' ) ){
-    #   xreg.var = input$covariates 
-    #   
-    #   data.hts = data.hts %>%
-    #   aggregate_key(  .spec = !!rlang::parse_expr( hts_formula() ) ,
-    #                   total = sum( total , na.rm = T ) ,
-    #                   # avg_mm = mean( !!rlang::parse_expr( 'avg_mm' ) , na.rm = T )
-    #                   # ipti = sum( !!rlang::parse_expr( 'ipti' ) , na.rm = T ) ,
-    #                   # doses = sum( !!rlang::parse_expr( 'doses' ) , na.rm = T )
-    #                   xreg.var := sum( !!rlang::parse_expr( xreg.var ) , na.rm = T )
-    #                   )
-    # } else {
-    #   
-    # data.hts = data.hts %>%
-    #   aggregate_key(  .spec = !!rlang::parse_expr( hts_formula() ) ,
-    #                   total = sum( total , na.rm = T )
-    #                   )
-    # }
-
-    cat('\n- end data.hts(): ' ) ; toc()
-    # saveRDS( data.hts, 'data.hts.rds' )
-
-    return( data.hts )
-  })
-
-  trendData = reactive({
-      # req( data.hts() )
-      # req( aggregateselected_data() )
-    cat( '\n* evaluation_widget: trendData(): ' )
-
-    .d = data.hts()
-    # cat( '\n - data.hts datasets:' , unique( .d$dataSet ) )
-
-     if ( input$selected  & num_facilities() > 1 ){
-
-      cat( '\n - input$selected TRUE' )
-
-      .d = .d %>% filter(
-        Selected ==  'Reporting Each Period' )
-
-      if ( period() %in% 'Month' ){
-        .d = .d %>% filter(
-          Month >=  yearmonth( startingMonth() )   ,
-          Month <= yearmonth( endingMonth() )  )
-      }
-
-      if ( period() %in% 'Week' ){
-        .d = .d %>% filter(
-          Week >=  yearweek( startingMonth() )   ,
-          Week <= yearweek( endingMonth() )  )
-      }
-
-}
-
-    cat( "\n - input$agg_level:", input$agg_level )
-
-    sub_agg = sub_agg_level()
-    cat( "\n- sub agg level" , sub_agg )
-
-    .d = .d %>%
-        filter(
-          ! is_empty( !! rlang::sym( input$agg_level   ) ) ,
-          ! is.na( !! rlang::sym( input$agg_level   ) ) ,
-          # next line is good for level 0
-          ! is_aggregated(  !! rlang::sym( input$agg_level   ) )
-        )
-
-    cat( '\n - !is_empty(sub_agg)' , sub_agg , !is_empty(sub_agg) )
-
-    if ( !is_empty( sub_agg ) ){
-      cat( '\n - filtering by sub_agg' )
-      .d = .d %>% filter(
-            is_aggregated( !! rlang::sym( sub_agg  ) )
-      )
-    }
-
-       # preserve tsibble key and index,
-       indexVar = index_var( .d )
-       keyVars = key_vars( .d )
-
-      .d = .d %>%
-         mutate(
-           grouping_var = 'Total' ) %>%
-           # ensure tsibble before using fill_gaps
-           as_tsibble( key = all_of(keyVars) , index = indexVar  ) %>%
-           fill_gaps( .full = TRUE  )
-
-
-       cat( '\n - .d in trendData' ); # glimpse(.d)
-
-       if ( num_datasets() > 1 ){
-         .d = .d %>%
-         filter( !is_aggregated( dataSet ) ) %>%
-         mutate( dataSet = as.character( dataSet ) %>%
-             str_remove_all( "<aggregated>" ) ,
-             grouping_var = dataSet )
-
-       }
-
-       if ( num_facilities() > 1 ){
-         .d = .d %>%
-         filter( !is_aggregated( Selected )  ) %>%
-         mutate( Selected = as.character( Selected ) %>%
-             str_remove_all( "<aggregated>" )  )
-
-         cat( '\n - Facilities:' ,  unique(.d$Selected) )
-       }
-
-      # if split, remove aggregate grouping
-       if ( !split() %in% 'None' ){
-         cat( '\n - input split:' , split() )
-         .d = .d %>%
-           filter( !is_aggregated( !! rlang::sym( split() ) )
-           ) %>%
-           mutate( grouping_var = as.character(
-             !! rlang::sym( split() ) )
-           )
-         cat( '\n - .d  aggregated split' , unique(.d$grouping_var) )
-         # print( glimpse( .d ))
-
-       }
-
-    cat( '\n - nrow(.d)' , nrow(.d))
-
-      # if ( !split() %in% 'None' & !input$filter_data %in% 'All' ){
-      #     print( 'filter_data is not null' )
-      #     .d = .d %>%
-      #       filter( .data[[ split() ]] %in% input$filter_data )
-      # }
-
-    if ( input$scale ) .d = .d %>%
-        ungroup() %>%
-        group_by( grouping_var ) %>%
-        mutate(
-          total = scale( total ) + 1
-      )
-
-
-    # ensure tsibble before using fill_gaps
-    .d = .d %>% as_tsibble( key = all_of( keyVars ) , index = indexVar  )
-
-      cat( '\n - end trend data():'); # print( glimpse( .d ) ); # print(.d)
-      # saveRDS( .d , 'trendData.rds' )
-
-  return( .d )
-})
+ 
 
 # Plot ####
   plotTrends = reactive({
 
-          # req( trendData() )
-          # req( period() )
-          # input$agg_level
-          # req( split() )
-          # req( input$evaluation_month )
+          req( trend_Data() )
+
           cat( '\n* evaluation_widget plotTrends():' )
 
           .limits =
@@ -1465,19 +1576,24 @@ evaluation_widget_server <- function( id ,
 
           data.text = paste( unique( selected_data()$data ), collapse = " + " )
           
-          cat( '\n - ploTrends trendData():');
-          .d = trendData()
+          cat( '\n - ploTrends trend_Data():');
+          .d = trend_Data()
           cat( '\n - ploTrends .d:'); #glimpse(.d)
 
           # if ( !input$filter_display %in% 'All' ) .d = .d %>%
           #         filter( .data[[ split() ]] %in%
           #                   input$filter_display )
+          
+          # Testing
+          saveRDS( .d, "trend_Data.rds")
 
           tic()
 
           .period = period()
 
       ## Main plot ####
+          cat( "\n - main plot")
+          
           g = .d %>%
           filter( !is.na( total ) ) %>%
           # autoplot( total ) +
@@ -1718,7 +1834,7 @@ evaluation_widget_server <- function( id ,
   output$vals <- renderPrint({
         hover <- input$plot_hover
         # print(str(hover)) # list
-        y <- nearPoints( trendData() , input$plot_hover)[input$var_y]
+        y <- nearPoints( trend_Data() , input$plot_hover)[input$var_y]
         req(nrow(y) != 0)
         y
   })

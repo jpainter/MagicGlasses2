@@ -14,7 +14,7 @@ tagList(
          tabPanel( ns("Outliers") ,  
                    
                 sidebarLayout(
-                    sidebarPanel( 
+                    sidebarPanel( width = 3 ,
                       
                       radioButtons( ns("dataElement") , label = "DataElement_Category:" ,
                                      choices = c('') ,
@@ -25,14 +25,14 @@ tagList(
                                    selected = 'Facilities only' )
                     ) ,
                     
-                    mainPanel( 
+                    mainPanel( width = 9 , 
                       
                       
-                      h5( 'Use the buttons to search for extreme values using median absolute deviation (MAD), and then seasonally adjusted outliers') ,
-                      
-                      actionButton( ns("determineExtremeValues") , 
-                                    "Search for Extreme Values" , style='margin-top:25px' 
-                      )   ,
+                      # h5( 'Use the buttons to search for extreme values using median absolute deviation (MAD), and then seasonally adjusted outliers') ,
+                      # 
+                      # actionButton( ns("determineExtremeValues") , 
+                      #               "Search for Extreme Values" , style='margin-top:25px' 
+                      # )   ,
                       
                       # actionButton( ns("determineSeasonalOutliers") , 
                       #               "Search for Seasonal Outliers" , style='margin-top:25px' 
@@ -65,7 +65,14 @@ tagList(
                           
                           selectizeInput( ns("endingMonth"), label = "Ending with", 
                             choices = NULL , 
-                            selected = NULL )
+                            selected = NULL ) ,
+                          
+                          selectizeInput( ns("reporting"), label = "Reporting frequency", 
+                            choices = c( "All" , "Reporting Each Period" , "Inconsistent Reporting" ) , 
+                            selected = "All" ) ,
+                          
+                          sliderInput( ns('maxMASE'), "Select facilities with MASE less than or equal to -" ,
+                                       min = 0.1 , max = 1.0, value =.4 , step = .05 )
                           
                           ) 
                        ,
@@ -188,6 +195,7 @@ cleaning_widget_server <- function( id ,
     
     ## Set reactive data only when tab is active
     data1 = reactive({ data_widget_output$data1() })
+    selected_data = reactive({ reporting_widget_output$selected_data() })
     
     # data1 =  reactive({ }) 
     # observeEvent( input$tabs , {
@@ -206,6 +214,7 @@ cleaning_widget_server <- function( id ,
     orgUnits = reactive({ metadata_widget_output$orgUnits() })  
     ousTree = reactive({ metadata_widget_output$ousTree() })  
     orgUnitLevels = reactive({ metadata_widget_output$orgUnitLevels() })
+    reportingSelectedOUs = reactive({ reporting_widget_output$reportingSelectedOUs() })
     
     dates = reactive({ reporting_widget_output$dates() })
     data.hts = reactive({ reporting_widget_output$data.hts() })
@@ -373,9 +382,10 @@ cleaning_widget_server <- function( id ,
          # outlierData$df_data = data1.mad()
 })
       
-    observeEvent( input$determineExtremeValues  , {
+    # observeEvent( input$determineExtremeValues  , {
+    observeEvent( data1()  , {
       # req( outlierData$df_data )
-      req( data1() )
+      # req( data1() )
       cat('\n* cleaning_widget observeEvent determineExtremeValues.  searchForMAD():' , searchForMAD() )
       
       #1. Scan for extreme values (MAD)
@@ -385,8 +395,8 @@ cleaning_widget_server <- function( id ,
       # if ( 'mad15' %in% names( outlierData$df_data ) ){
       if ( 'mad15' %in% names( x ) ){
 
-        showModal( rerunMadModal() )
-        cat('\n - reRun extreme values button:' , searchForMAD() )
+        # showModal( rerunMadModal() )
+        # cat('\n - reRun extreme values button:' , searchForMAD() )
         
       } else {
           searchForMAD( FALSE )
@@ -722,66 +732,34 @@ cleaning_widget_server <- function( id ,
     })
    
   # Summary ####
-    
-    # d.mase
-    data1.summary = reactive({
-        # req( outlierData$df_data )
-        req( data1() )
-        cat( '\n* cleaning_widget data1.summary')
-        
-        # d = outlierData$df_data
-        d = data1()
-        if (! 'expected' %in% names( d ) ){
-          cat( '\n - "expected" column not found')
-          return()
-          }
-        
-        # data.table?  
-        d.mase = setDT( d )[ 
-          # year( Month ) == 2020
-          ,
-          .(   mase = mase( actual = original, predicted = expected  ) ,
-               n = sum( !is.na( original ) ) ,
-               expected = sum( expected, na.rm = TRUE )
-          ) ,
-          by = c(  'orgUnit', 'orgUnitName' , 'data.id' , 'data' ) ] %>%
-          
-          as_tibble() %>%
-          group_by( orgUnit, orgUnitName , data.id , data )
-        
-        maxN = max( d.mase.ou$n.max )
-        
-        data1.summary = d.mase %>%
-          mutate( 
-            catMASE = case_when( 
-              MASE == 0  ~ "0" ,
-              MASE <= 50 ~ "0_50" ,
-              MASE <= 100 ~ "50_100" ,
-              MASE > 100 ~ "100+" ,
-              is.nan( MASE ) ~ 'NaN'
-            ) 
-            , catN = case_when(
-              n == maxN ~ "All" ,
-              n < 50 ~ "0_50" ,
-              n < 75 ~ "50_75" ,
-              n < 100 ~ "75_100" ,
-              is.na( n ) ~ 'None'
-            )
-          )
-          
-        return( d.mase )
-
-  })
+  
     
     output$mase.summary <- renderPlot({
-      req( data1.summary() )
+      
+      # req( data1() )
+      req( selected_data() )
       cat( '\n* output$mase.summary')
       
-      if ('MASE' %in% names( data1.summary() )){
+      # d = data1()
+      d = selected_data()
+      
+      if (! 'expected' %in% names( d ) ){
+          cat( '\n - "expected" column not found')
+          return()
+        }
         
-        ggplot( data1.summary() , aes( x = MASE ) ) + 
-        geom_histogram( binwidth = 1 )
-      }
+      reportingSelectedOUs = reportingSelectedOUs()
+      
+      # Testing
+      saveRDS( d , 'd.rds')
+      saveRDS( reportingSelectedOUs,  'reportingSelectedOUs.rds' )
+      
+      data_mase = d.mase( d  , reportingSelectedOUs )       
+      
+      mase.summary.plot( data_mase  , mase.cutpoint = input$maxMASE )
+
+        
+      # }
       
     })
 
@@ -820,9 +798,9 @@ cleaning_widget_server <- function( id ,
       
       cat( "\n * outlier.summary")
       
-      data1 = outlier.dataset()
+      outlier_dataset = outlier.dataset()
       
-      cat( "\n - outlier.dataset has" , nrow( data1 ) , 'rows')
+      cat( "\n - outlier.dataset has" , nrow( outlier_dataset ) , 'rows')
       
       # Testing
       # saveRDS( data1 , 'outlier.dataset.rds')
@@ -830,7 +808,7 @@ cleaning_widget_server <- function( id ,
       
       # data.table? 
       
-      d = data1 %>% 
+      d = outlier_dataset %>% 
         as_tibble() %>%
         group_by( Month , seasonal3 ) %>%
         summarise( original = sum( original , na.rm = T )  
@@ -855,6 +833,7 @@ cleaning_widget_server <- function( id ,
     })
     
     output$outlier.summary.chart <- renderPlot({
+      
       req( outlier.dataset()) 
       
       d = outlier.summary()
@@ -867,7 +846,7 @@ cleaning_widget_server <- function( id ,
           geom_line() +
           theme_minimal() 
         
-      # ggplotly( g )
+      g
           
     })
     
@@ -875,12 +854,15 @@ cleaning_widget_server <- function( id ,
       req( outlier.dataset() ) 
       
       df.ts = data1() 
+      
+      # Testing
+      saveRDS( df.ts , 'df.ts.rds')
 
-      cat('\n * outlier.summary.chart')
+      cat('\n * cleaning_widget.r monthly_summary_chart')
         
       d =  monthly.outlier.summary( df.ts )
       g  = outlier.summary.chart( d )
-      g 
+      g
       # ggplotly( g )
           
     })
@@ -896,10 +878,14 @@ cleaning_widget_server <- function( id ,
     outlier.dataset = reactive({
 
       # req( outlierData$df_data )
-      req( data1() )
+      # req( data1() )
+      req( selected_data() )
+      req( input$reporting )
       req( input$startingMonth )
       req( input$endingMonth )
       req( period() )
+      
+      d = selected_data()
 
       cat( '\n* cleaning_widget outlier.dataset():')
       # if ( is.null( outlierData$df_data ) ){
@@ -917,7 +903,12 @@ cleaning_widget_server <- function( id ,
       #     )
       # d. = as.data.table( outlierData$df_data )
       
-      d. = as.data.table( data1() )
+      # d. = as.data.table( data1() )
+      d. = as.data.table( selected_data() )
+      
+      if ( ! input$reporting %in% "All" ){
+        d. = d.  %>% filter( Selected %in% input$reporting ) 
+      }
    
       cat( '\n - period():' , period() ) 
       # cat( "\n - d. class/cols: \n -- ", class( d. ) , "\n -- ", names( d. ))
@@ -1039,7 +1030,7 @@ cleaning_widget_server <- function( id ,
         req( outlier.summary.cols() )
         req( input$dataElement )
         
-        cat('\n* outlier.summary' )
+        cat('\n* cleaning_widget outlier.summary' )
         d = outlier.dataset()
         
         

@@ -82,7 +82,7 @@ data_widget_server <- function( id ,
         
       formula.files = reactive({ 
           req( data.folder() )
-          cat( '\n* looking for formula files in' , data.folder() , '\n')
+          cat( '\n* data_widget looking for formula files in' , data.folder() , '\n')
         
           ff = files( search = 'Formulas_' , dir = data.folder() , type = 'xlsx|rds' )  
           if ( is_empty( ff ) ){
@@ -94,7 +94,7 @@ data_widget_server <- function( id ,
           formula_file.mdate = file.info( paste0( data.folder() , ff  ) )$mtime
           ff = ff[ rev(order( formula_file.mdate )) ]
           
-          cat( '\n - formula.files:' , ff  )
+          # cat( '\n - formula.files:' , ff  )
           if ( !any(file.exists( paste0( data.folder() , ff  ) ) )) return()
           
           return( ff )
@@ -257,7 +257,7 @@ data_widget_server <- function( id ,
           
           f.indicator = grepl( indicator , data.files , fixed = TRUE )
           
-          cat("\n f.indicator:" , f.indicator ) 
+          # cat("\n f.indicator:" , f.indicator ) 
           
           if ( sum( f.indicator ) == 0 ){
             cat( '\n - no data files for this indicator' )
@@ -308,7 +308,7 @@ data_widget_server <- function( id ,
           req( input$dataset )
           req( data.folder() )
           
-          cat('\n* data_widget  dataset.file():')
+          cat('\n* data_widget  dataset.file():', input$dataset )
           
           file = paste0( data.folder() , input$dataset  )
           
@@ -321,11 +321,11 @@ data_widget_server <- function( id ,
           # req( input$dataset ) # file name from data_widget (on Dictionary tab)
           cat('\n* data_widget  dataset():')
           
-          req( dataset.file() )
+          req( input$dataset  )
   
           file  = dataset.file()
 
-          if ( file_test("-f",  file) ){
+          if ( !is.null( input$dataset ) && file_test("-f",  file) ){
             
             showModal(
                 modalDialog( title = "Reading data", 
@@ -357,9 +357,9 @@ data_widget_server <- function( id ,
             cat( '\n* data_widget data1')
             
             # Testing 
-              saveRDS( dataset() , 'dataset.rds' )
-              saveRDS( formula_elements() , 'formula_elements.rds' )
-              saveRDS( ousTree() , 'ousTree.rds' )
+              # saveRDS( dataset() , 'dataset.rds' )
+              # saveRDS( formula_elements() , 'formula_elements.rds' )
+              # saveRDS( ousTree() , 'ousTree.rds' )
               
             cat( '\n -  data_widget data1() class( dataset() )', class( dataset() ))
           
@@ -409,7 +409,7 @@ data_widget_server <- function( id ,
               
               # Save prepared file
               cat('\n - saving prepared file'  )
-              saveRDS( d1, file = dataset.file() )
+              saveRDS( d1, file = dataset.file() , compress = FALSE )
               removeModal()
             
             } else {

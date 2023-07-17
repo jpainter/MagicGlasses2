@@ -430,7 +430,7 @@ metadata_widget_server <- function( id ,
         )  
     # url<-paste0( baseurl() , "api/categoryOptionCombos.json?fields=:all&paging=false")
     
-    cols = c( 'id', 'name' )
+    cols = c( 'id', 'name' , 'categoryCombo' )
     
     url <- paste0( baseurl() ,"api/categoryOptionCombos.json?fields=" ,
                      paste(cols, collapse = ",") , 
@@ -454,12 +454,16 @@ metadata_widget_server <- function( id ,
   categories = reactive({
     
     if (  login()  & loginFetch() ){ 
-    cat( '\n *reactive categories \n') 
+    cat( '\n *reactive categories ') 
 
       cc = categoryCombos()
       coc = categoryOptionCombos()
       
-      cat( "- collating categories  \n" )
+      # Testing
+      # saveRDS( cc,  "cc.rds")
+      # saveRDS( coc,  "coc.rds")
+      
+      cat( "\n - collating categories  " )
       showModal(
         modalDialog( title = "Collating categories", 
                      easyClose = TRUE ,
@@ -468,14 +472,34 @@ metadata_widget_server <- function( id ,
                      )
         )
       
-      cat( "- cc.coc  \n" )
-      cc.coc = cc %>% select( id, name, categoryOptionCombos ) %>%  
-        rename( categoryCombo.id = id , categoryCombo = name ) %>%
-        unnest( categoryOptionCombos ) %>% 
-        left_join( coc , by = "id" ) %>%
-        rename( categoryOptionCombo.id = id , categoryOptionCombo = name )
+      cat( "\n - cc.coc " )
       
-      cat( "- categories  \n" )
+      cc. = cc %>% select( id, name, categoryOptionCombos ) %>%  
+        rename( categoryCombo.id = id
+                , categoryCombo = name ) %>%
+        unnest( categoryOptionCombos )  %>% rename( categoryOptionCombo.id = id )
+      
+      coc. = coc %>%  
+          rename( categoryOptionCombo.id = id , categoryOptionCombo = name ) %>% 
+          unnest( categoryCombo) %>% 
+          rename( categoryCombo.id = id )
+      
+      cc.coc = coc.  %>% 
+        left_join( cc %>% select( id, name ) %>%  
+                     rename( categoryCombo.id = id , categoryCombo = name )  , 
+                   by = c( "categoryCombo.id"  ) )
+      
+      # Modified with above to accomodate Benin having missing categoryCombos, thus caegoryOptionCombos were unlinked
+      # cc.coc = cc %>% select( id, name, categoryOptionCombos ) %>%  
+      #   rename( categoryCombo.id = id , categoryCombo = name ) %>%
+      #   unnest( categoryOptionCombos ) %>% 
+      #   right_join( coc , by = "id" ) %>%
+      #   rename( categoryOptionCombo.id = id , categoryOptionCombo = name )
+      
+      # Testing
+      # saveRDS( cc.coc,  "cc.coc.rds")
+      
+      cat( "\n - categories " )
       categories = cc.coc %>%
         group_by( categoryCombo.id, categoryCombo ) %>%
         summarise(
@@ -483,6 +507,7 @@ metadata_widget_server <- function( id ,
           Categories = paste( categoryOptionCombo , collapse = ' ;\n '  ) ,
           categoryOptionCombo.ids = paste( categoryOptionCombo.id , collapse = ' ;\n '  )
         )
+      
       
       removeModal()
     } else {
@@ -1497,7 +1522,7 @@ metadata_widget_server <- function( id ,
   output$downloadInfo <- downloadHandler(
 
     filename = function() {
-      paste0( dir() , "MetaData_", Sys.Date()  ,".xlsx"  )
+      paste0( "MetaData_", Sys.Date()  ,".xlsx"  )
     } ,
     
     content = function( file ) {
@@ -1542,7 +1567,7 @@ metadata_widget_server <- function( id ,
                    geoFeatures = geoFeatures() 
       ) 
       
-      saveRDS( meta , "metadata.RDS" )
+      saveRDS( meta , paste0( dir() , "metadata.RDS" ) )
       
     }
     
@@ -1685,7 +1710,7 @@ metadata_widget_server <- function( id ,
                 dataElements = dataElementDictionary ,
                 dataElementGroups = dataElementGroups ,
                 categories = categories , 
-                orgUnitLevels = orgUnitLevels ,
+                orgUnitLevels = orgUnitLevels_with_counts ,
                 orgUnits = orgUnits ,
                 ousTree = ousTree ,
                 geoFeatures = geoFeatures ,

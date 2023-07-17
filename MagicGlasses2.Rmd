@@ -6,7 +6,7 @@ output:
     vertical_layout: fill
     theme:
       version: 4
-      bootswatch: flatly
+      bootswatch: paper
 runtime: shiny
 resource_files:
 - renv.lock
@@ -21,6 +21,30 @@ resource_files:
 # renv::restore()
 # renv::repair()
 # renv::snapshot()
+
+```
+
+```{r log_file, eval=FALSE }
+# output <- system2("R","-e \"rmarkdown::render('MagicGlasses2.Rmd')\"",
+#                   stdout = TRUE, stderr = TRUE)
+
+sink( "magicGlasses.log" , type = "message", append = FALSE, split = TRUE)
+
+rmarkdown::run('MagicGlasses2.Rmd')
+
+# Restore output to console
+# sink( type = "output")
+# sink(type="message") 
+
+
+# flog <- file( "magicGlasses.log" , open = "wt")
+# sink(file = flog, split = TRUE)
+
+# sink(con, append=TRUE, type="message")
+
+# This will echo all input and not truncate 150+ character lines...
+# source("script.R", echo=TRUE, max.deparse.length=10000)
+
 
 ```
 
@@ -45,9 +69,11 @@ if ( length( needed ) > 0 ){
 ```{r libraries , include=FALSE}
 
 options("menu.graphics" = FALSE)
+rstudioapi::writeRStudioPreference("console_max_lines", 2000L )
 
 library(conflicted) # For diagnosing function name conflicts
 library(tidyverse)
+library( stringr )
 library(data.table) # for clean install, run from clean session: 
     # remove.packages("data.table")
     # install.packages("data.table", type = "source",
@@ -69,7 +95,7 @@ library( ggrepel )
 library( ragg )
 library( scales)
 library( lemon ) # for reposition_legend() 
-if ( 'summarytools' %in% installed.packages() )  library( summarytools ) # invokes Xquartz on mac.
+# if ( 'summarytools' %in% installed.packages() )  library( summarytools ) # invokes Xquartz on mac.
 # library( describer )
 
 # library( tidyfast )
@@ -151,7 +177,7 @@ conflict_prefer("month", "lubridate")
 conflict_prefer("week", "lubridate")
 conflict_prefer("runExample", "shiny")
 conflict_prefer(":=", "rlang")
-conflict_prefer("validate", "jsonlite")
+conflict_prefer( "validate", "jsonlite" )
 
 # home = getActiveProject()
 # cat('\n ## getActiveProject():' , getActiveProject() )
@@ -161,15 +187,15 @@ conflict_prefer("validate", "jsonlite")
 # Functions ####
 # source( "data_time_libraries.r")
 # source( "outlier.r" )
-source( "ingest_formula_data.r")
-source( 'TS_Modeling_Functions.r')
+source( "ingest_formula_data.R")
+source( 'TS_Modeling_Functions.R')
 source( "Summary_TS.R") # new version of summary_ts()
 source( 'TS_model_outlier_impute.R') # model_ts()
 source( 'Deviation_Expected_Functions.R')
 # source( 'theme_ppt.R')
 # source( 'clean_ts.r' )
 source( 'DToptions.R')
-source( 'model_ts2.r' )
+source( 'model_ts2.R' )
 source( 'api_data.r' )
 source( 'dqa.r' )
 source( 'Cleaning.R' )
@@ -422,7 +448,7 @@ Column
 -----------------------------------
 
 ```{r directory_widget , echo = FALSE  }
-source( 'directory_widget.r' )
+source( 'directory_widget.R' )
 directory_widget_ui( "directory1" )
 
 directory_widget_output = directory_widget_server( "directory1" )
@@ -434,7 +460,7 @@ Column
 
 
 ```{r login_widget , echo = FALSE  }
-source( 'login_widget.r' )
+source( 'login_widget.R' )
 login_widget_ui( "login1" )
 
 login_widget_output = login_widget_server( "login1" )
@@ -445,7 +471,7 @@ Metadata
 ========================
 
 ```{r metadata_widget , eval=TRUE}
-source( 'metadata_widget.r' )
+source( 'metadata_widget.R' )
 metadata_widget_ui( "metadata1" )
 
 metadata_widget_output =
@@ -462,7 +488,7 @@ Data
 Column {data-width='30%'}
 -----------------------------------
 
-### Data (Dictionary/Formulas) {data-height='80%'}
+### Data (Dictionary/Formulas) {data-height='65%'}
 
 ```{r data_widget, echo = FALSE  }
 source( 'data_widget.r' )
@@ -477,10 +503,10 @@ data1_Widget_output =
 
 ```
 
-### Request data from server {data-height='20%'}
+### Request data from server {data-height='35%'}
 
 ```{r data_request_widget , eval=TRUE}
-source( 'data_request_widget.r' )
+source( 'data_request_widget.R' )
 data_request_widget_ui( "data_request1" )
 
 data_request_output =
@@ -553,7 +579,7 @@ Evaluation
 ========================
 
 ```{r evaluation_widget , eval = TRUE }
-source( 'evaluation_widget.r' )
+source( 'evaluation_widget.R' )
 evaluation_widget_ui( "evaluation1" )
 
 evaluation_widget_output =
