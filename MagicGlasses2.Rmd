@@ -202,6 +202,7 @@ source( 'Cleaning.R' )
 source( 'prepareDataset.R' )
 source( 'cleaning_functions.R' )
 source( "data Functions.R" )
+source( "dqa_functions.R" )
 
 # source( 'API.r' )
 
@@ -590,6 +591,25 @@ evaluation_widget_output =
                          reporting_widget_output = reporting_widget_output ,
                          cleaning_widget_output = cleaning_widget_output )
 ```
+
+
+Data Quality
+========================
+
+```{r dqa_widget , eval = TRUE }
+source( 'dqa_widget.R' )
+dqa_widget_ui( "dqa1" )
+
+dqa_widget_output =
+  dqa_widget_server( "dqa1" ,
+                         directory_widget_output = directory_widget_output ,
+                         metadata_widget_output = metadata_widget_output ,
+                         data_widget_output = data1_Widget_output ,
+                         reporting_widget_output = reporting_widget_output ,
+                         cleaning_widget_output = cleaning_widget_output )
+```
+
+
 
 About MagicGlasses2
 ========================
