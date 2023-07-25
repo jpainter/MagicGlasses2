@@ -85,7 +85,7 @@ evaluation_widget_ui = function ( id ){
                              value = TRUE  ) ,
               
               checkboxInput( ns( "facet_split" ) , label ="Facet by split",
-                             value = TRUE  ) ,
+                             value = FALSE  ) ,
               
               checkboxInput( ns( "selected" ) , label ='Selected facilities only',
                              value = TRUE  ) ,

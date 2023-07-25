@@ -22,21 +22,21 @@ dqa_widget_ui = function ( id ){
               tabPanel( "Data" , 
                         inputPanel(
       
-                selectInput( ns( "model" ), label = "Time-series model:" , 
-                        choices = c( 
-                                    # 'TSLM',
-                                     'TSLM (trend)' , 'TSLM (trend+season)' , 
-                                     'ETS' , 'ARIMA', 'SNAIVE' , 'NNETAR' ,
-                                     # 'BSTS' , 
-                                    'Prophet'
-                                    
-                                    # , 'TSLM (trend)'
-                                    # , 'TSLM (trend+season)'
-                                    ) , 
-                        selected = 'ETS'  ) ,
-  
-                checkboxInput( ns( "autoModel" ) , label ='Automatic nmodel selection',
-                               value = FALSE  ) 
+                # selectInput( ns( "model" ), label = "Time-series model:" , 
+                #         choices = c( 
+                #                     # 'TSLM',
+                #                      'TSLM (trend)' , 'TSLM (trend+season)' , 
+                #                      'ETS' , 'ARIMA', 'SNAIVE' , 'NNETAR' ,
+                #                      # 'BSTS' , 
+                #                     'Prophet'
+                #                     
+                #                     # , 'TSLM (trend)'
+                #                     # , 'TSLM (trend+season)'
+                #                     ) , 
+                #         selected = 'ETS'  ) ,
+                # 
+                # checkboxInput( ns( "autoModel" ) , label ='Automatic nmodel selection',
+                #                value = FALSE  ) 
                 ) ) 
           ) ) ,
           
@@ -54,11 +54,11 @@ dqa_widget_ui = function ( id ){
           tabsetPanel(
                
             
-            tabPanel( "DQA" , 
+            tabPanel( "Reporting" , 
                     
                     fluidPage(
                       fluidRow( style = "height:60vh;",
-                                plotOutput( ns("plotOutput") ) )
+                                plotOutput( ns("dqaReportingOutput") ) )
                       ) ) 
                   ) 
 ) 
@@ -127,40 +127,68 @@ dqa_widget_server <- function( id ,
     reportingSelectedOUs = reactive({ reporting_widget_output$reportingSelectedOUs() })
 
 
+  dqaReporting = reactive({
+    cat('\n*  dqa_widget dqaReporting function')
+    
+    dqa_data = data1() %>% as_tibble()
+    
+     # Testing
+    # saveRDS( dqa_data , "dqa_data.rds" )
+        
+    year = dqa_years( dqa_data )
+    
+    cat('\n -  years:', paste( year, collapse = ","  ))
+    
+    n_frequently_reporting = dqa_reporting( dqa_data, missing_reports = 0 )
+    n_facilities = nrow( data_ous( dqa_data = dqa_data) )
+    pr = n_frequently_reporting / n_facilities
+    
+    cat('\n -  pr:', paste( pr, collapse = ","  ) )
+    
+    data = tibble( year, n_frequently_reporting , n_facilities, pr , label = percent(pr, 1.1) )
+
+    print( data ) 
+    return( data )
+  })
     
 
-  plotOutput = reactive({
+  plotDqaReportingOutput = reactive({
         # req( input$components )
-        cat('\n*  evaluation_widget plotTrendOutput')
-        cat('\n - input$components:' , input$components)
+        cat('\n*  dqa_widget plotDqaReportingOutput')
 
-      if ( input$components ){
-          cat('\n - components')
-          g = plotComponents()
-      } else {
-          cat('\n - plotTrends')
-          g = plotTrends()
-      }
+        data = dqaReporting()
+        
+        n_facilities = max( data$n_facilities )
+        # Testing
+        # saveRDS( data , "plotDqaReportingOutput_data.rds" )
+        
+        g = ggplot( data = data , aes( x = as.character( Year ) , y = pr, label = label, group = 1  ) ) + 
+          geom_line() +
+          geom_text( vjust = -1 ) +
+          ylim( 0, 1 ) +
+          labs( x = "Year" , y = "Percent" , title = "Percent of facilities reporting all 12 months of the year",
+                subtitle  = paste( 'Out of the number of facilities that have ever reported (' , n_facilities , ")" ) 
+                )
       return( g )
 })
 
-  output$plotlyOutput <- renderPlotly({
-      plotly::ggplotly( plotOutput() )  })
+  # output$plotlyOutput <- renderPlotly({
+  #     plotly::ggplotly( plotDqaReportingOutput() )  })
 
-  output$plotOutput <-  renderPlot({ plotOutput()  })
+  output$dqaReportingOutput <-  renderPlot({ plotDqaReportingOutput()  })
 
-  output$dynamic <- renderUI({
-      req(input$plot_hover)
-      verbatimTextOutput("vals")
-  })
-
-  output$vals <- renderPrint({
-        hover <- input$plot_hover
-        # print(str(hover)) # list
-        y <- nearPoints( trend_Data() , input$plot_hover)[input$var_y]
-        req(nrow(y) != 0)
-        y
-  })
+  # output$dynamic <- renderUI({
+  #     req(input$plot_hover)
+  #     verbatimTextOutput("vals")
+  # })
+  # 
+  # output$vals <- renderPrint({
+  #       hover <- input$plot_hover
+  #       # print(str(hover)) # list
+  #       y <- nearPoints( trend_Data() , input$plot_hover)[input$var_y]
+  #       req(nrow(y) != 0)
+  #       y
+  # })
 
 
   # Return ####
