@@ -3,54 +3,72 @@
 monthly.outlier.summary = function( df.ts ){
    cat( "\n * monthly.outlier.summary" )
   
-    cat( "\n - errors" )
-    errors = 
-        df.ts %>%
+  # NOTE: 'All' refers to all data; 'algorithm' refers to the method used to flag and error; 'combined' refers to any error flag 
+    
+    cat( "\n - errors_by_data_and_algorithm" )
+    errors_by_data_and_algorithm = 
+        df.ts %>% as_tibble() %>%
         ungroup %>%
         filter( effectiveLeaf ) %>%
         select( Month ,  data.id , data ,value,  mad15, mad10, seasonal5, seasonal3 , original ) %>%
-        mutate( Combined = pmin( mad15, mad10,seasonal5, seasonal3 , na.rm = T ) %>% as.logical() ) %>%
+        mutate( Combined = pmax( mad15, mad10,seasonal5, seasonal3 , na.rm = T ) %>% as.logical() ) %>%
         pivot_longer( cols = c(  mad15, mad10, seasonal5, seasonal3 , Combined ) ,
                       names_to = "Alg" , values_to = "val"  ) %>%
-        filter( val == FALSE 
+        filter( val == TRUE 
                 # ,  ( value & Alg %in% "seasonal3" & is.na( val ) )  
                 ) %>%
-        group_by( data, Alg ) %>% 
+        group_by( Month , data, Alg ) %>% 
         summarise( e = sum( original ) ,
                    n.e = n() )
   
-  cat( "\n - data.totals" )
-  data.totals = 
-    df.ts %>%
+  cat( "\n - data.totals_by_data" ) 
+  data.totals_by_data = 
+    df.ts %>%  as_tibble() %>%
     ungroup %>%
     filter( effectiveLeaf ) %>%
-    group_by( data ) %>% 
+    group_by( Month , data ) %>% 
     summarise( t = sum( original ) ,
                n.t = n() )
 
-  cat( "\n - data.error.totals" )
-  data.error.totals = 
-    data.totals %>% as_tibble() %>%
-    left_join( errors , by = c("data", "Month") ) 
-    
-  cat( "\n - grand.totals" )
-  grand.totals = data.error.totals %>% 
+  cat( "\n - errors_by_data_and_algorithm_with_totals_by_data" )
+  total.errors_by_data_and_algorithm = 
+    data.totals_by_data %>% as_tibble() %>%
+    left_join( errors_by_data_and_algorithm , by = c("data", "Month") ) 
+  
+  
+  # calculate for all data 
+  cat( "\n- all data errors")
+  errors_for_all_data_by_algorithm = 
+    errors_by_data_and_algorithm %>%
     group_by( Month , Alg ) %>% 
-    summarise_at( vars( e, n.e, t, n.t ) , sum , na.rm = TRUE )  %>%
-    mutate( data = 'All' ) %>%
-    filter( !is.na( Alg ) )
-
-  cat( "\n - grand.data.error.totals" ) 
+    summarise_at( vars( e, n.e ) , sum , na.rm = TRUE )  %>%
+    mutate( data = 'All' ) 
+  
+  cat( "\n - data.totals_all" ) 
+  data.totals_all = 
+    data.totals_by_data %>%
+    group_by( Month ) %>%
+    summarise_at( vars( t, n.t ) , sum , na.rm = TRUE )  %>%
+    mutate( data = 'All' ) 
+ 
+  
+  cat( "\n - errors_by_data_and_algorithm_with_totals_by_data" )
+  total.errors_for_all_data_by_algorithm = 
+    data.totals_all %>% 
+    left_join( errors_for_all_data_by_algorithm , by = c("data", "Month") ) 
+  
+   
+  cat( "\n - complete dataset: grand.data.error.totals" )
   grand.data.error.totals = 
-    data.error.totals %>% 
-    bind_rows(  
-      grand.totals %>% as_tibble() )  %>%
+    total.errors_by_data_and_algorithm %>% 
     filter( !is.na( Alg ) ) %>%
+    bind_rows(  
+      total.errors_for_all_data_by_algorithm )  %>%
     mutate( pe =  e / t  ,
             pn =  n.e / n.t ,
             year = year( Month ) ,
             month = month( Month )
-            ) %>%
+            ) %>% 
     as_tsibble( index = Month , key = c( data , Alg ))
   
   return( grand.data.error.totals )
@@ -108,10 +126,11 @@ outlier.summary.chart = function( grand.data.error.totals  ){
 # 
 # data.directory = "~/Library/CloudStorage/OneDrive-CDC/_Malaria/Projects/HMIS/Formulas/DRC/"
 # data.directory = "~/Library/CloudStorage/OneDrive-CDC/_Malaria/Projects/HMIS/Formulas/Zimbabwe/"
+# data.directory = "../HMIS/Formulas/Malawi/"
 # 
 # df.ts <- readRDS( paste0( data.directory ,
-#                          "cas confirme_All-levels_5yrs_2022-08-02.rds"
-#                          # "Confirmed Cases_All-levels_10yrs_2022-06-23.rds"
+#                          #"cas confirme_All-levels_5yrs_2022-08-02.rds"
+#                           "confirmed cases ipd, opd, and chw_All-levels_9yrs_2023-07-24.rds"
 #                          )
 #                  ) %>%
 #   filter( COUNT > 0 )

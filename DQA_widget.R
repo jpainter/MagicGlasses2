@@ -59,6 +59,13 @@ dqa_widget_ui = function ( id ){
                     fluidPage(
                       fluidRow( style = "height:60vh;",
                                 plotOutput( ns("dqaReportingOutput") ) )
+                      ) ) ,
+            
+            tabPanel( "No Errors" , 
+                    
+                    fluidPage(
+                      fluidRow( style = "height:60vh;",
+                                plotOutput( ns("dqaNoErrorsOutput") ) )
                       ) ) 
                   ) 
 ) 
@@ -127,55 +134,71 @@ dqa_widget_server <- function( id ,
     reportingSelectedOUs = reactive({ reporting_widget_output$reportingSelectedOUs() })
 
 
-  dqaReporting = reactive({
-    cat('\n*  dqa_widget dqaReporting function')
+  # dqaReporting = reactive({
+  #   cat('\n*  dqa_widget dqaReporting function')
+  #   
+  #   dqa_data = data1() %>% as_tibble()
+  #   
+  #    # Testing
+  #   # saveRDS( dqa_data , "dqa_data.rds" )
+  #       
+  #   year = dqa_years( dqa_data )
+  #   
+  #   cat('\n -  years:', paste( year, collapse = ","  ))
+  #   
+  #   n_frequently_reporting = dqa_reporting( dqa_data, missing_reports = 0 )
+  #   n_facilities = nrow( data_ous( dqa_data = dqa_data) )
+  #   pr = n_frequently_reporting / n_facilities
+  #   
+  #   cat('\n -  pr:', paste( pr, collapse = ","  ) )
+  #   
+  #   data = tibble( year, n_frequently_reporting , n_facilities, pr , label = percent(pr, 1.1) )
+  # 
+  #   print( data ) 
+  #   return( data )
+  # })
     
-    dqa_data = data1() %>% as_tibble()
-    
-     # Testing
-    # saveRDS( dqa_data , "dqa_data.rds" )
-        
-    year = dqa_years( dqa_data )
-    
-    cat('\n -  years:', paste( year, collapse = ","  ))
-    
-    n_frequently_reporting = dqa_reporting( dqa_data, missing_reports = 0 )
-    n_facilities = nrow( data_ous( dqa_data = dqa_data) )
-    pr = n_frequently_reporting / n_facilities
-    
-    cat('\n -  pr:', paste( pr, collapse = ","  ) )
-    
-    data = tibble( year, n_frequently_reporting , n_facilities, pr , label = percent(pr, 1.1) )
 
-    print( data ) 
-    return( data )
-  })
-    
-
-  plotDqaReportingOutput = reactive({
+  plotDqaReporting = reactive({
         # req( input$components )
-        cat('\n*  dqa_widget plotDqaReportingOutput')
+      cat('\n*  dqa_widget plotDqaReporting')
 
-        data = dqaReporting()
-        
-        n_facilities = max( data$n_facilities )
-        # Testing
-        # saveRDS( data , "plotDqaReportingOutput_data.rds" )
-        
-        g = ggplot( data = data , aes( x = as.character( Year ) , y = pr, label = label, group = 1  ) ) + 
-          geom_line() +
-          geom_text( vjust = -1 ) +
-          ylim( 0, 1 ) +
-          labs( x = "Year" , y = "Percent" , title = "Percent of facilities reporting all 12 months of the year",
-                subtitle  = paste( 'Out of the number of facilities that have ever reported (' , n_facilities , ")" ) 
-                )
-      return( g )
+      #   data = dqaReporting()
+      #   
+      #   n_facilities = max( data$n_facilities )
+      #   # Testing
+      #   # saveRDS( data , "plotDqaReportingOutput_data.rds" )
+      #   
+      #   g = ggplot( data = data , aes( x = as.character( Year ) , y = pr, label = label, group = 1  ) ) + 
+      #     geom_line() +
+      #     geom_text( vjust = -1 ) +
+      #     ylim( 0, 1 ) +
+      #     labs( x = "Year" , y = "Percent" , title = "Percent of facilities reporting all 12 months of the year",
+      #           subtitle  = paste( 'Out of the number of facilities that have ever reported (' , n_facilities , ")" ) 
+      #           )
+      # return( g )
+     dqa_data = data1()
+     dqa_data %>% dqaPercentReporting() %>% dqa_reporting_plot()
 })
 
   # output$plotlyOutput <- renderPlotly({
   #     plotly::ggplotly( plotDqaReportingOutput() )  })
 
-  output$dqaReportingOutput <-  renderPlot({ plotDqaReportingOutput()  })
+  output$dqaReportingOutput <-  renderPlot({ plotDqaReporting()  })
+  
+  plotDqaNoError = reactive({
+        # req( input$components )
+    cat('\n*  dqa_widget plotDqaNoError')
+      
+    dqa_data = data1()
+    dqa_data %>% monthly.outlier.summary() %>%
+        yearly.outlier.summary() %>%
+        dqa_outliers %>%
+        yearly.outlier.summary_plot()
+    
+})
+   
+  output$dqaNoErrorsOutput <-  renderPlot({ plotDqaNoError()  })
 
   # output$dynamic <- renderUI({
   #     req(input$plot_hover)
