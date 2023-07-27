@@ -55,11 +55,12 @@ dqa_reporting_plot = function( data ){
   
   g = ggplot( data = data , aes( x = as.character( Year ) , y = pr, label = label, group = 1  ) ) + 
           geom_line() +
-          geom_text( vjust = -1 ) +
+          geom_text( vjust = -1 , size = 4 ) +
           scale_y_continuous(labels = scales::percent, limits = c(0,1)) +
           labs( x = "Year" , y = "Percent" , title = "Percent of facilities reporting all 12 months of the year",
                 subtitle  = paste( 'Out of the number of facilities that have ever reported (' , n_facilities , ")" ) 
-                )
+                ) + 
+          theme_minimal( base_size = 18 )
   
   return( g )
 }
@@ -81,12 +82,13 @@ yearly.outlier.summary_plot = function( data ){
                                 y = percent_no_error, 
                                 label = percent_no_error_chr, group = 1  ) ) + 
           geom_line() +
-          geom_text( vjust = 3 ) +
+          geom_text( vjust = 3 , size = 4 ) +
           scale_y_continuous(labels = scales::percent, limits = c(0,1)) +
           labs( x = "Year" , y = "Percent" , 
                 title = "Percent of data with no error flags"
                 # subtitle  = paste( 'Out of the number of facilities that have ever reported (' , n_facilities , ")" ) 
-                )
+                ) + 
+          theme_minimal( base_size = 18 )
   
   return( g )
 }
@@ -131,3 +133,82 @@ yearly.outlier.summary_plot = function( data ){
 #   yearly.outlier.summary() %>%
 #   dqa_outliers %>%
 #   yearly.outlier.summary_plot()
+
+
+mase_year = function( dqa_data , .year ){
+  
+  d_all_dataElements = setDT( dqa_data )[ 
+          year( Month ) <= .year 
+          , 
+          .( 
+               expected = sum( expected, na.rm = TRUE ) ,
+               original = sum( original, na.rm = TRUE ) 
+            ) ,
+          by = c(  'orgUnit', 'orgUnitName' , "Month") ] %>% 
+    as_tibble() %>%
+    group_by( orgUnit, orgUnitName )
+  
+  d.mase = setDT( d_all_dataElements )[ 
+          ,
+          .(   MASE = mase( actual = original, predicted = expected  ) ,
+                n = sum( !is.na( original ) ) ,
+               total_expected =  sum( expected , na.rm = T )
+          ) ,
+          by = c(  'orgUnit', 'orgUnitName' ) ] %>%
+          
+          as_tibble() %>%
+          group_by( orgUnit, orgUnitName ) 
+  
+  # median.mase = median( d.mase$MASE , na.rm = T )
+  
+  mean.mase = weighted.mean( d.mase$MASE[ d.mase$MASE<Inf ] , 
+                             w = d.mase$total_expected[ d.mase$MASE<Inf ] , 
+                             na.rm = TRUE )
+  
+  n_facilities = nrow( d.mase )
+  
+  # percent_MASE_under_20 = sum( d.mase$MASE < .2 , na.rm = T ) / sum( d.mase$MASE<Inf , na.rm = T ) 
+  
+  # ggplot( d.mase ) + geom_histogram( aes(MASE), binwidth = .1 )
+  
+  return( tibble( Year = .year , Facilities = n_facilities ,  Mean_MASE = mean.mase , label = percent( mean.mase , 0.1 )) )
+  
+}
+
+
+dqa_mase = function( dqa_data ){
+  
+  years = dqa_years( dqa_data )$Year
+  
+  
+  dqa_mase = map_df( years, ~mase_year( dqa_data, .x )  ) 
+  
+  # summarise begining with 3rd year of data
+  dqa_mase[1:2, 3:ncol( dqa_mase) ] = NA
+  
+  return( dqa_mase )
+}
+
+dqa_mase_plot = function( data ){
+  mase_txt = "Estimated as 2x the mean absolute scaled error (MASE) of the previouse values
+  - The smaller this value, the more accurate the data is, and the more likely that a program can attribute the change to program implementation
+  - Year to year change less than this is likely due to random variation"
+  
+  max_Facilities = max( data$Facilities , na.rm = T )
+  
+  g = ggplot( data = data , aes( x = as.character( Year ) , y = Mean_MASE , label = label, group = 1  ) ) + 
+          geom_line() +
+          geom_text( vjust = -1 , size = 4 ) +
+          scale_y_continuous(labels = scales::percent , limits = c(0, 1.5*max(data$Mean_MASE, na.rm = T ))) +
+          labs( x = "Year" , y = "Percent" , title = "Minimum Detectable Change for Program Evaluation",
+                subtitle  = mase_txt  ,
+                caption = "NOTE: MASE calculated begining with 3rd year of data"
+                ) + 
+          theme_minimal( base_size = 18 )
+  
+  return( g )
+}
+
+# TESTING
+# dqa_mase( dqa_data = dqa_data )
+# dqa_data %>% dqa_mase %>% dqa_mase_plot

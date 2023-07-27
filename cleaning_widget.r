@@ -751,8 +751,8 @@ cleaning_widget_server <- function( id ,
       reportingSelectedOUs = reportingSelectedOUs()
       
       # Testing
-      saveRDS( d , 'd.rds')
-      saveRDS( reportingSelectedOUs,  'reportingSelectedOUs.rds' )
+      # saveRDS( d , 'd.rds')
+      # saveRDS( reportingSelectedOUs,  'reportingSelectedOUs.rds' )
       
       data_mase = d.mase( d  , reportingSelectedOUs )       
       

@@ -21,36 +21,13 @@ dqa_widget_ui = function ( id ){
             tabsetPanel(
               tabPanel( "Data" , 
                         inputPanel(
-      
 
-                # selectInput( ns( "model" ), label = "Time-series model:" , 
-                #         choices = c( 
-                #                     # 'TSLM',
-                #                      'TSLM (trend)' , 'TSLM (trend+season)' , 
-                #                      'ETS' , 'ARIMA', 'SNAIVE' , 'NNETAR' ,
-                #                      # 'BSTS' , 
-                #                     'Prophet'
-                #                     
-                #                     # , 'TSLM (trend)'
-                #                     # , 'TSLM (trend+season)'
-                #                     ) , 
-                #         selected = 'ETS'  ) ,
-                # 
-                # checkboxInput( ns( "autoModel" ) , label ='Automatic nmodel selection',
-                #                value = FALSE  ) 
                 ) ) 
           ) ) ,
           
           mainPanel( width = 9 , 
                # width = "75%" ,
-                # conditionalPanel( "input.plotly == 1" , ns = ns ,
-                #     plotlyOutput( ns("plotlyOutput") , height = "100%" )
-                #       ) ,
                 
-                # conditionalPanel( "input.plotly == 0" , ns = ns ,
-                #     plotOutput( ns("plotOutput") , height = "600px" ,
-                #              hover = "plot_hover"  )
-                #  )
                 
           tabsetPanel(
                
@@ -66,11 +43,18 @@ dqa_widget_ui = function ( id ){
                     fluidPage(
                       fluidRow( style = "height:60vh;",
                                 plotOutput( ns("dqaNoErrorsOutput") ) )
+                      ) ) ,
+            
+            tabPanel( "MASE" , 
+                    
+                    fluidPage(
+                      fluidRow( style = "height:60vh;",
+                                plotOutput( ns("dqaMaseOutput") ) )
                       ) ) 
+            
                   ) 
 ) 
                  
-             # plotOutput( ns( "plotOutput" ) , hover = "plot_hover"  )
           )
         )    
 
@@ -133,56 +117,16 @@ dqa_widget_server <- function( id ,
     aggregateselected_data = reactive({ reporting_widget_output$aggregateselected_data() })
     reportingSelectedOUs = reactive({ reporting_widget_output$reportingSelectedOUs() })
 
-
-  # dqaReporting = reactive({
-  #   cat('\n*  dqa_widget dqaReporting function')
-  #   
-  #   dqa_data = data1() %>% as_tibble()
-  #   
-  #    # Testing
-  #   # saveRDS( dqa_data , "dqa_data.rds" )
-  #       
-  #   year = dqa_years( dqa_data )
-  #   
-  #   cat('\n -  years:', paste( year, collapse = ","  ))
-  #   
-  #   n_frequently_reporting = dqa_reporting( dqa_data, missing_reports = 0 )
-  #   n_facilities = nrow( data_ous( dqa_data = dqa_data) )
-  #   pr = n_frequently_reporting / n_facilities
-  #   
-  #   cat('\n -  pr:', paste( pr, collapse = ","  ) )
-  #   
-  #   data = tibble( year, n_frequently_reporting , n_facilities, pr , label = percent(pr, 1.1) )
-  # 
-  #   print( data ) 
-  #   return( data )
-  # })
     
 
   plotDqaReporting = reactive({
         # req( input$components )
       cat('\n*  dqa_widget plotDqaReporting')
 
-      #   data = dqaReporting()
-      #   
-      #   n_facilities = max( data$n_facilities )
-      #   # Testing
-      #   # saveRDS( data , "plotDqaReportingOutput_data.rds" )
-      #   
-      #   g = ggplot( data = data , aes( x = as.character( Year ) , y = pr, label = label, group = 1  ) ) + 
-      #     geom_line() +
-      #     geom_text( vjust = -1 ) +
-      #     ylim( 0, 1 ) +
-      #     labs( x = "Year" , y = "Percent" , title = "Percent of facilities reporting all 12 months of the year",
-      #           subtitle  = paste( 'Out of the number of facilities that have ever reported (' , n_facilities , ")" ) 
-      #           )
-      # return( g )
      dqa_data = data1()
      dqa_data %>% dqaPercentReporting() %>% dqa_reporting_plot()
 })
 
-  # output$plotlyOutput <- renderPlotly({
-  #     plotly::ggplotly( plotDqaReportingOutput() )  })
 
   output$dqaReportingOutput <-  renderPlot({ plotDqaReporting()  })
   
@@ -200,19 +144,14 @@ dqa_widget_server <- function( id ,
    
   output$dqaNoErrorsOutput <-  renderPlot({ plotDqaNoError()  })
 
-  # output$dynamic <- renderUI({
-  #     req(input$plot_hover)
-  #     verbatimTextOutput("vals")
-  # })
-  # 
-  # output$vals <- renderPrint({
-  #       hover <- input$plot_hover
-  #       # print(str(hover)) # list
-  #       y <- nearPoints( trend_Data() , input$plot_hover)[input$var_y]
-  #       req(nrow(y) != 0)
-  #       y
-  # })
-
+  plotDqaMASE = reactive({
+    cat('\n*  dqa_widget plotDqaMASE')
+    dqa_data = data1()
+    dqa_data %>% dqa_mase %>% dqa_mase_plot
+  })
+  
+  output$dqaMaseOutput <- renderPlot({ plotDqaMASE() })
+  
   # Return ####
   return( )
 } )
