@@ -55,7 +55,7 @@ dqa_reporting_plot = function( data ){
   
   g = ggplot( data = data , aes( x = as.character( Year ) , y = pr, label = label, group = 1  ) ) + 
           geom_line() +
-          geom_text( vjust = -1 , size = 4 ) +
+          geom_text( vjust = -1 , size = 6 ) +
           scale_y_continuous(labels = scales::percent, limits = c(0,1)) +
           labs( x = "Year" , y = "Percent" , title = "Percent of facilities reporting all 12 months of the year",
                 subtitle  = paste( 'Out of the number of facilities that have ever reported (' , n_facilities , ")" ) 
@@ -82,7 +82,7 @@ yearly.outlier.summary_plot = function( data ){
                                 y = percent_no_error, 
                                 label = percent_no_error_chr, group = 1  ) ) + 
           geom_line() +
-          geom_text( vjust = 3 , size = 4 ) +
+          geom_text( vjust = 3 , size = 6 ) +
           scale_y_continuous(labels = scales::percent, limits = c(0,1)) +
           labs( x = "Year" , y = "Percent" , 
                 title = "Percent of data with no error flags"
@@ -198,7 +198,7 @@ dqa_mase_plot = function( data ){
   
   g = ggplot( data = data , aes( x = as.character( Year ) , y = Mean_MASE , label = label, group = 1  ) ) + 
           geom_line() +
-          geom_text( vjust = -1 , size = 4 ) +
+          geom_text( vjust = -1 , size = 6 ) +
           scale_y_continuous(labels = scales::percent , limits = c(0, 1.5*max(data$Mean_MASE, na.rm = T ))) +
           labs( x = "Year" , y = "Percent" , title = "Minimum Detectable Change for Program Evaluation",
                 subtitle  = mase_txt  ,
