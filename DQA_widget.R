@@ -8,73 +8,39 @@ dqa_widget_ui = function ( id ){
             position = 'bottom-right'
             # , margins = c(70, 1200)
           ) ,
-  fillPage(       
-  # tabsetPanel( type = "tabs",
-  # add_busy_spinner(spin = "fading-circle", position = "bottom-right") ,
+          
+  fluidPage(
+  
+  titlePanel("Evolution of Data Quality"),
+  tags$style(".row{height: 80vh;} "),
+  navlistPanel(
+    "Indicator", widths = c(2,10) , 
     
-
-  # tabPanel( "" ,
-        sidebarLayout(
-          sidebarPanel( width = 2 , 
-            "Data Quality Indicators"
-            # tabsetPanel(
-            #   tabPanel( "Data" , 
-            #             inputPanel(
-            # 
-            #     ) ) 
-          )  ,
-          
-          mainPanel( width = 10 , 
+                tabPanel( "Reporting" , 
                 
-                # fluidPage(
-                #       fillRow(
-                #         style = "height:30vh;",
-                #                 plotOutput( ns("dqaReportingOutput")  ) ,
-                #                 ) ,
-                #       
-                #       fillRow(
-                #         style = "height:30vh;",
-                #                 plotOutput( ns("dqaNoErrorsOutput") ) ,
-                #                 ) ,
-                #       
-                #       fillRow(
-                #         style = "height:30vh;",
-                #                 plotOutput( ns("dqaMaseOutput") , height = '30vh') 
-                #                 )
-                #       ) 
-                #       )
-          
-          
-          
-                tabsetPanel(
-                
-                  tabPanel( "Reporting" ,
-                
-                          fluidPage(
-                            fluidRow( style = "height:80vh;",
+                          # fluidPage(
+                          #   fluidRow(  style = "height:80vh;",
                                       plotOutput( ns("dqaReportingOutput") ) )
-                            ) ) ,
+                            # ) ) 
+  ,
                 
-                  tabPanel( "No Errors" ,
+                  tabPanel( "Outliers" ,
                 
                           fluidPage(
-                            fluidRow( style = "height:80vh;",
+                            fluidRow( style = "height:90vh;",
                                       plotOutput( ns("dqaNoErrorsOutput") ) )
                             ) ) ,
                 
-                  tabPanel( "MASE" ,
+                  tabPanel( "Time-series Quality" ,
                 
                           fluidPage(
-                            fluidRow( style = "height:80vh;",
+                            fluidRow( style = "height:100vh;",
                                       plotOutput( ns("dqaMaseOutput") ) )
                             ) )
-                
-                        )
-                )
-                 
-          )
-        )    
-
+    
+    
+  )
+)
 
 )
 

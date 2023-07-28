@@ -541,6 +541,25 @@ formula1_Widget_output =
 ```
 
 
+
+Data Quality
+========================
+
+```{r dqa_widget , eval = TRUE }
+source( 'dqa_widget.R' )
+dqa_widget_ui( "dqa1" )
+
+dqa_widget_output =
+  dqa_widget_server( "dqa1" ,
+                         directory_widget_output = directory_widget_output ,
+                         metadata_widget_output = metadata_widget_output ,
+                         data_widget_output = data1_Widget_output ,
+                         reporting_widget_output = reporting_widget_output ,
+                         cleaning_widget_output = cleaning_widget_output )
+```
+
+
+
 Reporting
 ========================
 
@@ -585,23 +604,6 @@ evaluation_widget_ui( "evaluation1" )
 
 evaluation_widget_output =
   evaluation_widget_server( "evaluation1" ,
-                         directory_widget_output = directory_widget_output ,
-                         metadata_widget_output = metadata_widget_output ,
-                         data_widget_output = data1_Widget_output ,
-                         reporting_widget_output = reporting_widget_output ,
-                         cleaning_widget_output = cleaning_widget_output )
-```
-
-
-Data Quality
-========================
-
-```{r dqa_widget , eval = TRUE }
-source( 'dqa_widget.R' )
-dqa_widget_ui( "dqa1" )
-
-dqa_widget_output =
-  dqa_widget_server( "dqa1" ,
                          directory_widget_output = directory_widget_output ,
                          metadata_widget_output = metadata_widget_output ,
                          data_widget_output = data1_Widget_output ,
