@@ -1,6 +1,6 @@
 # DQA functions
 
-
+# Reporting ####
 data_ous = function( dqa_data ) dqa_data %>% as_tibble %>%
   count( orgUnit, orgUnitName , level ) %>%
   select( -n )
@@ -54,7 +54,7 @@ dqa_reporting_plot = function( data ){
   n_facilities = max( data$n_facilities )
   
   g = ggplot( data = data , aes( x = as.character( Year ) , y = pr, label = label, group = 1  ) ) + 
-          geom_line() +
+          geom_line(  linewidth = 1.25 ) +
           geom_text( vjust = -1 , size = 6 ) +
           scale_y_continuous(labels = scales::percent, limits = c(0,1)) +
           labs( x = "Year" , y = "Percent" , title = "Percent of facilities reporting all 12 months of the year",
@@ -65,34 +65,7 @@ dqa_reporting_plot = function( data ){
   return( g )
 }
 
-dqa_outliers = function( yearly.outlier.summary ){
-  
-  yearly_no_flags = yearly.outlier.summary %>%
-    filter( data %in% 'All' ) %>%
-    mutate( percent_no_error = 1 - pn , 
-            percent_no_error_chr = percent( percent_no_error , 0.1 )
-    )
-    
-  return( yearly_no_flags )
-}
-
-yearly.outlier.summary_plot = function( data ){
-  
- g = ggplot( data = data , aes( x = as.character( year ) , 
-                                y = percent_no_error, 
-                                label = percent_no_error_chr, group = 1  ) ) + 
-          geom_line() +
-          geom_text( vjust = 3 , size = 6 ) +
-          scale_y_continuous(labels = scales::percent, limits = c(0,1)) +
-          labs( x = "Year" , y = "Percent" , 
-                title = "Percent of data with no error flags"
-                # subtitle  = paste( 'Out of the number of facilities that have ever reported (' , n_facilities , ")" ) 
-                ) + 
-          theme_minimal( base_size = 18 )
-  
-  return( g )
-}
-# Testing.
+# Testing Reporting.
 # dqa_data = readRDS( 'dqa_data.rds' ) %>% as_tibble()
 # glimpse( dqa_data )
 # 
@@ -120,7 +93,50 @@ yearly.outlier.summary_plot = function( data ){
 #         )
 # dqa_data %>% dqaPercentReporting() %>% dqa_reporting_plot()
 
-# Outliers
+# Outliers ####
+dqa_outliers = function( yearly.outlier.summary ){
+  
+  yearly_no_flags = yearly.outlier.summary %>%
+    filter( data %in% 'All' ) %>%
+    mutate( percent_no_error = 1 - pn , 
+            percent_no_error_chr = percent( percent_no_error , 0.1 ) ,
+            percent_value_no_error = pe , 
+            percent_value_no_error_chr = percent( percent_value_no_error , 0.1 )
+    ) 
+    
+  return( yearly_no_flags )
+}
+
+yearly.outlier.summary_plot = function( data ){
+  
+ data = data %>%
+    select( year, starts_with( 'percent') & ! ends_with( 'chr' ) ) %>%
+    pivot_longer( -year ) %>%
+    mutate( label = percent( value , 0.1 ))
+ 
+ 
+ g = ggplot( data = data , aes( x = as.character( year ) , 
+                                y = value , color = name , 
+                                label = label , group = name   ) ) + 
+          geom_line( linewidth = 1.25) +
+          geom_text( vjust = 2 , size = 6 ) +
+          annotate("text", x = 0 , y = max(data[ grepl( 'value' , data$name ) , ]$value ), 
+                   label = "Magnitude of flagged values relative to sum of all values", vjust = -2, hjust = -1 , size = 6 ) +
+          annotate("text", x = 0, y = min(data[ ! grepl( 'value' , data$name ) , ]$value ), 
+                   label = "Percentage of values with NO error flags" , vjust = 5, hjust = -1 , size = 6  ) +
+          scale_y_continuous( labels = scales::percent, limits = c(0,1)) +
+          scale_color_hue(  l=40, c=35 ) +
+          guides( color = "none" ) +
+          labs( x = "Year" , y = "Percent" , 
+                title = "Reporting Errors" ,
+                subtitle  = paste( "Data flagged as potentially incorrect through outlier algorithms" ) 
+                ) + 
+          theme_minimal( base_size = 18 )
+  
+  return( g )
+}
+
+# Testing Outliers
 # data.directory = "../HMIS/Formulas/Malawi/"
 # dqa_data <- readRDS( paste0( data.directory ,
 #                          #"cas confirme_All-levels_5yrs_2022-08-02.rds"
@@ -129,12 +145,14 @@ yearly.outlier.summary_plot = function( data ){
 #                  ) %>%
 #   filter( COUNT > 0 )
 # 
-# dqa_data %>% monthly.outlier.summary() %>%
+# data = dqa_data %>% monthly.outlier.summary() %>%
 #   yearly.outlier.summary() %>%
-#   dqa_outliers %>%
-#   yearly.outlier.summary_plot()
+#   dqa_outliers 
+#   
+# yearly.outlier.summary_plot( data )
 
 
+# MASE ####
 mase_year = function( dqa_data , .year ){
   
   d_all_dataElements = setDT( dqa_data )[ 
@@ -197,7 +215,7 @@ dqa_mase_plot = function( data ){
   max_Facilities = max( data$Facilities , na.rm = T )
   
   g = ggplot( data = data , aes( x = as.character( Year ) , y = Mean_MASE , label = label, group = 1  ) ) + 
-          geom_line() +
+          geom_line(  linewidth = 1.25 ) +
           geom_text( vjust = -1 , size = 6 ) +
           scale_y_continuous(labels = scales::percent , limits = c(0, 1.5*max(data$Mean_MASE, na.rm = T ))) +
           labs( x = "Year" , y = "Percent" , title = "Minimum Detectable Change for Program Evaluation",
@@ -209,6 +227,6 @@ dqa_mase_plot = function( data ){
   return( g )
 }
 
-# TESTING
+# TESTING MASE
 # dqa_mase( dqa_data = dqa_data )
 # dqa_data %>% dqa_mase %>% dqa_mase_plot
