@@ -240,116 +240,116 @@ ts_model. = function( ts , # ts = datasets.  May or may not have nested dataset,
 }
 
 
-anomaly_search <- function( x , y , alpha = .05 ,  
-                              seasonal = TRUE , 
-                              log = FALSE , 
-                              min.months = 24 ,
-                              hampel = FALSE ,
-                              hampel.mad = 3, 
-                              hampel.halfWidth = 5 ,
-                              
-                              pb = NULL ) {
-  
-  options(dplyr.summarise.inform = FALSE)
-
-  if ( !is.null( pb ) ) pb$tick()
-
-  data.unnest <- x %>% unnest( data )
-
-  # if ( !"Mdate" %in% colnames( data.unnest ) ) return()
-
-  data =
-      data.unnest %>% as_tibble() %>%
-      filter( !is.na( {{y}} )) %>%
-      mutate( 
-        Mdate = as_date( Month )  ) %>%
-      ungroup()  
-  
-  if ( log ){
-    data = data %>%
-      mutate( 
-        {{y}} := log( {{y}} )
-        )
-  }
-
-  # if (nrow( data ) < 30 ) return()
-  a =
-    try(
-  # anomalize::decompose_stl( data, {{y}} , frequency = "12 months")
-    if ( seasonal & nrow( data ) > min.months  ){ 
-      data %>% 
-        time_decompose( {{y}} , message = FALSE, frequency = 12 ) %>%
-        mutate( orgUnit = x$orgUnit , var = x$var ) %>%
-        select( orgUnit, var, everything() ) %>%
-        anomalize( remainder , alpha = alpha ) %>%
-        rename(  l1 = ends_with( 'l1' ) ,
-                 l2 = ends_with( 'l2' ) ) %>%
-        mutate(
-          anomaly1 = ifelse( anomaly %in% 'Yes' , TRUE , FALSE ) 
-          ) %>%
-        mutate( Month = yearmonth( Mdate ) ,
-                anomaly1 = ifelse( anomaly %in% 'Yes' , TRUE , FALSE ) ) %>%
-        select( -Mdate )
-    } else {
-      
-      if ( hampel ){
-        
-        data %>% 
-          group_by( orgUnit, var ) %>%
-          summarise( 
-             m = slide_dbl( {{y}} , ~median(.x) , 
-                            .before = hampel.halfWidth , .after = hampel.halfWidth ) ,
-             md = slide_dbl(  {{y}} , ~mad(.x) , 
-                              .before = hampel.halfWidth , .after = hampel.halfWidth ) ,
-             l1 = m -  hampel.mad * md   ,
-             l2 = m + hampel.mad * md ,
-             observed = slide_dbl( {{y}} , ~.x , .before = 0, .after = 0) 
-          ) %>% 
-              ungroup %>% 
-              mutate( 
-                 anomaly1 = observed < l1 | observed > l2
-              ) %>%
-        # select(  - m , -md ) %>%
-        mutate( Month = data$Month)
-        
-        # data %>%
-        #   mutate( 
-        #     l1 = median( {{y}} ) - hampel.mad * mad({{y}} )  ,
-        #     l2 = median( {{y}} ) + hampel.mad * mad({{y}} )  ,
-        #     observed = {{y}} ,
-        #     anomaly1 = ( observed < l1 | observed > l2 ) 
-        #         )  %>%
-        # select( -Mdate )
-        
-      } else { 
-        
-        data %>% 
-        anomalize( {{y}} , alpha = alpha ) %>%
-        mutate(
-          anomaly1 = ifelse( anomaly %in% 'Yes' , TRUE , FALSE ) 
-          ) %>%
-        rename( observed = {{y}} , 
-                l1 = ends_with( 'l1' ) ,
-                l2 = ends_with( 'l2' ) 
-                ) %>%
-        select( -Mdate )
-      }
-    }
-    
-  , silent = TRUE
-  )
-
-  if ( ! is_tibble( a ) ) return()
-
-  a %>% mutate( orgUnit = x$orgUnit , var = x$var ) %>%
-    select( orgUnit, var, everything() )
-  
-  if ( log ){
-    a = a %>%
-      mutate_if( is_double , exp )
-  }
-   return( a )
-}
+# anomaly_search <- function( x , y , alpha = .05 ,  
+#                               seasonal = TRUE , 
+#                               log = FALSE , 
+#                               min.months = 24 ,
+#                               hampel = FALSE ,
+#                               hampel.mad = 3, 
+#                               hampel.halfWidth = 5 ,
+#                               
+#                               pb = NULL ) {
+#   
+#   options(dplyr.summarise.inform = FALSE)
+# 
+#   if ( !is.null( pb ) ) pb$tick()
+# 
+#   data.unnest <- x %>% unnest( data )
+# 
+#   # if ( !"Mdate" %in% colnames( data.unnest ) ) return()
+# 
+#   data =
+#       data.unnest %>% as_tibble() %>%
+#       filter( !is.na( {{y}} )) %>%
+#       mutate( 
+#         Mdate = as_date( Month )  ) %>%
+#       ungroup()  
+#   
+#   if ( log ){
+#     data = data %>%
+#       mutate( 
+#         {{y}} := log( {{y}} )
+#         )
+#   }
+# 
+#   # if (nrow( data ) < 30 ) return()
+#   a =
+#     try(
+#   # anomalize::decompose_stl( data, {{y}} , frequency = "12 months")
+#     if ( seasonal & nrow( data ) > min.months  ){ 
+#       data %>% 
+#         time_decompose( {{y}} , message = FALSE, frequency = 12 ) %>%
+#         mutate( orgUnit = x$orgUnit , var = x$var ) %>%
+#         select( orgUnit, var, everything() ) %>%
+#         anomalize( remainder , alpha = alpha ) %>%
+#         rename(  l1 = ends_with( 'l1' ) ,
+#                  l2 = ends_with( 'l2' ) ) %>%
+#         mutate(
+#           anomaly1 = ifelse( anomaly %in% 'Yes' , TRUE , FALSE ) 
+#           ) %>%
+#         mutate( Month = yearmonth( Mdate ) ,
+#                 anomaly1 = ifelse( anomaly %in% 'Yes' , TRUE , FALSE ) ) %>%
+#         select( -Mdate )
+#     } else {
+#       
+#       if ( hampel ){
+#         
+#         data %>% 
+#           group_by( orgUnit, var ) %>%
+#           summarise( 
+#              m = slide_dbl( {{y}} , ~median(.x) , 
+#                             .before = hampel.halfWidth , .after = hampel.halfWidth ) ,
+#              md = slide_dbl(  {{y}} , ~mad(.x) , 
+#                               .before = hampel.halfWidth , .after = hampel.halfWidth ) ,
+#              l1 = m -  hampel.mad * md   ,
+#              l2 = m + hampel.mad * md ,
+#              observed = slide_dbl( {{y}} , ~.x , .before = 0, .after = 0) 
+#           ) %>% 
+#               ungroup %>% 
+#               mutate( 
+#                  anomaly1 = observed < l1 | observed > l2
+#               ) %>%
+#         # select(  - m , -md ) %>%
+#         mutate( Month = data$Month)
+#         
+#         # data %>%
+#         #   mutate( 
+#         #     l1 = median( {{y}} ) - hampel.mad * mad({{y}} )  ,
+#         #     l2 = median( {{y}} ) + hampel.mad * mad({{y}} )  ,
+#         #     observed = {{y}} ,
+#         #     anomaly1 = ( observed < l1 | observed > l2 ) 
+#         #         )  %>%
+#         # select( -Mdate )
+#         
+#       } else { 
+#         
+#         data %>% 
+#         anomalize( {{y}} , alpha = alpha ) %>%
+#         mutate(
+#           anomaly1 = ifelse( anomaly %in% 'Yes' , TRUE , FALSE ) 
+#           ) %>%
+#         rename( observed = {{y}} , 
+#                 l1 = ends_with( 'l1' ) ,
+#                 l2 = ends_with( 'l2' ) 
+#                 ) %>%
+#         select( -Mdate )
+#       }
+#     }
+#     
+#   , silent = TRUE
+#   )
+# 
+#   if ( ! is_tibble( a ) ) return()
+# 
+#   a %>% mutate( orgUnit = x$orgUnit , var = x$var ) %>%
+#     select( orgUnit, var, everything() )
+#   
+#   if ( log ){
+#     a = a %>%
+#       mutate_if( is_double , exp )
+#   }
+#    return( a )
+# }
   
 
 

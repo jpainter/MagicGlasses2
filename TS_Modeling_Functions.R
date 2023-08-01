@@ -130,48 +130,48 @@ df_ts = function( df.pre.ts , period = "Month" ,
     
     }
 
-outlier.df = function( ts , ou = NULL , pb= NULL ){
-  ## TODO: map_df( elements, ts %>% filter( data %in% .x ))
-  if (!is.null( pb )) pb$tick()$print()
-  if (!is.null( ou )){ d = ts %>% filter( orgUnit %in% ou ) }
-  
-  print(ou)
-  
-  elements = unique( d$data )
-  
-  to = map( elements , ~{
-    
-    e = d %>% filter( data %in% .x ) 
-    # if ( nrow(e) > 24 ){
-      decompose  = e %>%
-        model( arima = ARIMA( value  ~ 0 + 
-                 pdq(p = 0:2, d = 0:1, q = 0:2) + 
-                 PDQ(P = 0:2, D = 0:1, Q = 0:2, period = '1 year') 
-        )
-               ) %>%
-        augment() 
-        # print('dec')
-        anom = decompose %>%
-          anomalize( .resid , 
-                     method = 'iqr' , # "gesd", #'iqr' faster but not as accurate  
-                     alpha = 0.01 , max_anoms = 0.1 
-                     # , verbose = TRUE
-          )
-        
-        # print('anom')
-        topOutliers = anom %>% 
-          mutate( e = .resid / (.fitted + 1) )   %>% 
-          filter( anomaly %in% 'Yes' , value > 9 , e > 5) %>%
-          as_tibble()
-    # } else {
-      
-      # topOutliers = tibble( orgUnit = ou , data = .x)
-    # }
-    topOutliers 
-  })
-  
-  return( to  )
-}
+# outlier.df = function( ts , ou = NULL , pb= NULL ){
+#   ## TODO: map_df( elements, ts %>% filter( data %in% .x ))
+#   if (!is.null( pb )) pb$tick()$print()
+#   if (!is.null( ou )){ d = ts %>% filter( orgUnit %in% ou ) }
+#   
+#   print(ou)
+#   
+#   elements = unique( d$data )
+#   
+#   to = map( elements , ~{
+#     
+#     e = d %>% filter( data %in% .x ) 
+#     # if ( nrow(e) > 24 ){
+#       decompose  = e %>%
+#         model( arima = ARIMA( value  ~ 0 + 
+#                  pdq(p = 0:2, d = 0:1, q = 0:2) + 
+#                  PDQ(P = 0:2, D = 0:1, Q = 0:2, period = '1 year') 
+#         )
+#                ) %>%
+#         augment() 
+#         # print('dec')
+#         anom = decompose %>%
+#           anomalize( .resid , 
+#                      method = 'iqr' , # "gesd", #'iqr' faster but not as accurate  
+#                      alpha = 0.01 , max_anoms = 0.1 
+#                      # , verbose = TRUE
+#           )
+#         
+#         # print('anom')
+#         topOutliers = anom %>% 
+#           mutate( e = .resid / (.fitted + 1) )   %>% 
+#           filter( anomaly %in% 'Yes' , value > 9 , e > 5) %>%
+#           as_tibble()
+#     # } else {
+#       
+#       # topOutliers = tibble( orgUnit = ou , data = .x)
+#     # }
+#     topOutliers 
+#   })
+#   
+#   return( to  )
+# }
 
 with.without_outliers = function( ts, out){
   

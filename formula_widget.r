@@ -18,20 +18,22 @@ formula_widget_ui <- function( id ) {
 
                 tabPanel("List of Selected Elements", 
                          
-                      fluidRow(
+                      # fluidRow(
                         # column( 5 , 
                         #  actionButton( ns("removeSelected") , 
                         #                              "Remove Selected Elements" , style='margin-top:25px' 
                         #                          ) 
                         #  ) ,
-                        column( 3 , 
+                        # column( 3 , 
                          downloadButton( ns( 'saveFormula' ), 'Save Formula') 
-                        ) ,
+                        # ) 
+                        ,
                         
-                        column( 3 , 
+                        # column( 3 , 
                          actionButton( ns( 'deleteRows' ), 'Delete Selected Rows') 
-                        )
-                        ) ,
+                        # )
+                        # ) 
+                      ,
  
                            # DTOutput( ns('forumlaDictionaryTable') ) 
                       
