@@ -7,6 +7,8 @@ metadata_widget_ui <- function( id ) {
            
   tagList(
     
+    tags$head(tags$style(".button{width: 50%;}" )) ,
+    
     add_busy_spinner(spin = "fading-circle", 
                    position = "top-right") ,
 
@@ -16,22 +18,25 @@ metadata_widget_ui <- function( id ) {
                 tabPanel( "systemInfo", 
                          
                           # Set up shinyjs
-                          useShinyjs() , 
+                          # useShinyjs() , 
                           
-                          fluidRow(
-                            
-                           column( 6 ,
+                          # fluidRow(
+                          #   
+                          #  column( 6 , div(style = "height:100px" ) , 
                                    actionButton( ns("getMetadataButton") , 
                                                      "Request Metadata" , style='margin-top:25px' 
-                                                 )
-                           ) ,
+                                                 ) ,
+                          
+                          tags$br() ,
+                           # ) ,
+                           # 
+                           # column( 6 , div(style = "height:100px" ) , 
+                                    downloadButton( ns( 'downloadInfo' ), 'Save metadata and system info' , 
+                                                    style = "width: 100px") ,
                          
-                           column( 6 ,
-                                    downloadButton( ns( 'downloadInfo' ), 'Save metadata and system info') ,
-                         
-                           ) )
-                           , 
-                          br() ,
+                           # ) )
+                           # , 
+                          tags$br() ,
                          
                          fluidRow(
                            column( 6, DTOutput( ns('systemInfo') ) ) ,
