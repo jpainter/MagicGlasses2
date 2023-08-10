@@ -306,7 +306,11 @@ mable_data = function(
 }
 
 
-  fit_function = function( train.data , index = NULL , mixed.model = FALSE ){ 
+  fit_function = function( train.data , index = NULL , mixed.model = FALSE , covariates = NULL ){ 
+    
+    
+        options(future.rng.onMisuse="ignore")
+    
     
         if (is.null( index)){
           
@@ -334,32 +338,64 @@ mable_data = function(
             ) 
             
             prophet.cov.tr = paste(  "fabletools::box_cox( total, lambda = ", .lam ,
-                                           " )  ~ growth('linear') + season( period = 12, order = 2,
-                                              type = 'multiplicative') + xreg( " ,
-                                      paste( covariates , collapse = " + " ) , ")" 
+                                      " ) ~ growth( 'linear' ,
+                                           n_changepoints = 5 ) + 
+                                           season( period = 12, order = 2,
+                                              type = 'multiplicative')  + xreg( " ,
+                                     paste( covariates , collapse = " + " ) , ")" 
             )
-      # cat( "\n fitting with .lam", .lam )
             
-      fit = train.data. %>% 
-                model(
-                  # ets = ETS( total ),
-                  ets.tr = ETS( fabletools::box_cox( total , lambda = !! {{ .lam }}  ) ) 
-                  
-                  , arima.tr = ARIMA( as.formula( !! {{ arima.formula.tr }} ) ) 
-                  
-                  , arima.cov.tr = ARIMA(  as.formula( !! {{  arima.formula.cov.tr   }} ) )
-  
-                  , prophet = prophet( as.formula( !! {{  prophet.cov.tr   }} ) )
-
-                  , nnetar.tr = NNETAR( fabletools::box_cox( total , lambda = !! {{ .lam }}   ) )
-
-                  , nnetar.tr.cov = NNETAR( fabletools::box_cox( total , lambda = !! {{ .lam }}   )
-                                        , lambda = .lam
-                                        , xreg = c( .$any_stock_out , .$lag_avg_mm , .$llin )
-                                         )
-                  , .safely = TRUE ) 
+            prophet.cov.tr = paste(  "fabletools::box_cox( total, lambda = ", .lam ,
+                                     " )  ~ growth('linear' ,
+                                           n_changepoints = 5 ) + 
+                                           season( period = 12, order = 2,
+                                              type = 'multiplicative') + xreg( " ,
+                                     paste( covariates , collapse = " + " ) , ")" 
+            )
+            
+      # cat( "\n fitting with .lam", .lam )
+      if ( !is.null( covariates) ){
+        
+        fit = train.data. %>% 
+          model(
+            # ets = ETS( total ),
+            ets.tr = ETS( fabletools::box_cox( total , lambda = !! {{ .lam }}  ) ) 
+            
+            , arima.tr = ARIMA( as.formula( !! {{ arima.formula.tr }} ) ) 
+            
+            , arima.cov.tr = ARIMA(  as.formula( !! {{  arima.formula.cov.tr   }} ) )
+            
+            , prophet = prophet( as.formula( !! {{  prophet.tr   }} ) )
+            
+            , nnetar.tr = NNETAR( fabletools::box_cox( total , lambda = !! {{ .lam }}   ) )
+            
+            , nnetar.tr.cov = NNETAR( fabletools::box_cox( total , lambda = !! {{ .lam }}   )
+                                      , lambda = .lam
+                                      , xreg = c( .$any_stock_out , .$lag_avg_mm , .$llin )
+            )
+            , .safely = TRUE ) 
+        
+      } else {
+        
+        fit = train.data. %>% 
+          model(
+            # ets = ETS( total ),
+            ets.tr = ETS( fabletools::box_cox( total , lambda = !! {{ .lam }}  ) ) 
+            
+            , arima.tr = ARIMA( as.formula( !! {{ arima.formula.tr }} ) ) 
+            
+            
+            , prophet = prophet( as.formula( !! {{  prophet.cov.tr   }} )  )
+            
+            , nnetar.tr = NNETAR( fabletools::box_cox( total , lambda = !! {{ .lam }}   ) )
+            
+            
+            , .safely = TRUE ) 
+      }
+            
+    
       
-              if ( mixed.model ) fit = fit %>%
+        if ( mixed.model ) fit = fit %>%
   
                 mutate( 
                       mixed = ifelse( is_null_model( ets.tr ) , 
@@ -367,7 +403,7 @@ mable_data = function(
                                       (ets.tr + arima.tr + arima.cov.tr + prophet + nnetar.tr + nnetar.tr.cov ) / 6 )
                   ) 
               
-              return( fit )
+        return( fit )
   }
   
    forecast_function = function( fit, key , 

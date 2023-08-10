@@ -1,13 +1,14 @@
 data_request_widget_ui = function ( id ) 
 {
     ns <- NS(id)  
-  
+      
     add_busy_spinner(spin = "fading-circle", 
                    position = "top-right") 
   
-    fluidPage(
-    fluidRow(
-       column( 4, 
+    div(
+
+      fluidRow( height = '60%' ,
+       column( 4, offset=0,
          selectInput( ns("level") , label = "OrgUnit Levels:" , 
                       width = '90%',
                       choices = "Load metadata to get values" , 
@@ -17,15 +18,7 @@ data_request_widget_ui = function ( id )
                       size = 4  ##needed for `selected = FALSE` to work ) 
                      )
          ) ,
-       column( 3, 
-          # selectInput( ns("period") , label = "Period:" , 
-          #               width = '90%',
-          #               choices = rev( c('months_last_year','months_last_2_years','months_last_3_years','months_last_4_years','months_last_5_years')) , 
-          #               selected = 1 ,
-          #               multiple = FALSE ,
-          #               selectize = FALSE, 
-          #               size = 4  ##needed for `selected = FALSE` to work ) 
-          #              ) ,
+       column( 3,  offset=0, 
           
           selectInput( ns("period") , label = "Period:" , 
                        width = '90%',
@@ -36,7 +29,7 @@ data_request_widget_ui = function ( id )
                        size = 4  ##needed for `selected = FALSE` to work ) 
           ) )  ,
           
-        column( 3,
+        column( 2, offset=0, 
                selectInput( ns("years") , label = "Years:" , 
                        width = '90%',
                        choices =  1:20  , 
@@ -44,22 +37,15 @@ data_request_widget_ui = function ( id )
                        multiple = FALSE ,
                        selectize = FALSE, 
                        size = 4  ##needed for `selected = FALSE` to work ) 
-          ) 
-          
-        ) 
-       
-      ) ,
-    
-    fluidRow(
-      column( 6 ,         
-        actionButton( ns("requestDataButton") , 
-                      "Request data" , style='margin-top:25px' 
-                      ) ),
-      column( 6 ,         
-        h5("After download complete, use refresh button to see file.")
-      )
+          ) ) ,
+       column( 3 , actionButton( ns("requestDataButton") , height = "10%" , 
+                                      "Request data" , style='margin-top:25px'
+                      ) ,
+                  h5("After download complete, use refresh button to see file.") )
+      ) 
+  
     )
-    )
+
         } 
         
 data_request_widget_server <- function( id , 
