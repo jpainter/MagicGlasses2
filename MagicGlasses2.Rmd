@@ -6,7 +6,7 @@ output:
     vertical_layout: fill
     theme:
       version: 4
-      bootswatch: paper
+      bootswatch: yeti
 runtime: shiny
 resource_files:
 - renv.lock
