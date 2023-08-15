@@ -126,6 +126,7 @@ library( tictoc )
 
 library(ipc)
 library(future)
+library( future.apply )
 library(furrr)
 library( purrr )
 library(promises)
