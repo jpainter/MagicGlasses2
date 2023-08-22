@@ -468,7 +468,8 @@ Column
 source( 'login_widget.R' )
 login_widget_ui( "login1" )
 
-login_widget_output = login_widget_server( "login1" )
+login_widget_output = login_widget_server( "login1" ,
+                                           directory_widget_output = directory_widget_output )
 
 ```
 
@@ -548,6 +549,7 @@ formula1_Widget_output =
 
 Data Quality
 ========================
+
 
 ```{r dqa_widget , eval = TRUE }
 source( 'dqa_widget.R' )

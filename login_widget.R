@@ -78,13 +78,13 @@ login_widget_ui <- function( id ) {
           } # ui
 
 # Server function ####
-login_widget_server <- function( id ){
+login_widget_server <- function( id , 
+                        directory_widget_output = NULL ){
   moduleServer(
     id , 
-    function( input, output, session, 
-                        org_Units ,
-                        data_elements , 
-                        malariaDataElements ) {
+    function( input, output, session) {
+      
+  data.folder = reactive({ directory_widget_output$directory() })
       
   add_busy_spinner(spin = "fading-circle", 
                    position = "top-right")
@@ -153,10 +153,12 @@ login_widget_server <- function( id ){
  instances = reactive({
    cat('reactive instances \n')
    iFile = "Instances.xlsx"
-   
-  if ( file.exists( '_Instances.xlsx') ){
+  
+  file.locations = c( paste0( data.folder(), '_Instances.xlsx') , '_Instances.xlsx'  )
+  
+  if ( any( file.exists(  file.locations ) ) ) {
     
-      iFilePrivate = '_Instances.xlsx'
+      iFilePrivate = file.locations[ which(file.exists(file.locations)) ][1]
       i = read_excel( iFilePrivate ) 
       
     } else {
