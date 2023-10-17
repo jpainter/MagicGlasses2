@@ -1073,7 +1073,7 @@ aggData = function( data.total = NULL ,
 
 trendData = function( .d = data.hts , 
                       reportingSelectedOUs = NULL , 
-                      period = NULL ,
+                      period = "Month" ,
                       startingMonth = NULL ,
                       endingMonth = NULL , 
                       selected.only = TRUE ,
@@ -1121,9 +1121,13 @@ trendData = function( .d = data.hts ,
         
       
       if ( period %in% 'Month' & !is.null( startingMonth )  & !is.null( endingMonth ) ){
+        
+            if ( ! "yearmonth" %in% class( startingMonth ) ) startingMonth = as.yearmonth( startingMonth ) 
+            if ( ! "yearmonth" %in% class( endingMonth ) ) endingMonth = as.yearmonth( endingMonth ) 
+              
             .d. = .d. %>% filter(
-              Month >=  as.yearmonth( startingMonth )   ,
-              Month <= as.yearmonth( endingMonth  )  )
+              Month >=   startingMonth    ,
+              Month <=  endingMonth    )
           }
     
       if ( period %in% 'Week'  & !is.null( startingMonth )  & !is.null( endingMonth ) ){

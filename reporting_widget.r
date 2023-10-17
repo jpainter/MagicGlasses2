@@ -1399,8 +1399,8 @@ reporting_widget_server <- function( id ,
     cat( '\n* reporting_widget data.total()' )
     
     # Testing
-    saveRDS( selected_data()  , 'selected.data.rds')
-    saveRDS( group_by_cols()  , 'group_by_cols.rds')
+    # saveRDS( selected_data()  , 'selected.data.rds')
+    # saveRDS( group_by_cols()  , 'group_by_cols.rds')
     
     data.total = dataTotal(
         data = selected_data()   , 
