@@ -7,6 +7,8 @@ output:
     theme:
       version: 4
       bootswatch: yeti
+params:
+  version: "December 11, 2023" 
 runtime: shiny
 resource_files:
 - renv.lock
@@ -66,7 +68,7 @@ if ( length( needed ) > 0 ){
 
 ```
 
-```{r libraries , include=FALSE}
+```{r libraries , context="setup" , include=FALSE}
 
 options("menu.graphics" = FALSE)
 rstudioapi::writeRStudioPreference("console_max_lines", 2000L )
@@ -160,7 +162,7 @@ library( forecast )
 library(shinybusy)
 ```
 
-```{r options, include=FALSE }
+```{r options, context="setup" , include=FALSE }
 
 options(shiny.trace=FALSE)
 options(shiny.reactlog=FALSE)
@@ -184,7 +186,7 @@ conflict_prefer( "validate", "jsonlite" )
 # cat('\n ## getActiveProject():' , getActiveProject() )
 ```
 
-```{r sources, include=FALSE}
+```{r sources, context="setup" , include=FALSE}
 # Functions ####
 # source( "data_time_libraries.r")
 # source( "outlier.r" )
@@ -220,7 +222,7 @@ useShinyjs()   # Set up shinyjs
 
 ```
 
-```{css my-css , include = FALSE, eval = TRUE }
+```{css my-css , context="setup" , include = FALSE, eval = TRUE }
 
 # DT table elements on same line 
 form{
@@ -446,13 +448,39 @@ theme <- bs_theme(
 <!-- Inputs {.sidebar data-width=300} -->
 <!-- ==================================== -->
 
-Setup and Logon
+Welcome
+=======================
+
+    
+**An epidemiological look at DHIS2 data**
+
+*The goal is to make the analysis of routine data accessible, transparent, and repeatable.*
+
+The layout follows a research path using the pages (navigation at left) to
+
+* Understand which data are available \textcolor{blue}{Metadata}
+
+* Request data \textcolor{blue}{Data}
+
+* Get overview of data Quality \textcolor{blue}{DQA}
+
+* Define and remove outliers \textcolor{blue}{Outliers}
+
+* Evaluate trends and estimate intervention effectiveness \textcolor{blue}{Evaluation}
+
+
+(Note: The layout of each page depends on your browser. 
+You can adjust screen layout and text size by pressing ctrl- or ctrl+)
+
+Ver ( `r params$version` )
+
+Setup
 =======================
 
 Column
 -----------------------------------
 
-```{r directory_widget , echo = FALSE  }
+```{r directory_widget ,  echo = FALSE  }
 source( 'directory_widget.R' )
 directory_widget_ui( "directory1" )
 
@@ -464,7 +492,7 @@ Column
 -----------------------------------
 
 
-```{r login_widget , echo = FALSE  }
+```{r login_widget ,  echo = FALSE  }
 source( 'login_widget.R' )
 login_widget_ui( "login1" )
 
@@ -476,7 +504,7 @@ login_widget_output = login_widget_server( "login1" ,
 Metadata
 ========================
 
-```{r metadata_widget , eval=TRUE}
+```{r metadata_widget ,  eval=TRUE}
 source( 'metadata_widget.R' )
 metadata_widget_ui( "metadata1" )
 
@@ -496,7 +524,7 @@ Column {data-width='30%'}
 
 ### Data (Dictionary/Formulas) {data-height='65%'}
 
-```{r data_widget, echo = FALSE  }
+```{r data_widget,   echo = FALSE  }
 source( 'data_widget.r' )
 data_widget_ui( "data1" )
 
@@ -511,7 +539,7 @@ data1_Widget_output =
 
 ### Request data from server {data-height='35%'}
 
-```{r data_request_widget , eval=TRUE}
+```{r data_request_widget ,  eval=TRUE}
 source( 'data_request_widget.R' )
 data_request_widget_ui( "data_request1" )
 
@@ -530,7 +558,7 @@ Column {data-width='70%'}
 
 ### Data Elements
 
-```{r formula_widget , echo = FALSE }
+```{r formula_widget ,  echo = FALSE }
 ### Data definitions (formulas)
 
 source( 'formula_widget.r' )
@@ -551,7 +579,7 @@ Data Quality
 ========================
 
 
-```{r dqa_widget , eval = TRUE }
+```{r dqa_widget ,  eval = TRUE }
 source( 'dqa_widget.R' )
 dqa_widget_ui( "dqa1" )
 
@@ -569,7 +597,7 @@ dqa_widget_output =
 Reporting
 ========================
 
-```{r reporting_widget , eval= TRUE }
+```{r reporting_widget ,  eval= TRUE }
 source( 'reporting_widget.r' )
 reporting_widget_ui( "reporting1" )
 
@@ -585,7 +613,7 @@ Outliers
 ========================
 
 
-```{r cleaning_widget , eval= TRUE } 
+```{r cleaning_widget ,  eval= TRUE } 
 source( 'cleaning_widget.r' )
 
 cleaning_widget_ui( "cleaning1" )
@@ -604,7 +632,7 @@ cleaning_widget_output =
 Evaluation
 ========================
 
-```{r evaluation_widget , eval = TRUE }
+```{r evaluation_widget ,  eval = TRUE }
 source( 'evaluation_widget.R' )
 evaluation_widget_ui( "evaluation1" )
 
@@ -623,11 +651,8 @@ About MagicGlasses2
 ========================
 
 
-```{r README}
+```{r README  }
 
-# source( 'leaflet_widget.r' )
-# leaflet_widget_ui( "leaflet1" )
-# leaflet_widget_server( "leaflet1" )  
 
 includeMarkdown( 'README.md' )
 ```

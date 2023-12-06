@@ -9,8 +9,8 @@ metadata_widget_ui <- function( id ) {
     
     tags$head(tags$style(".button{width: 50%;}" )) ,
     
-    add_busy_spinner(spin = "fading-circle", 
-                   position = "top-right") ,
+    # add_busy_spinner(spin = "fading-circle",
+    #                position = "top-right") ,
 
 
     tabsetPanel(type = "tabs",
@@ -18,7 +18,7 @@ metadata_widget_ui <- function( id ) {
                 tabPanel( "systemInfo", 
                          
                           # Set up shinyjs
-                          # useShinyjs() , 
+                          useShinyjs() , 
                           
                           # fluidRow(
                           #   

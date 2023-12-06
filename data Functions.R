@@ -2476,7 +2476,7 @@ key.mpe = function( Forecast_data ,
                      .split = 'None' , 
                      by_month = FALSE , 
                      agg_level = NULL , 
-                     # horizon = 12 , 
+                     horizon = NULL , 
                      var = ".mean" , 
                       .cat = FALSE  ){
   
@@ -2500,7 +2500,7 @@ key.mpe = function( Forecast_data ,
   
   if (.cat)  cat( '\n - truth'); #print( truth )
   
-  mid_point = round( as.integer( horizon ) /2  )
+  if ( ! is.null( horizon ) ) mid_point = round( as.integer( horizon ) /2  )
   
   # summarise 
   if ( 'orgUnit' %in% keyvars ){ 
@@ -2516,6 +2516,7 @@ key.mpe = function( Forecast_data ,
       index_by( 1 ) 
   }
   
+  if ( .split != 'None' )  .split = c( keyvars , .split ) 
   if ( by_month ) .split = c( keyvars , "Month" )
   
   e = truth %>% as_tibble %>% 
@@ -2536,8 +2537,8 @@ key.mpe = function( Forecast_data ,
       # ) ,
       
       predicted = sum( pred ) ,
-      pred_hilo80 = `80%` ,
-      pred_hilo95 = `95%` ,
+      # pred_hilo80 = `80%` ,
+      # pred_hilo95 = `95%` ,
       pred_upper = sum( `80%`$upper ) ,
       pred_lower = sum( `80%`$lower  ) 
       , actual = sum( actual )
@@ -2554,11 +2555,11 @@ key.mpe = function( Forecast_data ,
     mutate( !! agg_level :=
               as.character( !! rlang::sym( agg_level  ) ) )
   
-  if (  any( !split %in% 'None' ) && length( split ) == 1 ){
-    if (.cat)  cat( '\n - key.mpe grouping_var' , split )
+  if (  any( ! .split %in% 'None' ) && length( .split ) == 1 ){
+    if (.cat)  cat( '\n - key.mpe grouping_var' , .split )
     e = e %>%
       mutate(
-        grouping_var = as.character( !! rlang::sym( split ) )
+        grouping_var = as.character( !! rlang::sym( .split ) )
       )
   } else {
     e = e %>%

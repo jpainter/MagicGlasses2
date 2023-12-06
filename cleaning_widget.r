@@ -2,7 +2,8 @@
 cleaning_widget_ui = function ( id ){
         ns <- NS(id)  
         
-tagList( 
+tagList(
+  
           shinybusy::add_busy_spinner(
             spin = "fading-circle" , # "self-building-square",
             position = 'bottom-left'
@@ -164,14 +165,14 @@ tagList(
               )
 
                   ) , 
-        tabPanel( "Data View", DTOutput( ns("contents") ) ),
+        tabPanel( "Data View", DTOutput( ns("contents") ) ) 
           
-        tabPanel( "Summary (under construction)",
-                        html("<div style='display:flex;'>") ,
-                          htmlOutput( ns("profileSummary") ) ,
-                        html("<div>") ,
-
-              ) 
+        # tabPanel( "Summary (under construction)",
+        #                 html("<div style='display:flex;'>") ,
+        #                   htmlOutput( ns("profileSummary") ) ,
+        #                 html("<div>") ,
+        # 
+        #       ) 
     ) )
 } # ui
         

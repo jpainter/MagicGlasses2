@@ -386,11 +386,12 @@ mase.summary.plot = function(d.mase , mase.cutpoint = 0.4 ){
 mad_outliers = function( d ,
                               .total = NULL , 
                               .threshold = 50,
-                              key_entry_errors = NULL ){
+                              key_entry_errors = NULL,
+                              progress = TRUE){
   
   if ( is.null( key_entry_errors ) ){
     
-    cat( '\n - mad_outliers: Scanning for repetive key entry errors')
+    # cat( '\n - mad_outliers: Scanning for repetive key entry errors')
     key_entry_errors =
       count( as_tibble( d %>%
                           filter( nchar(original) > 3 ,
@@ -436,7 +437,7 @@ mad_outliers = function( d ,
                                        over_max = over_max ,
                                        maximum_allowed = .max , 
                                        logical = TRUE, 
-                                       .progress = TRUE ,
+                                       .progress = progress ,
                                        total = .total ) 
                 
                 , mad10 = extremely_mad( ifelse( !mad15 , original , NA ), 
@@ -459,7 +460,8 @@ mad_outliers = function( d ,
 
 seasonal_outliers = function( d ,
                               .total = NULL , 
-                              .threshold = 50 ){
+                              .threshold = 50,
+                              progress = FALSE ){
   
         data1.seasonal = d %>%  
         group_by( orgUnit, data.id ) %>%
@@ -468,7 +470,7 @@ seasonal_outliers = function( d ,
           expected = unseasonal(  ifelse( ! mad10, original , NA) , 
                                   smallThreshold = .threshold * 2  , 
                                   logical = FALSE , # Returns forecasted value
-                                  .progress = TRUE ,
+                                  .progress = progress ,
                                    total = .total 
                                   ) ,
           
@@ -492,10 +494,11 @@ outlier.summary.tibble = function(
     cols = c( "key_entry_error", "over_max" , 'mad15', 'mad10', 
               # 'mad5',
               'seasonal5' , 'seasonal3',
-              'expected') 
+              'expected') ,
+    .print = TRUE 
 ){
   
-  cat( '\n * Cleaning.R outlier.summary.tibble ')
+  if ( .print ) cat( '\n * Cleaning.R outlier.summary.tibble ')
   
   warn<-options(warn=-1) # suppress divide by zero warning
   

@@ -7,8 +7,8 @@ formula_widget_ui <- function( id ) {
            
   tagList(
     
-    add_busy_spinner(spin = "fading-circle", 
-                   position = "top-right") ,
+    # add_busy_spinner(spin = "fading-circle", 
+    #                position = "top-right") ,
     
     fluidPage(
 

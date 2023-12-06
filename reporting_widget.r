@@ -2,7 +2,8 @@
 reporting_widget_ui = function ( id ){
         ns <- NS(id)  
         # fillCol( height = 600, flex = c(NA ) , 
-  tagList( 
+  tagList(
+
           shinybusy::add_busy_spinner(
             spin = "fading-circle" , # "self-building-square",
             position = 'bottom-right'

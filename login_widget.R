@@ -2,78 +2,61 @@
 login_widget_ui <- function( id ) {
   # Create a namespace function using the provided id
   ns <- NS(id)
+  
   # fillCol( height = 600, flex = c(NA ) ,
   tagList(
-
-    # tabsetPanel(type = "tabs",
-                
-                # tabPanel("Login", 
+    
+    shinybusy::add_busy_spinner(
+      spin = "fading-circle" , # "self-building-square",
+      position = 'bottom-right'
+      # , margins = c(70, 1200)
+    ) ,
+    
+    fluidPage(      
                          
-                         useShinyjs() ,  # Set up shinyjs
-                         
-                         h3( 'Login to DHIS2 server*') ,
-        
+                        hr() ,
          
-                        fluidRow( 
-                           # column( 6 , checkboxInput( ns("demo") , 
-                           #                label = "Click to choose from one of the DHIS2 demo instances", 
-                           #                FALSE )
-                           # ) , 
+                        h3( 'Step 2. Login to DHIS2 server*') ,
+        
+                        h4('Enter address and credentials:') ,
                            
-                           column( 12, 
-                                   
-                                   h4("Choose from list of DHIS2 Instances**:") ,
-                                
-                                   
-                                   selectInput( ns('instance') , NULL , choices = NULL ) ,
-      
-                                   tags$blockquote("*Once data has been downloaded and saved to the directory (at left), 
-                                                   the app is fully functionaly without being connected to the DHIS2 server") ,
-                                   
-                                   br()  
-                           ) ,
-                                   
-                                   tags$blockquote("**the app provides links to the demo versions of DHIS2.  
-                                                   To add other instances, copy the excel file Instances.xlsx and save it as
-                                                   _Instances.xlsx within the MagicGlasses2 folder.  You can insert rows into this 
-                                                   spreadsheet following the same format as the demo instances.
-                                                   [if not saved with '_' prefix, it will be overwritten during the next GIT pull]"
-                           )
-                           
-                           
-                         ) ,
-                         
-                         fluidRow( 
-                           
-                           column( 12, 
-                           
-                           h4('Or enter address and credentials:') ,
-                           
-                           inputPanel( 
+                        inputPanel( 
                                textInput( ns("baseurl") , label = "DHIS2 URL:", NULL ), # "https://play.dhis2.org/2.33.1/"
                                
                                textInput( ns("username") , label = "User name:", NULL ), # "admin"
                                
-                               passwordInput( ns("password") , label = "Password:", NULL )
-                           )
-                           ) 
-                           ) ,
-       
+                               passwordInput( ns("password") , label = "Password:", NULL ) 
+                        ) ,
                          
                           fluidRow( 
-                           column( 12, h2( textOutput( ns("Status") ) ) ) ) ,
-            
-                         
-                         fluidRow(
-                           column( 12, tableOutput( ns('systemInfo') ) ) 
-                           )
+                            
+                               column( 4, h2( textOutput( ns("Status") ) ) ) , 
+    
+                               column( 8, tableOutput( ns('systemInfo') ) ) 
+                           ) ,
+                        
+                          fluidRow( 
                            
-    #             ) 
-    # )
-    
-    
-  # )
-        ) # end fillColl
+                           column( 12, 
+                                   
+                                   h4("Or, choose from list of saved DHIS2 Instances**:") ,
+                                   
+                                   selectInput( ns('instance') , NULL , choices = NULL ) ,
+      
+                                   tags$blockquote("*Once data has been downloaded and saved to the directory (at left), 
+                                                   the app is fully functionaly without being connected to the DHIS2 server"
+                                                   ) ,
+                                   
+                                   tags$blockquote( "**the app provides links to the demo versions of DHIS2.  
+                                                   To add other instances, copy the excel file Instances.xlsx and save it as
+                                                   _Instances.xlsx within the MagicGlasses2 folder.  You can insert rows into this 
+                                                   spreadsheet following the same format as the demo instances.
+                                                   [if not saved with '_' prefix, it will be overwritten during the next GIT pull]"
+                                                    )
+                           ) 
+                           ) 
+                )
+    )
           
           } # ui
 

@@ -3,6 +3,7 @@ dqa_widget_ui = function ( id ){
         # fillCol( height = 600, flex = c(NA ) , 
         
     tagList( 
+      
           shinybusy::add_busy_spinner(
             spin = "fading-circle" , # "self-building-square",
             position = 'bottom-right'
@@ -12,7 +13,7 @@ dqa_widget_ui = function ( id ){
   fluidPage(
   
   titlePanel("Evolution of Data Quality"),
-  tags$style(".row{height: 80vh;} "),
+  # tags$style(".row{height: 80vh;} "),
   navlistPanel(
     "Indicator", widths = c(2,10) , 
     

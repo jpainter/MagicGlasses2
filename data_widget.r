@@ -6,7 +6,9 @@ data_widget_ui = function ( id )
 
       shinybusy::add_busy_spinner(
             spin = "fading-circle" , # "self-building-square",
-            position = 'bottom-left'
+            position = 'bottom-left',
+            timeout = 100 ,
+            onstart = FALSE 
             # , margins = c(70, 1200)
           ) ,
   
@@ -55,7 +57,9 @@ data_widget_ui = function ( id )
              ) ,
         style = "font-size: 66%; width: 100%" ) ,
       
-      actionButton( ns("refresh"), "Refresh")
+      actionButton( ns("refresh"), "Refresh") ,
+      
+      br()
 
 )       
         # ) # end fillColl
@@ -238,7 +242,7 @@ data_widget_server <- function( id ,
             
           dir.files = data.dir_files()
         
-          indicator = paste0( input$indicator , "_" )
+          indicator = input$indicator # paste0( input$indicator , "_" )
           cat( '\n* rds_data_file indicator: ' , input$indicator , '\n' )
           
           file.type = 'rds' # input$file.type 
@@ -249,15 +253,15 @@ data_widget_server <- function( id ,
             
           data.files = dir.files[ 
                   # grepl( 'All levels' , dir.files ) &
-                  grepl( file.type , dir.files) &
+                  grepl( file.type , dir.files, ignore.case = T ) &
                   # grepl( file.other, dir.files, fixed = TRUE  ) &
                   grepl( file.keywords, dir.files, ignore.case = T ) ]
         
-          # cat('\nall levels data files:' , data.files )
+          cat('\nall levels data files:' , data.files )
           
           f.indicator = grepl( indicator , data.files , fixed = TRUE )
           
-          # cat("\n f.indicator:" , f.indicator ) 
+          cat("\n f.indicator:" , f.indicator ) 
           
           if ( sum( f.indicator ) == 0 ){
             cat( '\n - no data files for this indicator' )
@@ -297,7 +301,7 @@ data_widget_server <- function( id ,
 
         # Update list of data files
         observe({  
-            cat( '\n updating dataset list' )
+            cat( '\n* updating dataset list' )
               updateSelectInput( session, 'dataset' ,
                                       choices = rds_data_file() ,
                                       selected = NULL ) # rds_data_file()[1] )

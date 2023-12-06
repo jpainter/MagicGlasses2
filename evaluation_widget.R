@@ -2,160 +2,163 @@ evaluation_widget_ui = function ( id ){
         ns <- NS(id)  
         # fillCol( height = 600, flex = c(NA ) , 
         
-    tagList( 
+    tagList(
+      
           shinybusy::add_busy_spinner(
             spin = "fading-circle" , # "self-building-square",
             position = 'bottom-right'
             # , margins = c(70, 1200)
           ) ,
+        
   fillPage(       
-  tabsetPanel( type = "tabs",
-  # add_busy_spinner(spin = "fading-circle", position = "bottom-right") ,
-    
-
-  tabPanel( "" ,
-        sidebarLayout(
-          sidebarPanel( width = 3 , 
-            # width = "25%" ,
-            
-            tabsetPanel(
-              tabPanel( "Models" , 
-                        inputPanel(
+    tabsetPanel( type = "tabs",
+    # add_busy_spinner(spin = "fading-circle", position = "bottom-right") ,
       
-                selectInput( ns( "model" ), label = "Time-series model:" , 
-                        choices = c( 
-                                    # 'TSLM',
-                                     'TSLM (trend)' , 'TSLM (trend+season)' , 
-                                     'ETS' , 'ARIMA', 'SNAIVE' , 'NNETAR' ,
-                                     # 'BSTS' , 
-                                    'Prophet'
-                                    
-                                    # , 'TSLM (trend)'
-                                    # , 'TSLM (trend+season)'
-                                    ) , 
-                        selected = 'ETS'  ) ,
-                
-              textInput( ns( 'model.formula' ) , 'Model Formula' ,
-                value =  "total ~ error() + trend() + season()" ) ,
-          
-          
-                textInput( ns( 'covariates' ), 'Model covariates' ,
-                    value =  NULL ) ,
-                
-                  checkboxInput( ns( "transform" ) , label ='Transform: box_cox(auto)',
-                               value = FALSE  ) ,
+  
+    tabPanel( "" ,
+          sidebarLayout(
+            sidebarPanel( width = 3 , 
+              # width = "25%" ,
+              
+              tabsetPanel(
+                tabPanel( "Models" , 
+                          inputPanel(
+        
+                  selectInput( ns( "model" ), label = "Time-series model:" , 
+                          choices = c( 
+                                      # 'TSLM',
+                                       'TSLM (trend)' , 'TSLM (trend+season)' , 
+                                       'ETS' , 'ARIMA', 'SNAIVE' , 'NNETAR' ,
+                                       # 'BSTS' , 
+                                      'Prophet'
+                                      
+                                      # , 'TSLM (trend)'
+                                      # , 'TSLM (trend+season)'
+                                      ) , 
+                          selected = 'ETS'  ) ,
                   
-                checkboxInput( ns( "smooth" ) , label ='Show smoothed trend line (loess)',
-                               value = FALSE  ) ,
-                
-       
-                checkboxInput( ns( "scale" ) , label ='Scale values (x-mean)/sd + 1)',
-                               value = FALSE  ) ,
-                
-                checkboxInput( ns( 'components' ), label = 'Visualize trend' ,
-                            value = FALSE ) ,
-                
-                checkboxInput( ns( "forecast_ci" ) , label ='Prediction interval',
-                               value = FALSE  ) ,
-                
-                checkboxInput( ns( "bootstrap" ) , label ='Bootstrap estimate',
-                               value = FALSE  ) ,
-                
-                checkboxInput( ns( "autoModel" ) , label ='Automatic nmodel selection',
-                               value = FALSE  ) 
-                ) ) ,
-              
-              tabPanel( "Stratifications" ,
-              checkboxInput( ns('hts'), label = "hts across full admin hierarchy", 
-                     value = FALSE ) ,
-       
-              # selectInput( ns("hts_level") , label = "Aggregate only from level:" ,
-              #       choices = 1:6 ,
-              #       selected = 1 ) ,
+                textInput( ns( 'model.formula' ) , 'Model Formula' ,
+                  value =  "total ~ error() + trend() + season()" ) ,
             
-              selectInput( ns( "agg_level") , label = "Aggregate to admin level:" , 
-                choices = NULL , 
-                selected = 1  ) ,
             
-            selectInput( ns( "agg_method") , label = "Aggregate (regression) method:" , 
-                choices = c( "None", "Bottum up", "MINT(ols)" , "MINT(cov)") , 
-                selected = 1  ) ,
-
-              checkboxInput( ns( "facet_admin" ) , label ="Facet by admin",
-                             value = TRUE  ) ,
-              
-              checkboxInput( ns( "facet_split" ) , label ="Facet by split",
-                             value = FALSE  ) ,
-              
-              checkboxInput( ns( "selected" ) , label ='Selected facilities only',
-                             value = TRUE  ) ,
-            
-             selectInput( ns( "error") , label = "Keep original data or remove data with following error flags:" , 
-                choices = c( "Original", "mad15", "mad10" , "seasonal5" , "seasonal3" ) , 
-                selected = 1  ) ,
-              
-              checkboxInput( ns( "label" ) , label ='Show labels',
-                             value = FALSE  ) ,
-            
-              checkboxInput( ns( "pe" ) , label ='Show mean percent difference from expected',
-                             value = TRUE  ) ,
-            
-              checkboxInput( ns( "legend" ) , label ='Show legend',
-                             value = FALSE  )
-              
-              # checkboxInput( ns( "plotly" ) , label ='Plotly Chart',
-              #                value = FALSE  ) 
-              )
-          ) ) ,
-          
-          mainPanel( width = 9 , 
-               # width = "75%" ,
-                # conditionalPanel( "input.plotly == 1" , ns = ns ,
-                #     plotlyOutput( ns("plotlyOutput") , height = "100%" )
-                #       ) ,
-                
-                # conditionalPanel( "input.plotly == 0" , ns = ns ,
-                #     plotOutput( ns("plotOutput") , height = "600px" ,
-                #              hover = "plot_hover"  )
-                #  )
-                
-          tabsetPanel(
-               
-            inputPanel(  
-              
-              selectizeInput( ns("evaluation_month") , label = "Intervention Start", 
-                    choices = NULL ,
-                    selected = NULL ) ,
-            
-            # div(id = "expr-container",
-              selectInput( ns("horizon") , label = "Number periods after intervention:" , 
-                            choices = c(3,6,12,18,24,36) , 
-                            selected = 12  ) ,
-            
-              checkboxInput( ns( "pre_evaluation") , label ='Pre-intervention model fit',
-                               value = FALSE  ) ,
-                
-                
-              checkboxInput( ns( "evaluation" ), label ='Post-intervention evaluation',
-                               value = FALSE  ) 
-                
-            ) ,
-          
-          tabPanel( "ggPlot" ,
+                  textInput( ns( 'covariates' ), 'Model covariates' ,
+                      value =  NULL ) ,
+                  
+                  checkboxInput( ns( "transform" ) , label ='Transform: box_cox(auto)',
+                                 value = FALSE  ) ,
                     
-                    fluidPage(
-                      fluidRow( style = "height:60vh;",
-                                plotOutput( ns("plotOutput") ) )
-                      ) ) ,
-                  tabPanel("Plotly", plotlyOutput(  ns("plotlyOutput") ) ),
-                  tabPanel("Table", plotlyOutput( ns("tableOutput" )  ) ) 
-                  ) 
-) 
-                 
-             # plotOutput( ns( "plotOutput" ) , hover = "plot_hover"  )
-          )
-        )    
-
+                  checkboxInput( ns( "smooth" ) , label ='Show smoothed trend line (loess)',
+                                 value = FALSE  ) ,
+                  
+         
+                  checkboxInput( ns( "scale" ) , label ='Scale values (x-mean)/sd + 1)',
+                                 value = FALSE  ) ,
+                  
+                  checkboxInput( ns( 'components' ), label = 'Visualize trend' ,
+                              value = FALSE ) ,
+                  
+                  checkboxInput( ns( "forecast_ci" ) , label ='Prediction interval',
+                                 value = FALSE  ) ,
+                  
+                  checkboxInput( ns( "bootstrap" ) , label ='Bootstrap estimate',
+                                 value = FALSE  ) ,
+                  
+                  checkboxInput( ns( "autoModel" ) , label ='Automatic nmodel selection',
+                                 value = FALSE  ) 
+                  ) ) ,
+                
+                tabPanel( "Stratifications" ,
+                checkboxInput( ns('hts'), label = "hts across full admin hierarchy", 
+                       value = FALSE ) ,
+         
+                # selectInput( ns("hts_level") , label = "Aggregate only from level:" ,
+                #       choices = 1:6 ,
+                #       selected = 1 ) ,
+              
+                selectInput( ns( "agg_level") , label = "Aggregate to admin level:" , 
+                  choices = NULL , 
+                  selected = 1  ) ,
+              
+              selectInput( ns( "agg_method") , label = "Aggregate (regression) method:" , 
+                  choices = c( "None", "Bottum up", "MINT(ols)" , "MINT(cov)") , 
+                  selected = 1  ) ,
+  
+                checkboxInput( ns( "facet_admin" ) , label ="Facet by admin",
+                               value = TRUE  ) ,
+                
+                checkboxInput( ns( "facet_split" ) , label ="Facet by split",
+                               value = FALSE  ) ,
+                
+                checkboxInput( ns( "selected" ) , label ='Selected facilities only',
+                               value = TRUE  ) ,
+              
+               selectInput( ns( "error") , label = "Keep original data or remove data with following error flags:" , 
+                  choices = c( "Original", "mad15", "mad10" , "seasonal5" , "seasonal3" ) , 
+                  selected = 1  ) ,
+                
+                checkboxInput( ns( "label" ) , label ='Show labels',
+                               value = FALSE  ) ,
+              
+                checkboxInput( ns( "pe" ) , label ='Show mean percent difference from expected',
+                               value = TRUE  ) ,
+              
+                checkboxInput( ns( "legend" ) , label ='Show legend',
+                               value = FALSE  )
+                
+                # checkboxInput( ns( "plotly" ) , label ='Plotly Chart',
+                #                value = FALSE  ) 
+                )
+            ) ) ,
+            
+            mainPanel( width = 9 , 
+                 # width = "75%" ,
+                  # conditionalPanel( "input.plotly == 1" , ns = ns ,
+                  #     plotlyOutput( ns("plotlyOutput") , height = "100%" )
+                  #       ) ,
+                  
+                  # conditionalPanel( "input.plotly == 0" , ns = ns ,
+                  #     plotOutput( ns("plotOutput") , height = "600px" ,
+                  #              hover = "plot_hover"  )
+                  #  )
+              inputPanel(  
+                
+                selectizeInput( ns("evaluation_month") , label = "Intervention Start", 
+                      choices = NULL ,
+                      selected = NULL ) ,
+              
+              # div(id = "expr-container",
+                selectInput( ns("horizon") , label = "Number periods after intervention:" , 
+                              choices = c(3,6,12,18,24,36) , 
+                              selected = 12  ) ,
+              
+                checkboxInput( ns( "pre_evaluation") , label ='Pre-intervention model fit',
+                                 value = FALSE  ) ,
+                  
+                  
+                checkboxInput( ns( "evaluation" ), label ='Post-intervention evaluation',
+                                 value = FALSE  ) 
+                  
+              ) ,
+              
+              tabsetPanel(
+                   
+                
+              
+                tabPanel( "ggPlot" ,
+                          
+                          fluidPage(
+                            fluidRow( style = "height:60vh;",
+                                      plotOutput( ns("plotOutput") ) )
+                            ) ) ,
+                tabPanel("Plotly", plotlyOutput(  ns("plotlyOutput") ) ),
+                tabPanel("Table", plotlyOutput( ns("tableOutput" )  ) ) 
+              ) 
+  ) 
+                   
+               # plotOutput( ns( "plotOutput" ) , hover = "plot_hover"  )
+            )
+          )    
+  
 
 )))
 

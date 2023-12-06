@@ -1,52 +1,66 @@
-data_request_widget_ui = function ( id ) 
-{
-    ns <- NS(id)  
+data_request_widget_ui = function ( id ) {
+  ns <- NS(id)
+  
+ tagList(
       
-    add_busy_spinner(spin = "fading-circle", 
-                   position = "top-right") 
-  
-    div(
+          shinybusy::add_busy_spinner(
+            spin = "fading-circle" , # "self-building-square",
+            position = 'bottom-right'
+            # , margins = c(70, 1200)
+          ) ,
+          
+          
+  fluidPage(
 
-      fluidRow( height = '60%' ,
-       column( 4, offset=0,
-         selectInput( ns("level") , label = "OrgUnit Levels:" , 
-                      width = '90%',
-                      choices = "Load metadata to get values" , 
-                      selected = 1,
-                      multiple = FALSE ,
-                      selectize = FALSE, 
-                      size = 4  ##needed for `selected = FALSE` to work ) 
-                     )
-         ) ,
-       column( 3,  offset=0, 
-          
-          selectInput( ns("period") , label = "Period:" , 
+      fluidRow( 
+       
+        column( 6, offset=0,
+        selectInput( "level" , label = "OrgUnit Levels:" ,
+                     width = '90%',
+                     choices = "Load metadata to get values" ,
+                     selected = 1,
+                     multiple = FALSE ,
+                     selectize = FALSE,
+                     size = 4  ##needed for `selected = FALSE` to work )
+                    )
+        ) ,
+        
+        column( 3,  offset=0,
+
+          selectInput( "period" , label = "Period:" ,
                        width = '90%',
-                       choices =  c('Monthly', 'Weekly')  , 
+                       choices =  c('Monthly', 'Weekly')  ,
                        selected = 1 ,
                        multiple = FALSE ,
-                       selectize = FALSE, 
-                       size = 4  ##needed for `selected = FALSE` to work ) 
-          ) )  ,
-          
-        column( 2, offset=0, 
-               selectInput( ns("years") , label = "Years:" , 
+                       selectize = FALSE,
+                       # size = 4  ##needed for `selected = FALSE` to work )
+          )
+          )  ,
+
+        column( 2, offset=0,
+               selectInput( "years" , label = "Years:" ,
                        width = '90%',
-                       choices =  1:20  , 
+                       choices =  1:20  ,
                        selected = 1 ,
                        multiple = FALSE ,
-                       selectize = FALSE, 
-                       size = 4  ##needed for `selected = FALSE` to work ) 
-          ) ) ,
-       column( 3 , actionButton( ns("requestDataButton") , height = "10%" , 
-                                      "Request data" , style='margin-top:25px'
-                      ) ,
-                  h5("After download complete, use refresh button to see file.") )
+                       selectize = FALSE,
+                       size = 4  ##needed for `selected = FALSE` to work )
+          ) )
+
+       ) ,
+      
+    fluidRow( # height = '25%' ,
+       
+       column( 3 , actionButton( "requestDataButton" , height = "10%" ,
+                              "Request data"   , style='margin-top:25px'
+                              ) ,
+              ) ,
+       column( 6, tags$blockquote( "**After download complete, use refresh button to see file." )
+               )
       ) 
-  
-    )
-
-        } 
+)
+)
+}
         
 data_request_widget_server <- function( id , 
                                     loginDetails = list() , 
@@ -224,7 +238,7 @@ data_request_widget_server <- function( id ,
           }
           
           # TEsting 
-          saveRDS( .elements, "dataRequestElements.rds" )
+          # saveRDS( .elements, "dataRequestElements.rds" )
           
           .level1.id = orgUnits() %>% filter( level == 1 ) %>% pull( id )
           

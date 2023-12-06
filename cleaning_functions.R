@@ -76,7 +76,7 @@ monthly.outlier.summary = function( df.ts ){
 
 yearly.outlier.summary = function( grand.data.error.totals ){
   
-   cat( "\n - yearly.outlier.summary" ) 
+   cat( "\n * yearly.outlier.summary" ) 
    yearly.summary = grand.data.error.totals %>% 
      as_tibble %>%
      filter( Alg %in% 'Combined' ) %>%

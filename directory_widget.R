@@ -1,70 +1,32 @@
-directory_widget_ui = function ( id ) 
-{
+directory_widget_ui = function ( id ){
         ns <- NS(id)  
         
         fillCol( height = "100%", flex = c(NA ) , 
-
-        
          
          # shinyDirButton( ns('folder') , 'Folder select', 'Please select a folder', FALSE) ,
          
          # br(),
          
-         tags$blockquote(
-           h4('MagicGlasses: an epidemiological look at DHIS2') ,
-           br() , br() ,
-           "The goal is to make the analysis of routine data accessible, transparent, and repeatable." ,
-           br() , br() ,
-           "The layout follows a research path using the pages (at top of page) to
-           understanding which data are available " ,
-           tags$b("(Metadata)"), 
-           "requesting data", 
-           tags$b( "(Data)" ), 
-           "adjusting for reporting bias " ,
-           tags$b( "(Reporting)" ) ,
-           ", scanning for outliers " ,
-           tags$b( "(Outliers)" ), 
-           "applying time-series models and estimating intervention effectiveness ",
-           tags$b( "(Evaluation)" ) 
+         # tags$blockquote(
+
            
-  
-         ) ,
          
-         hr() ,
+        hr() ,
          
-        h3( 'Directory for data files:') ,
+        h3( 'Step 1.  Provide directory for data files:') ,
           
          textInput( ns("data.directory"), label = NULL ,
                      value = path.expand("~") ,
                      width = '95%'
                      ) ,
          
-         # selectInput(ns("data.directory"), label = NULL ,
-         #             width = '95%',
-         #              choices = NULL , 
-         #              selected = NULL ,
-         #              multiple = FALSE ,
-         #              selectize = FALSE, 
-         #              size = 4  ##needed for `selected = FALSE` to work ) 
-         #             ) ,
          
-         
-         
-         h4( 'Folder Contains:') ,
+         # hr() ,
+         h4( 'This directory Contains:') ,
         
-         # selectInput( ns("metadataFiles") , label = NULL , 
-         #              width = '95%',
-         #              choices = NULL , 
-         #              selected = NULL ,
-         #              multiple = FALSE ,
-         #              selectize = FALSE, 
-         #              size = 4  ##needed for `selected = FALSE` to work ) 
-         #             ) ,
-         
-         # shiny::dataTableOutput( ns('folderInfo') ) , 
         tableOutput( ns('folderInfo') ) , 
          
-         hr()
+         # hr()
          
         
         ) # end fillColl
