@@ -468,6 +468,7 @@ The layout follows a research path using the pages (navigation at left) to
 
 * Evaluate trends and estimate intervention effectiveness \textcolor{blue}{Evaluation}
 
+**To begin, go to the Setup tab**
 
 (Note: The layout of each page depends on your browser. 
 You can adjust screen layout and text size by pressing ctrl- or ctrl+)
@@ -598,7 +599,7 @@ Reporting
 ========================
 
 ```{r reporting_widget ,  eval= TRUE }
-source( 'reporting_widget.r' )
+source( 'reporting_widget_app.r' )
 reporting_widget_ui( "reporting1" )
 
 reporting_widget_output = 
