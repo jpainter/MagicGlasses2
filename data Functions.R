@@ -1094,6 +1094,8 @@ trendData = function( .d = data.hts ,
 
       if (  is.null( period ) ) period = dataPeriod( .d )
       
+      .d. = .d
+      
       if ( selected.only  & num_facilities > 1 ){
     
           if ( .cat ) cat( '\n - Show Selected (mostFrequeltylReporting) only' )
@@ -1117,7 +1119,7 @@ trendData = function( .d = data.hts ,
             group_by_at(  c( setdiff( key_vars( .d )  , c("Selected", "agegrp")  ), "Month" ) ) %>%
             summarise_at( covariates , median, na.rm = TRUE )
           
-         }
+      } 
         
       
       if ( period %in% 'Month' & !is.null( startingMonth )  & !is.null( endingMonth ) ){
