@@ -15,7 +15,7 @@ dqa_widget_ui = function ( id ){
   titlePanel("Evolution of Data Quality"),
   # tags$style(".row{height: 80vh;} "),
   navlistPanel(
-    "Indicator", widths = c(2,10) , 
+    "Metric", widths = c(2,10) , 
     
                 tabPanel( "Reporting" , 
                 
