@@ -1884,6 +1884,10 @@ reporting_widget_server <- function( id ,
     avgValues = avgValues()
     base.map = base.map()
     
+    # Testing
+    cat( "\n - saving facility_map files for testing")
+    save( gf, facilities, avgValues, base.map , file = "facility_map.rda" )
+    
     cat( "\n - admin.levels")
     admins = gf %>% filter( st_geometry_type(.) != 'POINT') %>% filter( !st_is_empty(.) )
     admin.levels = admins$levelName %>% unique 

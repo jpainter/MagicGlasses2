@@ -1853,15 +1853,31 @@ reporting_widget_server <- function( id ,
     # pal <- colorNumeric( palette = "YlGnBu", domain = avgValues$medianValue  )
     cat( "\n - base.map")
     base.map =
-      leaflet( ) %>%
+      leaflet( options = leafletOptions( preferCanvas = TRUE ,  updateWhen = FALSE ) ) %>%
       addTiles(group = "OSM (default)") %>%
-      addProviderTiles( providers$Stamen.Toner , group = "Toner") %>%
-      addProviderTiles( providers$Stamen.TonerLite , group = "Toner Lite") %>%
-      addProviderTiles( "Stamen.Terrain", group = "Stamen.Terrain" ) %>%
+      
+      addMeasure(
+        position = "bottomleft",
+        primaryLengthUnit = "meters",
+        primaryAreaUnit = "sqmeters"
+      ) %>%
+      
+      addProviderTiles(providers$Stadia.StamenToner, group = "Toner") %>%
+      # addProviderTiles( providers$Stamen.TonerLite , group = "Toner Lite") %>%
+      # addProviderTiles( "Stadia.Stamen.Terrain" , group = "Stamen.Terrain" ) %>%
       addProviderTiles( "Esri.WorldStreetMap", group = "Esri.WorldStreetMap" )  %>%
       addProviderTiles( "Esri.WorldImagery", group = "Esri.WorldImagery" ) %>%
-      addTiles( group = "No Background" , options = providerTileOptions( opacity = 0 ) )
-      
+      addTiles( group = "No Background" , options = providerTileOptions( opacity = 0 ) ) %>%
+
+      addLayersControl(
+        baseGroups = c("OSM (default)", "Toner", 
+                       "Esri.WorldStreetMap" , "Esri.WorldImagery", "No Background" ) ,
+        overlayGroups = c( admin.levels , "", "Facility" ) ,
+        options = layersControlOptions( collapsed = TRUE )
+
+      ) 
+    
+    
     for ( i in seq_along( admin.levels ) ){
         base.map = base.map %>%
           addPolygons( data = admins %>% filter( levelName == admin.levels[ i ] ) ,
@@ -1880,15 +1896,15 @@ reporting_widget_server <- function( id ,
         
 
         
-    cat( "\n - addLayersControls")   
-    base.map = base.map %>%
+    # cat( "\n - addLayersControls")   
+    # base.map = base.map 
           # Layers control
-          addLayersControl(
-            baseGroups = c("OSM (default)", "Toner", "Toner Lite", "Stamen.Terrain", 
-                           "Esri.WorldStreetMap" , "Esri.WorldImagery", "No Background" ) ,
-            overlayGroups = c( admin.levels , "Facility") ,
-            options = layersControlOptions( collapsed = TRUE )
-          ) 
+          # addLayersControl(
+          #   baseGroups = c("OSM (default)", "Toner", "Toner Lite", "Stamen.Terrain", 
+          #                  "Esri.WorldStreetMap" , "Esri.WorldImagery", "No Background" ) ,
+          #   overlayGroups = c( admin.levels , "Facility") ,
+          #   options = layersControlOptions( collapsed = TRUE )
+          # ) 
 
     return( base.map )
       
@@ -1901,6 +1917,11 @@ reporting_widget_server <- function( id ,
     facilities = champion_facilities()
     avgValues = avgValues()
     base.map = base.map()
+    
+    # Testing
+    # cat( "\n - saving facility_map files for testing")
+    # save( gf, facilities, avgValues, base.map , file = "facility_map.rda" )
+    
     
     cat( "\n - admin.levels")
     admins = gf %>% filter( st_geometry_type(.) != 'POINT') %>% filter( !st_is_empty(.) )
@@ -1926,6 +1947,13 @@ reporting_widget_server <- function( id ,
     cat( '\n - add markers')
     
     gf.map = base.map  %>%
+
+      addLayersControl(
+        baseGroups = c("OSM (default)", "Toner", "Toner Lite", "Stamen.Terrain", 
+                       "Esri.WorldStreetMap" , "Esri.WorldImagery", "No Background" ) ,
+        overlayGroups = c( admin.levels , "Reporting") ,
+        options = layersControlOptions( collapsed = TRUE ) 
+        ) %>%
         
       #   addCircleMarkers( data = facilities , group = "Facility" ,
       #     radius = ~ medianValueRangeSize  ,
@@ -1935,14 +1963,9 @@ reporting_widget_server <- function( id ,
       
       addMarkers(data = facilities ,
                  icon = symbols ,
-                 group = "Reporting" ) %>%
-      
-      addLayersControl(
-        baseGroups = c("OSM (default)", "Toner", "Toner Lite", "Stamen.Terrain", 
-                       "Esri.WorldStreetMap" , "Esri.WorldImagery", "No Background" ) ,
-        overlayGroups = c( admin.levels , "Reporting") ,
-        options = layersControlOptions( collapsed = TRUE )
-      ) 
+                 group = "Reporting" ) 
+    
+
   
       
     # size legend with library(  leaflegend )
