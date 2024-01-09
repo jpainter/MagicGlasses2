@@ -57,6 +57,8 @@ data_widget_ui = function ( id )
              ) ,
         style = "font-size: 66%; width: 100%" ) ,
       
+      checkboxInput( ns("rescan") , "Rescan dataset for for analysis" ) ,
+      
       actionButton( ns("refresh"), "Refresh") ,
       
       br()
@@ -380,7 +382,7 @@ data_widget_server <- function( id ,
             } 
   
               
-            if ( !'effectiveLeaf' %in% names( dataset() ) ){
+            if ( !'effectiveLeaf' %in% names( dataset() ) | input$rescan  ){
               
               showModal(
                 modalDialog( title = "Preparing raw data for analysis.  Just a moment...", 
@@ -392,7 +394,16 @@ data_widget_server <- function( id ,
               
               cat( '\n -- preparing data1')
               
-              d1 = data_1( dataset() , formula_elements() , ousTree()  )
+              data = dataset() 
+              if ( 'categoryOptionCombo.ids' %in% names( data )) data = data %>% rename( categoryOptionCombo = categoryOptionCombo.ids )
+              if ( 'dataElement.id' %in% names( data )) data = data %>% 
+                select( -dataElement ) %>%
+                rename( dataElement = dataElement.id )
+              
+              data = data %>%
+                select( dataElement, categoryOptionCombo, period, orgUnit, COUNT, SUM ) 
+              
+              d1 = data_1( data , formula_elements() , ousTree()  )
               cat( '\n - data1 names:', names( d1 ))
               cat( '\n - data1 rows:', nrow( d1 ))
               
