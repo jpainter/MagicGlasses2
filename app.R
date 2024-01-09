@@ -121,6 +121,10 @@ conflict_prefer("week", "lubridate")
 conflict_prefer("runExample", "shiny")
 conflict_prefer(":=", "rlang")
 conflict_prefer( "validate", "jsonlite" )
+conflicts_prefer( base::match )
+conflicts_prefer( stats::mad )
+conflicts_prefer( stats::sd )
+conflicts_prefer( purrr::map )
 
 source( paste0( mg2 , "ingest_formula_data.R") ) 
 source( paste0( mg2 , 'TS_Modeling_Functions.R') )
@@ -138,6 +142,7 @@ source( paste0( mg2 , 'prepareDataset.R' ) )
 source( paste0( mg2 , 'cleaning_functions.R' ) )
 source( paste0( mg2 , "data Functions.R" ) )
 source( paste0( mg2 , "dqa_functions.R" ) )
+
 
 # source( "key.mpe.distribution.R" )
 # source( "pre_mable_fit.R")
@@ -165,6 +170,22 @@ source(  paste0( mg2, 'reporting_widget_app.r' ) )
 source(  paste0( mg2, 'cleaning_widget.r' ) )
 source(  paste0( mg2, 'evaluation_widget.R' ) )
 
+options(shiny.trace=FALSE)
+options(shiny.reactlog=FALSE)
+
+# add_busy_spinner(spin = "fading-circle", position = "bottom-right")
+
+# Avoid naming conflicts for functions found in more than 1 package...
+conflict_prefer("filter", "dplyr")
+conflict_prefer("select", "dplyr")
+conflict_prefer("last", "dplyr")
+conflict_prefer("first", "dplyr")
+conflict_prefer("year", "lubridate")
+conflict_prefer("month", "lubridate")
+conflict_prefer("week", "lubridate")
+conflict_prefer("runExample", "shiny")
+conflict_prefer(":=", "rlang")
+conflict_prefer( "validate", "jsonlite" )
 
 
 # Define UI  ####
