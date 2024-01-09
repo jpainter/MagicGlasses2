@@ -15,7 +15,7 @@ data_request_widget_ui = function ( id ) {
       fluidRow( 
        
         column( 6, offset=0,
-        selectInput( "level" , label = "OrgUnit Levels:" ,
+        selectInput( ns( "level" ) , label = "OrgUnit Levels:" ,
                      width = '90%',
                      choices = "Load metadata to get values" ,
                      selected = 1,
@@ -27,7 +27,7 @@ data_request_widget_ui = function ( id ) {
         
         column( 3,  offset=0,
 
-          selectInput( "period" , label = "Period:" ,
+          selectInput( ns( "period" ) , label = "Period:" ,
                        width = '90%',
                        choices =  c('Monthly', 'Weekly')  ,
                        selected = 1 ,
@@ -38,7 +38,7 @@ data_request_widget_ui = function ( id ) {
           )  ,
 
         column( 2, offset=0,
-               selectInput( "years" , label = "Years:" ,
+               selectInput( ns( "years" ) , label = "Years:" ,
                        width = '90%',
                        choices =  1:20  ,
                        selected = 1 ,
@@ -51,7 +51,7 @@ data_request_widget_ui = function ( id ) {
       
     fluidRow( # height = '25%' ,
        
-       column( 3 , actionButton( "requestDataButton" , height = "10%" ,
+       column( 3 , actionButton( ns( "requestDataButton" ) , height = "10%" ,
                               "Request data"   , style='margin-top:25px'
                               ) ,
               ) ,
@@ -98,23 +98,20 @@ data_request_widget_server <- function( id ,
           })
       
       # Update level names
-      observe({
-            cat( '\n* updating levels' )
-            if ( !is.null(orgUnitLevels() )){
-              oulvls = orgUnitLevels() %>% pull( levelName )
+      observeEvent( !is.null( orgUnitLevels() ) , {
+            cat( '\n* data_request_widget: updating levels' )
+            
+          oulvls = orgUnitLevels() %>% pull( levelName )
               oulvls = c( 'All-levels' , oulvls )
               updateSelectInput( session, 'level' ,
                                choices = oulvls,
                                selected = 'All-levels'  )
-            }
           } )
       
       # Update period: choose largest value of month or week
       observe({
             cat( '\n* updating period' )
             if ( !is.null( formula_elements() )){
-              oulvls = orgUnitLevels() %>% pull( levelName )
-              oulvls = c( 'All-levels' , oulvls )
               p = min( formula_elements()$periodType , na.rm = T ) 
               updateSelectInput( session, 'period' , selected = p )
             }
