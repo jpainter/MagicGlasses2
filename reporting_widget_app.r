@@ -1313,6 +1313,20 @@ reporting_widget_server <- function( id ,
                         .cat = TRUE )
    
    # testing
+   
+   # When there are no leaf orgUnits (e.g. National or District data only)
+   if ( nrow( .cleanedData ) == 0 ){
+     
+     .cleanedData = cleanedData( 
+                        data1() ,
+                        .effectiveLeaf = FALSE ,
+                        source = input$source ,
+                        error =  NULL ,
+                        algorithm = 'seasonal3' ,
+                        .cat = TRUE )
+     
+     cat( "\n - .cleanedData with .effectiveLeaf FALSE, nrow = ", nrow( .cleanedData ))
+   }
      
    selected_data =  selectedData( 
                         data = .cleanedData , # data1() ,
