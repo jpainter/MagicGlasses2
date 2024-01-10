@@ -122,7 +122,8 @@ df_ts = function( df.pre.ts , period = "Month" ,
   # set NA to missing 
   if ( fill.gaps ){
       cat( '\n - fill gaps' )  
-      ts = ts %>% fill_gaps( value = missing.value , .full = TRUE )
+      ts = ts %>% fill_gaps( value = missing.value , .full = TRUE ) %>%
+        tidyr::fill( c( effectiveLeaf , orgUnit, data.id ) , .direction = "down")
     } 
   
   cat( '\n - done' )  
