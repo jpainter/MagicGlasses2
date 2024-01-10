@@ -86,7 +86,7 @@ cleanedData = function( d ,
 
       if ( nrow( d ) == 0 ){
         if ( .cat ) cat('\n - d1 has zero rows')
-        return()
+        return( d )
       } 
 
       # TODO for speed -- use d.table ....
@@ -1730,7 +1730,7 @@ pre_impact_fit = function(
     remove.aggregate = TRUE  , 
     .cat = TRUE 
 ){
-  
+    cat( "\n* data Functions.R pre_impact_fit:")
     period = dataPeriod( ml.data )
     
     # prepare data with error and selected facilities
@@ -2166,7 +2166,7 @@ impact_fit = function(
     # .cat = TRUE ,
     ...
 ){
-  
+  cat( "\n* data Functions.R impact_fit:")
   period = dataPeriod( ml.data )
   
   # prepare data with error and selected facilities
