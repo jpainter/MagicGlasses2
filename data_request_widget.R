@@ -102,7 +102,9 @@ data_request_widget_server <- function( id ,
             cat( '\n* data_request_widget: updating levels' )
             
           oulvls = orgUnitLevels() %>% pull( levelName )
-              oulvls = c( 'All-levels' , oulvls )
+              # oulvls = c( 'All-levels' , oulvls )
+              ## disable choice of other levels
+              oulvls = c( 'All-levels'  )
               updateSelectInput( session, 'level' ,
                                choices = oulvls,
                                selected = 'All-levels'  )
