@@ -1281,23 +1281,22 @@ evaluation_widget_server <- function( id ,
       
       mable.data = mable_data(      
                                     ml.rtss.data = selected_data() ,
-                                    # ml.rtss.data = data1() ,
-                                    # ml.rtss.data = aggregateselected_data() ,
+                                    .orgUnit = FALSE , # group by orgunit
                                     .startingMonth = startingMonth() ,
                                     .endingMonth = endingMonth() ,
-                                    .missing_reports = missing_reports() ,
-                                    alwaysReporting = input$selected , 
-                                    reportingSelectedOUs = reportingSelectedOUs() ,
+                                    .missing_reports = NULL ,
+                                    selected.only = input$selected ,
+                                    # alwaysReporting = input$selected , 
+                                    # reportingSelectedOUs = reportingSelectedOUs() ,
                                     covariates =  input$covariates , 
                                     .split = split() , 
                                     .error = error ,
-                                    .orgUnit = FALSE ,
                                     agg_level = input$agg_level ,
                                     levelNames = levelNames ,
                                     remove.aggregate = TRUE ,
                                     .cat = TRUE ,
                                     testing = FALSE )
-
+      
       
       # # testing
       # if ( testing ) saveRDS( mable.data, "mable.data.rds")
