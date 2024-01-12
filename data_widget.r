@@ -57,7 +57,7 @@ data_widget_ui = function ( id )
              ) ,
         style = "font-size: 66%; width: 100%" ) ,
       
-      checkboxInput( ns("rescan") , "Rescan dataset for for analysis" ) ,
+      checkboxInput( ns("rescan") , "Rescan dataset for analysis" ) ,
       
       actionButton( ns("refresh"), "Refresh") ,
       
