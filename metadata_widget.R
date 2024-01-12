@@ -1473,7 +1473,7 @@ metadata_widget_server <- function( id ,
       addLayersControl(
         baseGroups = c("OSM (default)", "Toner", 
                        "Esri.WorldStreetMap" , "Esri.WorldImagery", "No Background" ) ,
-        overlayGroups = c( admin.levels , "", "Facility" ) ,
+        overlayGroups = c( "Facility" ) ,
         options = layersControlOptions( collapsed = TRUE )
 
       )  %>%
