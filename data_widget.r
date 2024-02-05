@@ -396,6 +396,12 @@ data_widget_server <- function( id ,
               
               data = dataset() 
               if ( 'categoryOptionCombo.ids' %in% names( data )) data = data %>% rename( categoryOptionCombo = categoryOptionCombo.ids )
+              
+              # when there is no category option combo, as when downloading totals with no dissagregations, 
+              # the column does not exist in download and need to add it...
+              if ( ! 'categoryOptionCombo' %in% names( data )) data = data %>% 
+                mutate( categoryOptionCombo = NA )
+             
               if ( 'dataElement.id' %in% names( data )) data = data %>% 
                 select( -dataElement ) %>%
                 rename( dataElement = dataElement.id )

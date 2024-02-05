@@ -498,7 +498,6 @@ reporting_widget_server <- function( id ,
     x = data1()[ !is.na( data1()$dataSet ) , ]$dataSet %>% unique
     
     cat('\n - there are' , length( x ) , 'dataSets')
-    cat('\n - \n, ' , x )
     
     return( x )
 })
@@ -1755,6 +1754,10 @@ reporting_widget_server <- function( id ,
     req( selected_data())  
     cat( "\n * avgValues:")
     
+    # Testing 
+    # saveRDS( selected_data() , 'selected_data.rds' )
+    
+    ## TODO: use DT to speed up...
     avgValues =
       selected_data()  %>% 
       group_by( orgUnit, Month ) %>% 
@@ -1771,6 +1774,7 @@ reporting_widget_server <- function( id ,
     req( reportingSelectedOUs() )
     cat( "\n * champion_facilities:")
     
+    ous = orgUnits()
     sou = reportingSelectedOUs()
     gf = geoFeatures()
     avgValues = avgValues()
@@ -1778,15 +1782,17 @@ reporting_widget_server <- function( id ,
     # testing 
     # saveRDS( gf , 'gf.rds' )
     # saveRDS( sou , 'sou.rds' )
-    # saveRDS( selected_data() , 'selected_data.rds' )
+    # saveRDS( avgValues , 'avgValues.rds' )
+    saveRDS( ous , 'ous.rds')
     
     cat( "\n - quartile values:")
     quartileValues = quantile( avgValues$medianValue , probs = c( 0, 0.25, 0.5, 0.75, 1) )
  
     cat( "\n - champion column:")
-    champion_facilities = gf %>%
-        filter( st_geometry_type(.) == 'POINT') %>% 
-        filter( !st_is_empty(.) ) %>%
+    champion_facilities = ous %>%
+      right_join( gf ) %>%
+        # filter( st_geometry_type(.) == 'POINT') %>% 
+        # filter( !st_is_empty(.) ) %>%
         mutate( 
           champion = ifelse( id %in% sou , "Consistent Reporting (Champion)", "Inconstent Reporting" )
         )

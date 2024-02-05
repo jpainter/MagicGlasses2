@@ -89,13 +89,6 @@ evaluation_widget_ui = function ( id ){
                 checkboxInput( ns( "facet_split" ) , label ="Facet by split",
                                value = FALSE  ) ,
                 
-                checkboxInput( ns( "selected" ) , label ='Selected facilities only',
-                               value = TRUE  ) ,
-              
-               selectInput( ns( "error") , label = "Keep original data or remove data with following error flags:" , 
-                  choices = c( "Original", "mad15", "mad10" , "seasonal5" , "seasonal3" ) , 
-                  selected = 1  ) ,
-                
                 checkboxInput( ns( "label" ) , label ='Show labels',
                                value = FALSE  ) ,
               
@@ -104,6 +97,26 @@ evaluation_widget_ui = function ( id ){
               
                 checkboxInput( ns( "legend" ) , label ='Show legend',
                                value = FALSE  )
+              ) ,
+               
+              tabPanel( "Reporting" , 
+                h5("Choose whether or not to limit analysis to consistently reporting facilities.  
+                   This will be based on the current choices in the Reporting page.  
+                   The default is to filter to the consistently reporting facilities.") ,
+                
+                checkboxInput( ns( "selected" ) , label ='Selected facilities only',
+                               value = TRUE  ) 
+                ) ,
+              
+              tabPanel( "Outliers" ,
+                        
+               h5("Choose whether or not to remove potential outliers, as flagged in the Outliers page.  
+                   The default is to omit values that were greater than the medican absolute deviation times 10 (MAD10)"
+                  ) ,
+               
+               selectInput( ns( "error") , label = "Keep original data or remove data with following error flags:" , 
+                  choices = c( "Original", "mad15", "mad10" , "seasonal5" , "seasonal3" ) , 
+                  selected = "mad10"  ) 
                 
                 # checkboxInput( ns( "plotly" ) , label ='Plotly Chart',
                 #                value = FALSE  ) 

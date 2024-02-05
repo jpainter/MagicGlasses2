@@ -56,11 +56,15 @@ dqa_reporting_plot = function( data ,  text_size = 18  ){
   g = ggplot( data = data , aes( x = as.character( Year ) , y = pr, label = label, group = 1  ) ) + 
           geom_line(  linewidth = 1.25 ) +
           geom_text( vjust = -1 , size = text_size / 3  ) +
-          scale_y_continuous(labels = scales::percent, limits = c(0,1)) +
+          scale_y_continuous(labels = scales::percent, 
+                             limits = c(0,1) ,
+                             expand = expand_scale(mult = c(0.0, 0.2)) 
+                             ) +
           labs( x = "Year" , y = "Percent" , title = "Percent of facilities reporting all 12 months of the year",
                 subtitle  = paste( 'Out of the number of facilities that have ever reported (' , n_facilities , ")" ) 
                 ) + 
-          theme_minimal( base_size = text_size )
+          theme_minimal( base_size = text_size  ) 
+          # theme( plot.margin = margin(10,10,10,10, "points" ) )
   
   return( g )
 }
@@ -130,14 +134,15 @@ yearly.outlier.summary_plot = function( data, text_size = 18 , label_size = 6 ){
                    vjust = 2 , hjust = -1 , size = label_size  ) +
    
           scale_y_continuous( labels = scales::percent, limits = c(0,1) , 
-                              expand = expand_scale(mult = c(0, 0.1)) ) +
+                              expand = expand_scale(mult = c(0.1, 0.2)) ) +
           scale_color_hue(  l=40, c=35 ) +
           guides( color = "none" ) +
           labs( x = "Year" , y = "Percent" , 
                 title = "Potential Reporting Errors" ,
                 subtitle  = paste( "Data flagged as incorrect through outlier algorithms" ) 
                 ) + 
-          theme_minimal( base_size = text_size )
+          theme_minimal( base_size = text_size ) 
+          # theme( plot.margin = margin(50,10,10,10, "points" ) )
   
   return( g )
 }

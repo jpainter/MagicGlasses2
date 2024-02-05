@@ -22,6 +22,7 @@ library(data.table) # for clean install, run from clean session:
 # install.packages("data.table", type = "source",
 # repos = "https://Rdatatable.gitlab.io/data.table")
 library( flexdashboard )
+library( bslib )
 library( shiny)
 library( shinyjs)
 library( shinyWidgets )
@@ -109,23 +110,6 @@ options(shiny.reactlog=FALSE)
 knitr::opts_chunk$set(echo = FALSE)
 
 # add_busy_spinner(spin = "fading-circle", position = "bottom-right")
-
-# Avoid naming conflicts for functions found in more than 1 package...
-conflict_prefer("filter", "dplyr")
-conflict_prefer("select", "dplyr")
-conflict_prefer("last", "dplyr")
-conflict_prefer("first", "dplyr")
-conflict_prefer("year", "lubridate")
-conflict_prefer("month", "lubridate")
-conflict_prefer("week", "lubridate")
-conflict_prefer("runExample", "shiny")
-conflict_prefer(":=", "rlang")
-conflict_prefer( "validate", "jsonlite" )
-conflicts_prefer( base::match )
-conflicts_prefer( stats::mad )
-conflicts_prefer( stats::sd )
-conflicts_prefer( purrr::map )
-
 source( paste0( mg2 , "ingest_formula_data.R") ) 
 source( paste0( mg2 , 'TS_Modeling_Functions.R') )
 source( paste0( mg2 , "Summary_TS.R") ) # new version of summary_ts()
@@ -186,6 +170,11 @@ conflict_prefer("week", "lubridate")
 conflict_prefer("runExample", "shiny")
 conflict_prefer(":=", "rlang")
 conflict_prefer( "validate", "jsonlite" )
+conflicts_prefer( base::match )
+conflicts_prefer( stats::mad )
+conflicts_prefer( stats::sd )
+conflicts_prefer( purrr::map )
+conflicts_prefer( shiny::isolate )
 
 
 # Define UI  ####

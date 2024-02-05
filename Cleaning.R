@@ -241,6 +241,38 @@ unseasonal = function( x ,
       return( x.ts )
 }
 
+fitValue = function( x ,  
+                       smallThreshold = 100 , 
+                       deviation = 3 ,
+                       logical = FALSE ,
+                       interpolate = FALSE , # only useful when logical is FALSE
+                       .lambda = 1 , 
+                       .pb = NULL ,
+                       .progress = FALSE ,
+                        total = NA,
+                     model = 'prophet'   ){
+  
+   if (!is.null( .pb ) ){
+      if ( 'progressor' %in% class(.pb) ){ .pb() } else { .pb$tick() }
+  } 
+                 
+      cat( "\n - x is ", class(x) )
+      
+      .lam = forecast::BoxCox.lambda( as.numeric(x$original) , method = "guerrero", lower = 0.1 )
+      
+      cat( "\n - .lam is ", .lam )
+        
+      x.fitted  = x %>% 
+        mutate( original = as.numeric( original ) ) %>%
+        model( p = prophet( box_cox( original , lambda = 1  ) ) )  %>% 
+        fitted %>% 
+        pull( .fitted )
+        
+      
+      # if ( logical ) return( outlier ) # FALSE = outlier
+      return( x.fitted )
+}
+
 
 # MASE function borrowed from Metrics package, modified with sum na.rm = TRUE
 abs_ae = function (actual, predicted){

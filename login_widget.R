@@ -138,10 +138,12 @@ login_widget_server <- function( id ,
    iFile = "Instances.xlsx"
   
   file.locations = c( paste0( data.folder(), '_Instances.xlsx') , '_Instances.xlsx'  )
+  cat( "\n* instances.  file.locations" , file.locations )
   
   if ( any( file.exists(  file.locations ) ) ) {
     
       iFilePrivate = file.locations[ which(file.exists(file.locations)) ][1]
+      cat("\n - FilePrivate:" , iFilePrivate )
       i = read_excel( iFilePrivate ) 
       
     } else {
@@ -171,11 +173,11 @@ login_widget_server <- function( id ,
    
           i_row = which( instances()$Instance %in% input$instance )
 
-          cat( 'Instances:\n' , instances()$Instance, '\n'  )
-          cat( 'i_row:' , i_row , '\n')
+          cat( '\n - Instances:\n' , instances()$Instance )
+          cat( '\n - i_row:' , i_row , '\n')
          
           Instance = instances()$Instance[ i_row ]
-          cat( 'Instance:' , Instance , '\n')
+          cat( '\n - Instance:' , Instance )
  
           
     } else {
