@@ -1,4 +1,6 @@
 
+# Initial method to update packages with renv library, but it may fail.  
+renv::restore()
 
 # update packages so that not trying to install old version
 renv::update()
