@@ -1790,7 +1790,7 @@ reporting_widget_server <- function( id ,
  
     cat( "\n - champion column:")
     champion_facilities = ous %>%
-      right_join( gf ) %>%
+      right_join( gf, by = join_by( id ) ) %>%
         # filter( st_geometry_type(.) == 'POINT') %>% 
         # filter( !st_is_empty(.) ) %>%
         mutate( 

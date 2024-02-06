@@ -1760,9 +1760,9 @@ reporting_widget_server <- function( id ,
     avgValues = avgValues()
     
     # testing 
-    # saveRDS( gf , 'gf.rds' )
-    # saveRDS( sou , 'sou.rds' )
-    # saveRDS( selected_data() , 'selected_data.rds' )
+    saveRDS( gf , 'gf.rds' )
+    saveRDS( sou , 'sou.rds' )
+    saveRDS( avgValues() , 'avgValues.rds' )
     
     cat( "\n - quartile values:")
     quartileValues = quantile( avgValues$medianValue , probs = c( 0, 0.25, 0.5, 0.75, 1) )
@@ -1782,7 +1782,7 @@ reporting_widget_server <- function( id ,
       mutate( medianValueRange = cut( medianValue , breaks =  unique( quartileValues ) , ordered_result = TRUE ) ,
               medianValueRangeSize = medianValueRange %>% as.numeric() )
       
-    cat( "\n - done facilities:")
+    cat( "\n - done champion_facilities:")
     return( champion_facilities )
   })
   
