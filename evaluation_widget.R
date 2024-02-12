@@ -1118,6 +1118,9 @@ evaluation_widget_server <- function( id ,
       req( tsModel() )
       req( input$horizon )
       cat( '\n* evaluation_widget tsForecast()' )
+      
+      eval_month = yearmonth( input$evaluation_month ) 
+      time_period = seq( eval_month , eval_month + as.integer( input$horizon ) -1 , by = 1 ) 
 
       if ( input$bootstrap ){
 
@@ -1137,11 +1140,9 @@ evaluation_widget_server <- function( id ,
  
           forecast.fit.data  = trend_Data() %>%
             select( - total ) %>%
-            filter_index( as.character( time_period ) ~ . ,
-                        .preserve = TRUE ) %>%
-            filter( 
-              Month > time_period ,
-              Month <= ( time_period + as.integer( input$horizon ) )  )
+            # filter_index( as.character( time_period ) ~ . ,
+            #             .preserve = TRUE ) %>%
+            filter( Month %in% time_period )
           
           fcast = tsModel() %>% fabletools::forecast( new_data = forecast.fit.data )
           
@@ -1198,29 +1199,36 @@ evaluation_widget_server <- function( id ,
       return( fcast )
       })
 
+    
     tsPreForecast = reactive({
 
       req( tsPreModel() )
       req( input$horizon )
       req( input$evaluation_month )
 
-      eval_month = input$evaluation_month
-      time_period = yearmonth( eval_month  ) - 12
+      eval_month = yearmonth( input$evaluation_month ) 
+      time_period = seq( eval_month - 11  , eval_month , by = 1 )
 
       cat( '\n* evaluation_widget tsPreForecast' )
       # if ( input$covariates %in% "avg_mm"){
 
-        test.data  = trend_Data() %>%
-          select( - total ) %>%
-          filter_index( as.character( time_period ) ~ as.character( time_period + as.integer( input$horizon ) ) ,
-                      .preserve = TRUE )
+      
+      cat( '\n - evaluation_widget test.data' )
+      # testing
+      # saveRDS( trend_Data() , 'trend_Data.rds')
+      # saveRDS( time_period , 'time_period.rds')
+      # saveRDS( input$horizon , 'horizon.rds')
+      
+  
+      test.data  = trend_Data() %>%
+        select( - total ) %>%
+        filter( Month %in% time_period )
+      
 
         # fcast= getForecast( test_data = test.data , model = tsPreModel() ,
         #          bootstrap = FALSE , Reps = 1000 )
 
-        # if ( period() %in% 'Month' ) fcast = tsPreModel() %>% forecast( h = 12 , level = pi_levels() )
-        # if ( period() %in% 'Week' ) fcast = tsPreModel() %>% forecast( h = 52  )
-        
+
         if ( nchar( input$covariates ) > 0 ){
           cat( "\n - input$covariates:" , input$covariates )
           if ( period() %in% "Month" ) time_period = yearmonth( eval_month  ) # - month(1)
@@ -1229,6 +1237,11 @@ evaluation_widget_server <- function( id ,
           fcast = tsPreModel() %>% fabletools::forecast( new_data = test.data )
 
       } else {
+        
+        cat( '\n - evaluation_widget tsPreModel() %>% fabletools::forecast' )
+        # Testing
+        # saveRDS( tsPreModel() , 'tsPreModel.rds')
+        # saveRDS( pi_levels() , 'pi_levels.rds' )
 
         if ( period() %in% 'Month' ) fcast = tsPreModel() %>% fabletools::forecast(h = "12 months" , level = pi_levels() ) 
         if ( period() %in% 'Week' ) fcast = tsPreModel() %>% fabletools::forecast(h = "52 weeks" , level = pi_levels() ) 
@@ -1264,7 +1277,7 @@ evaluation_widget_server <- function( id ,
       #        fill_gaps( .full = TRUE  )
 
       cat( '\n - tsPreForecast done.' )
-      print( names( fcast ) )
+      # print( names( fcast ) )
       
       # Testing:
       # saveRDS( fcast , 'tsPreForecast.rds' )
@@ -1711,7 +1724,7 @@ evaluation_widget_server <- function( id ,
             fabletools::autolayer( tsPreForecast()
                        , level = ifelse( input$forecast_ci , 89 , FALSE )
                        , color = 'black'
-                       , linetype = 'dotted'  , size = 2
+                       , linetype = 'dotted'  , linewidth = 2
                        ,  alpha = .75 ) +
             # geom_line( data = tsPreForecast(), aes(  y = .mean )
             #   # ,   color = 'light blue'
@@ -1748,7 +1761,7 @@ evaluation_widget_server <- function( id ,
                        # , level = 80  # pi_levels()
                        , color = 'black'
                        , level = ifelse( input$forecast_ci , 89 , FALSE )
-                       , linetype = 'dashed', size = 1
+                       , linetype = 'dashed', linewidth = 1
                        ,  alpha = .5 ) +
 
             geom_vline( xintercept = as.Date( eval_date ) ,
