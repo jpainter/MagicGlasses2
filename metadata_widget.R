@@ -738,7 +738,7 @@ metadata_widget_server <- function( id ,
         )
       
       # if available, use resources method
-      url<-paste0( baseurl() ,"api/indicators.json?fields=:all&paging=false")
+      url<-paste0( baseurl() ,"api/indicators.json?fields=:all&pageing=false")
       
       cols = c( 'id', 'name', 'displayName', 
                 # 'description' , # col not available in Guinea Feb 2022
@@ -746,7 +746,7 @@ metadata_widget_server <- function( id ,
                 'annualized'
       )
       
-      indicators =  get( url )[[1]]  %>% select( !!cols ) 
+      indicators =  get( url )$indicators  %>% select( !!cols ) 
     
       removeModal()
     } else { return() }
@@ -915,7 +915,11 @@ metadata_widget_server <- function( id ,
                      paste(cols, collapse = ",") , 
                      "&paging=false")
       
-      print('orgUnit URL'); print(url)
+      print('\n - orgUnit URL'); print(url)
+      
+      #Testing
+      # saveRDS( get( url )[[1]] , "getOusLevels.rds")
+      # saveRDS( cols , "cols.rds")
       
       ousLevels =  get( url )[[1]]  %>% 
         select( !!cols ) %>% 
@@ -1601,8 +1605,18 @@ metadata_widget_server <- function( id ,
  meta_variables = reactive({
     req( dataElementDictionary() )
     # req( indicatorDictionary() )
-   
+    
+    cat( "\n* metadata_widget: meta_variables")
+    
+    # testing
+    # saveRDS( indicatorDictionary() , "indicatorDictionary.rds" )
+    # saveRDS( categories() , "categories.rds" )
+    # saveRDS( dataElementDictionary() , "dataElementDictionary.rds" )
+    # saveRDS( dataSets() , "dataSets.rds" )
+    # saveRDS( orgUnits() , "orgUnits.rds" )
+  
     # if (  login() & loginFetch() ){ 
+    
       mv = tibble(
   
         'Organizational units' = nrow( orgUnits() ) %>% scales::comma() ,
@@ -1615,7 +1629,7 @@ metadata_widget_server <- function( id ,
     
         # 'Category option combos' = nrow( categoryOptionCombos() ) %>% scales::comma() ,
     
-        'Indicators' = nrow( indicatorDictionary() ) %>% scales::comma()
+        # 'Indicators' = nrow( indicatorDictionary() ) %>% scales::comma()
     
     
         )  %>% gather( 'Attribute', 'Number' )
@@ -1624,13 +1638,12 @@ metadata_widget_server <- function( id ,
       # } else {
       #   mv = NULL
       # }
-
+      cat( "...done")
       return( mv )
       
   })
   
   output$variables = renderTable(
-    
     meta_variables() 
     # extensions = 'Buttons' ,
     # rownames = FALSE,
