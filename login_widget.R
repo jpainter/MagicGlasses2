@@ -262,7 +262,13 @@ login_widget_server <- function( id ,
       cat( '\n *login_widget system.info')
      
       url = paste0( baseurl() , "api/system/info" )
+      
       getInfo = GET( url )
+      
+      #Testing
+      saveRDS( url , 'url.rds')
+      saveRDS( getInfo , 'getInfo.rds')
+      
       getInfo.content =  content( getInfo , "text")
       
       info =   jsonlite::fromJSON( getInfo.content ) 

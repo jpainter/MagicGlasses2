@@ -210,7 +210,7 @@ mable_data = function(
     hts = FALSE , 
     agg_level = NULL ,
     remove.aggregate = TRUE ,
-    .cat = NULL , 
+    .cat = FALSE , 
     testing = FALSE , ...
 ){
   
@@ -250,9 +250,14 @@ mable_data = function(
                                              endingMonth = .endingMonth ,
                                              missing_reports = .missing_reports , 
                                              .cat = .cat ) %>% length()
-  
+    
+    if (.cat) cat("\n - num_facilities: " , num_facilities )
+    
+    
     .dataSets = unique( d$dataSet ) 
     num_datasets = length( .dataSets )
+    if (.cat) cat("\n - num_datasets: " , num_datasets )
+    
     
     data.total = dataTotal( data = d , 
                             group_by_cols = group_by_cols , 
@@ -283,15 +288,16 @@ mable_data = function(
                            group_by_cols = group_by_cols , .cat = .cat )
   }
   
+    #Testing
+    if (testing ) saveRDS( data.agg.ts , 'data.agg.ts.rds')
   
   if (.cat) cat("\n - trend.data " )
-    
-    if (.cat) cat("\n - num_datasets: " , num_datasets )
-    if (.cat) cat("\n - num_facilities: " , num_facilities )
-    
 
   if (.cat) cat("\n - remove.aggregate: " , remove.aggregate )
-  
+        
+  if ( .cat ) cat( '\n - mable_data num_facilities: ' , num_facilities )
+  if ( .cat ) cat( '\n - mable_data selected.only: ' , selected.only )
+    
   trend.data = trendData( .d = data.agg.ts , 
                           levelNames = levelNames , 
                           startingMonth = .startingMonth , 
@@ -303,6 +309,9 @@ mable_data = function(
                           agg_level = agg_level  , 
                           remove.aggregate = remove.aggregate , 
                           .cat = .cat  )
+  
+
+  return( trend.data )
   
 }
 
@@ -407,7 +416,7 @@ mable_data = function(
         return( fit )
   }
   
-   forecast_function = function( fit, key , 
+  forecast_function = function( fit, key , 
                                  test.data ,
                                 .times = 100 ,
                                 .cat = FALSE ){

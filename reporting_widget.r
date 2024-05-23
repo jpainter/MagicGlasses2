@@ -1378,7 +1378,8 @@ reporting_widget_server <- function( id ,
    cat("\n - end selected_data()")
    
    # Testing 
-   # saveRDS( selected_data , 'selected_data.rds')
+   saveRDS( iris, 'testing_selected_data_save.rds')
+   saveRDS( selected_data , 'selected_data.rds' )
    
   return( selected_data )
 })
@@ -1416,7 +1417,7 @@ reporting_widget_server <- function( id ,
     cat( '\n* reporting_widget data.total()' )
     
     # Testing
-    # saveRDS( selected_data()  , 'selected.data.rds')
+    # saveRDS( selected_data()  , 'selected_data.rds')
     # saveRDS( group_by_cols()  , 'group_by_cols.rds')
     
     data.total = dataTotal(

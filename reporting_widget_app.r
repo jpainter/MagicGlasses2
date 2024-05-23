@@ -299,6 +299,9 @@ reporting_widget_server <- function( id ,
               # metadata = metadata_widget_output ,
               # data.details = data_widget_output 
               ) {
+    
+    # set testing mode
+    testing = FALSE 
 
     options(shiny.trace=FALSE)
     options(shiny.reactlog=FALSE)
@@ -493,7 +496,7 @@ reporting_widget_server <- function( id ,
     # unique
     
     #testing
-    # saveRDS( data1() , "data1.rds" )
+    if ( testing )  saveRDS( data1() , "data1.rds" )
     
     x = data1()[ !is.na( data1()$dataSet ) , ]$dataSet %>% unique
     
@@ -545,7 +548,7 @@ reporting_widget_server <- function( id ,
       cat( '\n* reporting_widget d:')
     
       # Testing 
-      # saveRDS( data1() , 'dataset.rds' )
+      if ( testing )  saveRDS( data1() , 'dataset.rds' )
       # cat( "\n - reporting_widget data1() class/cols:" , class( data1() ) )
       
       if ( nrow( data1() ) == 0 ){
@@ -696,7 +699,7 @@ reporting_widget_server <- function( id ,
     # cat( "\n - reporting_widget d() class/cols: \n -- " , class( data ) , "\n -- " , names( data ))
     
     # testing
-    # saveRDS( data, 'reporting_widget_d.rds')
+    if ( testing )  saveRDS( data, 'reporting_widget_d.rds')
     
     return( data )
 })
@@ -718,7 +721,7 @@ reporting_widget_server <- function( id ,
       data = d()
       
       #Testing
-      # saveRDS( data, 'orgunits.reports.data.rds')
+      if ( testing )  saveRDS( data, 'orgunits.reports.data.rds')
       
       if ( !input$count.any  ){
         
@@ -731,7 +734,7 @@ reporting_widget_server <- function( id ,
       .period = period()
       
       #Testing
-      # saveRDS( .period, '.period.rds')
+      if ( testing )  saveRDS( .period, '.period.rds')
     
       # cat('\n -orgunit.reports--o.r.')
       # o.r. =
@@ -748,7 +751,7 @@ reporting_widget_server <- function( id ,
       cat('\n - orgunit.reports--o.r.(DT)')
       
       # Testing:
-      # saveRDS( o.r. , "o.r..rds")
+      if ( testing )  saveRDS( o.r. , "o.r..rds")
       
       o.r. = setDT( o.r. )[ ,  .(n_periods = uniqueN( base::get( .period ) ) ) , 
                        by = c( 'year' , 'orgUnit' ) ] %>%
@@ -1048,8 +1051,8 @@ reporting_widget_server <- function( id ,
     # all_categories = input$all_categories 
     # data_categories = input$data_categories 
     # .cat = FALSE
-    # save( d , endingMonth, startingMonth, .period, missing_reports, count.any,
-    #       all_categories, data_categories, .cat, file = 'reportingSelectedOUs_data.rda')
+    if ( testing )  save( d , endingMonth, startingMonth, .period, missing_reports, count.any,
+           all_categories, data_categories, .cat, file = 'reportingSelectedOUs_data.rda')
     
     
     if ( input$mostReports & nrow( d() ) > 0 ){
@@ -1079,7 +1082,7 @@ reporting_widget_server <- function( id ,
         cat( "\n - end reportingSelectedOUs:" )
         
         # Testing
-        # saveRDS( sf, 'reportingSelectedOUs.rds')
+        if ( testing )  saveRDS( sf, 'reportingSelectedOUs.rds')
         
         return( sf )
       })
@@ -1143,7 +1146,7 @@ reporting_widget_server <- function( id ,
     
     # save data for testing ggplot options
     # cat('\n - saving plot2_data.rds')
-    # saveRDS( monthly.reports(), 'monthly.reports.rds' )
+    if ( testing )  saveRDS( monthly.reports(), 'monthly.reports.rds' )
     
     if ( length( monthly.reports()$year) > 0  ) {
     
@@ -1247,7 +1250,7 @@ reporting_widget_server <- function( id ,
       .period = period()
       
       # save data for testing ggplot options
-      # saveRDS( annual.reports() , 'plot1_data.rds' )
+      if ( testing )  saveRDS( annual.reports() , 'plot1_data.rds' )
       
       
       if ( length( annual.reports()$year) > 0  ) {
@@ -1261,10 +1264,10 @@ reporting_widget_server <- function( id ,
       cat('\n - plot1: ggplot( annual.reports() ... ')
       
       # Testing
-      # saveRDS( annual.reports(), "annual.reports.rds" )
-      # saveRDS( reportingSelectedOUs() , "reportingSelectedOUs.rds" )
-      # saveRDS( facilities() , "facilities.rds" )
-      # saveRDS( x.annual() , "x.annual.rds" )
+      if ( testing )  saveRDS( annual.reports(), "annual.reports.rds" )
+      if ( testing )  saveRDS( reportingSelectedOUs() , "reportingSelectedOUs.rds" )
+      if ( testing )  saveRDS( facilities() , "facilities.rds" )
+      if ( testing )  saveRDS( x.annual() , "x.annual.rds" )
       
       g = ggplot( annual.reports() , 
                   aes( x = n_periods , y = n ) ) +
@@ -1393,7 +1396,7 @@ reporting_widget_server <- function( id ,
    cat("\n - end selected_data()")
    
    # Testing 
-   # saveRDS( selected_data , 'selected_data.rds')
+   if ( testing ) saveRDS( selected_data , 'selected_data.rds')
    
   return( selected_data )
 })
@@ -1431,8 +1434,8 @@ reporting_widget_server <- function( id ,
     cat( '\n* reporting_widget data.total()' )
     
     # Testing
-    # saveRDS( selected_data()  , 'selected.data.rds')
-    # saveRDS( group_by_cols()  , 'group_by_cols.rds')
+    if ( testing )  saveRDS( selected_data()  , 'selected.data.rds')
+    if ( testing )  saveRDS( group_by_cols()  , 'group_by_cols.rds')
     
     data.total = dataTotal(
         data = selected_data()   , 
@@ -1447,7 +1450,7 @@ reporting_widget_server <- function( id ,
     cat('\n - end data.total()')
     
     # Testing
-    # saveRDS( data.total , 'data.total.rds')
+    if ( testing )  saveRDS( data.total , 'data.total.rds')
     return( data.total )
     
   })
@@ -1507,14 +1510,11 @@ reporting_widget_server <- function( id ,
     cat('\n* reporting_widget aggregateselected_data():' )
     
     # testing
-    saveRDS( levelNames() , 'levelNames.rds')
-    saveRDS( aggregateDataKey() , 'aggregateDataKey.rds')
+    if ( testing ) saveRDS( levelNames() , 'levelNames.rds')
+    if ( testing ) saveRDS( aggregateDataKey() , 'aggregateDataKey.rds')
     
     .d = data.total()
     cat('\n - data.total():' )
-    
-    # testing
-    saveRDS( .d , 'data.total.rds' )
     
     if ( !is_tsibble( .d ) ){
       cat('\n - preparing data.total as tsibble')
@@ -1524,7 +1524,7 @@ reporting_widget_server <- function( id ,
       cat('\n - key.cols:', key.cols )
           
       # testing
-      # saveRDS( key.cols , 'key.cols.rds' )
+      if ( testing ) saveRDS( key.cols , 'key.cols.rds' )
       
       .d = .d %>% 
         as_tsibble( index = !! rlang::sym( period() )  ,
@@ -1542,7 +1542,7 @@ reporting_widget_server <- function( id ,
     keyVars = key_vars( .d )
     
     # testing
-    # saveRDS( .d , 'agg.d1.rds' )
+    if ( testing ) saveRDS( .d , 'agg.d1.rds' )
     
     .d = .d %>%
       filter(
@@ -1572,7 +1572,7 @@ reporting_widget_server <- function( id ,
        }  
       
     # testing
-    # saveRDS( .d , 'agg.d2.rds' )
+    if ( testing ) saveRDS( .d , 'agg.d2.rds' )
     
       # if split, remove aggregate grouping
        if ( !input$split %in% 'None' ){
@@ -1589,7 +1589,7 @@ reporting_widget_server <- function( id ,
        } 
     
     # testing
-    # saveRDS( .d , 'agg.d3.rds' )
+    if ( testing ) saveRDS( .d , 'agg.d3.rds' )
     
     # ensure output is tbl_ts
     if ( ! 'tbl_ts' %in% class( .d )  ){
@@ -1598,7 +1598,7 @@ reporting_widget_server <- function( id ,
     }
     
       # testing
-       # saveRDS( .d, 'aggregateselected_data.rds')
+      if ( testing ) saveRDS( .d, 'aggregateselected_data.rds')
        
        cat('\n -  end aggregateselected_data()' )
        return( .d )
@@ -1623,11 +1623,11 @@ reporting_widget_server <- function( id ,
     cat("\n* n_selected(): ")
     
     # testing
-    # saveRDS( reportingSelectedOUs(), "reportingSelectedOUs.rds") 
-    # saveRDS( selected_data(),"selected_data.rds" ) 
-    # saveRDS( data1(), "data1.rds" ) 
-    # saveRDS( levelNames() , "levelNames.rds" )
-    # saveRDS(  selected_data_categories$elements , "selected_data_categories.rds" )
+    if ( testing )  saveRDS( reportingSelectedOUs(), "reportingSelectedOUs.rds") 
+    if ( testing )  saveRDS( selected_data(),"selected_data.rds" ) 
+    if ( testing )  saveRDS( data1(), "data1.rds" ) 
+    if ( testing )  saveRDS( levelNames() , "levelNames.rds" )
+    if ( testing )  saveRDS(  selected_data_categories$elements , "selected_data_categories.rds" )
     
     x = selected_data() %>% as_tibble %>% ungroup %>%
       distinct( Selected , orgUnit ) %>%
@@ -1648,7 +1648,7 @@ reporting_widget_server <- function( id ,
     .d = aggregateselected_data()
     
     # testing
-    saveRDS(.d, 'plot3_data.rds')
+    if ( testing ) saveRDS(.d, 'plot3_data.rds')
     
     
     data.text = paste( unique( selected_data()$data ) ,
@@ -1754,9 +1754,6 @@ reporting_widget_server <- function( id ,
     req( selected_data())  
     cat( "\n * avgValues:")
     
-    # Testing 
-    # saveRDS( selected_data() , 'selected_data.rds' )
-    
     ## TODO: use DT to speed up...
     avgValues =
       selected_data()  %>% 
@@ -1780,10 +1777,10 @@ reporting_widget_server <- function( id ,
     avgValues = avgValues()
     
     # testing 
-    # saveRDS( gf , 'gf.rds' )
-    # saveRDS( sou , 'sou.rds' )
-    # saveRDS( avgValues , 'avgValues.rds' )
-    saveRDS( ous , 'ous.rds')
+    if ( testing )  saveRDS( gf , 'gf.rds' )
+    if ( testing )  saveRDS( sou , 'sou.rds' )
+    if ( testing )  saveRDS( avgValues , 'avgValues.rds' )
+    if ( testing )  saveRDS( ous , 'ous.rds')
     
     cat( "\n - quartile values:")
     quartileValues = quantile( avgValues$medianValue , probs = c( 0, 0.25, 0.5, 0.75, 1) )
@@ -1940,7 +1937,7 @@ reporting_widget_server <- function( id ,
     
     # Testing
     # cat( "\n - saving facility_map files for testing")
-    # save( gf, facilities, avgValues, base.map , file = "facility_map.rda" )
+    if ( testing )  save( gf, facilities, avgValues, base.map , file = "facility_map.rda" )
     
     
     cat( "\n - admin.levels")

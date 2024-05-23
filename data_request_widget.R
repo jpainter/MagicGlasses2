@@ -99,15 +99,19 @@ data_request_widget_server <- function( id ,
       
       # Update level names
       observeEvent( !is.null( orgUnitLevels() ) , {
-            cat( '\n* data_request_widget: updating levels' )
+        cat( '\n* data_request_widget: updating levels' )
             
-          oulvls = orgUnitLevels() %>% pull( levelName )
+        # testing
+        # saveRDS( orgUnitLevels(), 'orgUnitLevels.rds')
+        
+        oulvls = orgUnitLevels() %>% pull( levelName )
               # oulvls = c( 'All-levels' , oulvls )
               ## disable choice of other levels
               oulvls = c( 'All-levels'  )
               updateSelectInput( session, 'level' ,
                                choices = oulvls,
                                selected = 'All-levels'  )
+        cat( "...done")
           } )
       
       # Update period: choose largest value of month or week
@@ -153,7 +157,7 @@ data_request_widget_server <- function( id ,
       ou = case_when(
         
         input$level %in% 'All-levels' ~ 
-          list( .orgUnitLevels %>% arrange( desc( level )) %>% pull( level ) %>%
+          list( .orgUnitLevels %>% arrange( level ) %>% pull( level ) %>%
           paste0( "LEVEL-" , .  ) )  ,
       
         # input$level %in% 'Leaf-only' ~ 
@@ -170,7 +174,7 @@ data_request_widget_server <- function( id ,
             filter( levelName %in% input$level ) %>%
             pull( level ) %>%  paste0( "LEVEL-" , .  )  ) 
       
-      ) %>% unlist #nb: each case evaluated as list, otherwise alsways returns vector of max length
+      ) %>% unlist #nb: each case evaluated as list, otherwise always returns vector of max length
     
       cat( '\n - data_request_widget orgUnits:' , ou )
       return( ou )

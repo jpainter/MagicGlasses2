@@ -152,6 +152,7 @@ mostFrequentReportingOUs <- function(
                           count.any = TRUE , 
                           # all_categories = TRUE , 
                           data_categories = NULL ,
+                          testing = FALSE , 
                          .cat = FALSE ){
   
     if ( .cat ) cat( '\n* data Functions.R mostFrequentReportingOUs' )
@@ -198,6 +199,9 @@ mostFrequentReportingOUs <- function(
            Week <=  yearweek( endingMonth )  
                  ) 
        } 
+  
+  # Testing
+  if ( testing ) saveRDS( data, "mostFrequentReportingOUs.data.rds" )
     
   # mr = data %>%
        #   filter( !is.na( original  ) ) %>%
@@ -711,9 +715,9 @@ dataTotal = function(
  
   
     summary_cols = NULL
-    if ( ! any( is.null( covariates  ) ) &&  any( nchar( covariates) >0 ) ) summary_cols = c( summary_cols, covariates ) %>% unique 
+    if ( ! any( is.null( covariates  ) ) &&  any( nchar( covariates) >0 ) ) summary_cols = c( group_by_cols, covariates ) %>% unique 
     if (.cat) cat( "\n - summary_cols: ", summary_cols )
-    if (.cat)cat( "\n - summarise group by: ", group_by_cols )
+    if (.cat) cat( "\n - summarise group by: ", group_by_cols )
 
     if ( ! any(is.null( summary_cols )) &&  any( nchar( summary_cols  )>0 ) ){
       if (.cat)cat( "\n - and all_of : ", summary_cols )
@@ -1078,30 +1082,36 @@ trendData = function( .d = data.hts ,
                       endingMonth = NULL , 
                       selected.only = TRUE ,
                       num_facilities = NULL , 
-                      num_datasets = NULL , 
+                      num_datasets = 1 , 
                       levelNames = NULL , 
                       agg_level = NULL ,
                       split = 'None' ,
                       covariates = NULL , 
                       remove.aggregate = TRUE , 
                       scale = FALSE ,
+                      testing = FALSE , 
                       .cat = FALSE ){
 
       if ( .cat ) cat( '\n* data Functions.R: trendData(): ' )
   
       # Testing
-      # saveRDS( .d, "trendData.d.rds")
+      if ( testing ) saveRDS( .d, "trendData.d.rds")
 
       if (  is.null( period ) ) period = dataPeriod( .d )
       
       .d. = .d
       
+      # num_facilities = length( unique( .d.$orgUnit ))
+      
+      if ( .cat ) cat( '\n - period: ', period )
+      if ( .cat ) cat( '\n - num_facilities: ' , num_facilities )
+      if ( .cat ) cat( '\n - selected.only: ' , selected.only )
+      
       if ( selected.only  & num_facilities > 1 ){
     
           if ( .cat ) cat( '\n - Show Selected (mostFrequeltylReporting) only' )
     
-          .d. = .d %>% filter(
-            Selected ==  'Reporting Each Period' )
+          .d. = .d %>% filter( Selected ==  'Reporting Each Period' )
           
           # make tibbles of covariate values to add back , if needed
           # Selected.d = .d. %>% 
@@ -2645,6 +2655,7 @@ plotTrends = function( trend.data ,
                          legend = FALSE , 
                          label = FALSE ,
                          facet_split = FALSE ,
+                         facet_vars = NULL , 
                          facet_admin = FALSE ,
                          agg_level = 'National' ,
                          pre_evaluation = FALSE ,
@@ -2710,12 +2721,20 @@ plotTrends = function( trend.data ,
 
           # Determine number of agg levels available
           # If only one, do not facet (causes error, perhaps because of autoplot?)
+          
+          
 
-          num_agg_levels = count( trend.data %>% as_tibble ,
+          if ( ! is.null( agg_level ) ){
+            
+            num_agg_levels = count( trend.data %>% as_tibble ,
                                   !! rlang::sym( agg_level ) ) %>%
-            nrow()
+            nrow() 
+          } else { 
+            num_agg_levels = 1 
+            }
 
           # if ( input$agg_level != levelNames()[1] & input$facet_admin ){
+          
           if ( num_agg_levels  > 1 & facet_admin ){
             if ( .cat )  cat( '\n -  admin facets' )
 
@@ -2731,13 +2750,14 @@ plotTrends = function( trend.data ,
             g = g +
             facet_wrap( vars( as.character( !! rlang::sym( agg_level ) ) ) ,
                            scales = "free_y" )
-          }} else {
+          } } else {
 
             if ( facet_split ){
             if ( .cat ) cat( '\n - facet_split' )
             g = g +
             # facet_wrap( ~ grouping_var   ,
-            facet_grid( vars(  RTSS , pbo )   , scales = "free_y" )
+            # facet_grid( vars(  RTSS , pbo )   , scales = "free_y" )
+            facet_grid( vars(  !! rlang::sym( facet_vars )  )   , scales = "free_y" )
           }
             }
 

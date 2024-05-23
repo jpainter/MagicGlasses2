@@ -187,6 +187,8 @@ evaluation_widget_server <- function( id ,
     id ,
     function( input, output, session 
               ) {
+      
+    testing = FALSE
 
     options(shiny.trace=FALSE)
     options(shiny.reactlog=FALSE)
@@ -202,7 +204,6 @@ evaluation_widget_server <- function( id ,
     
     data1 = reactive({ data_widget_output$data1() })
     
-    aggregateselected_data = reactive({ reporting_widget_output$aggregateselected_data() })
     data.total = reactive({ reporting_widget_output$data.total() })
     selected_data = reactive({ reporting_widget_output$selected_data() })
     
@@ -1305,27 +1306,40 @@ evaluation_widget_server <- function( id ,
       
       cat( "\n - mable.data" )
       
+      selected_data = selected_data()
+      startingMonth = startingMonth()
+      endingMonth = endingMonth()
+      split = split()
+      agg_level = input$agg_level
+      missing_reports = missing_reports()
+  
+      
+      if ( testing ) save(selected_data, startingMonth, endingMonth, error , missing_reports ,
+                          split , agg_level , levelNames, file = "trend_Data_inputs.rda")
+      
       mable.data = mable_data(      
-                                    ml.rtss.data = selected_data() ,
+                                    ml.rtss.data = selected_data ,
                                     .orgUnit = FALSE , # group by orgunit
-                                    .startingMonth = startingMonth() ,
-                                    .endingMonth = endingMonth() ,
-                                    .missing_reports = NULL ,
+                                    .startingMonth = startingMonth ,
+                                    .endingMonth = endingMonth ,
+                                    .missing_reports = missing_reports ,
                                     selected.only = input$selected ,
                                     # alwaysReporting = input$selected , 
                                     # reportingSelectedOUs = reportingSelectedOUs() ,
                                     covariates =  input$covariates , 
-                                    .split = split() , 
+                                    .split = split , 
                                     .error = error ,
-                                    agg_level = input$agg_level ,
+                                    agg_level = agg_level ,
                                     levelNames = levelNames ,
                                     remove.aggregate = TRUE ,
                                     .cat = TRUE ,
-                                    testing = FALSE )
+                                    # Testing:
+                                    testing = FALSE 
+                                    )
       
       
       # # testing
-      # if ( testing ) saveRDS( mable.data, "mable.data.rds")
+      if ( testing ) saveRDS( mable.data, "mable.data.rds")
       return( mable.data )
       
     })
@@ -1605,7 +1619,7 @@ evaluation_widget_server <- function( id ,
           data.text = paste( unique( selected_data()$data ), collapse = " + " )
           
           cat( '\n - ploTrends trend_Data():');
-          .d = trend_Data()
+          trend_Data = trend_Data()
           cat( '\n - ploTrends .d:'); #glimpse(.d)
 
           # if ( !input$filter_display %in% 'All' ) .d = .d %>%
@@ -1613,8 +1627,8 @@ evaluation_widget_server <- function( id ,
           #                   input$filter_display )
           
           # Testing
-          saveRDS( .d, "trend_Data.rds")
-
+          if (testing )  saveRDS( trend_Data , "trend_Data.rds")
+          
           tic()
 
           .period = period()
@@ -1622,17 +1636,18 @@ evaluation_widget_server <- function( id ,
       ## Main plot ####
           cat( "\n - main plot")
           
-          g = .d %>%
-          filter( !is.na( total ) ) %>%
-          # autoplot( total ) +
-          ggplot( aes( x = !! rlang::sym( .period ), y = total
-
-                     , group =  grouping_var # as.character( !! rlang::sym( input$agg_level  ) )
-
-                     , color =  grouping_var
-                    ) )  +
-          geom_line() +
-          theme_minimal()
+          
+          g = trend_Data %>%
+              filter( !is.na( total ) ) %>%
+              autoplot( total ) +
+              # ggplot( aes( x = !! rlang::sym( .period ), y = total
+              # 
+              #            , group =  as.character( !! rlang::sym( input$agg_level  ) )
+              # 
+              #            , color =  as.character( !! rlang::sym( input$agg_level  ) )
+              #           ) )  +
+              # geom_line() +
+              theme_minimal()
 
           # Testing
           # save(.d, file = 'plot-trend-test-data.rda')
@@ -1645,9 +1660,9 @@ evaluation_widget_server <- function( id ,
 
           if ( input$label ){
             g = g + geom_label_repel(
-                       data = .d %>%
+                       data = trend_Data %>%
                          filter(
-                           !! rlang::sym( .period ) == max( .d %>% pull( .period ) ,
+                           !! rlang::sym( .period ) == max( trend_Data %>% pull( .period ) ,
                                                             na.rm = T )
                            ) ,
                        aes( label = grouping_var ,
@@ -1658,7 +1673,7 @@ evaluation_widget_server <- function( id ,
           # Determine number of agg levels available
           # If only one, do not facet (causes error, perhaps because of autoplot?)
 
-          num_agg_levels = count( .d %>% as_tibble ,
+          num_agg_levels = count( trend_Data %>% as_tibble ,
                                   !! rlang::sym( input$agg_level ) ) %>%
             nrow()
 

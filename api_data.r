@@ -77,7 +77,7 @@ get = function( source_url , .print = TRUE , json = TRUE , ...){
   
   if ( .print ){
     cat( paste( "\n - downloading " , 
-                # source_url,  
+                source_url,  
                 "...") ) 
     # print( Sys.time() )
   } 
@@ -771,14 +771,14 @@ api_data = function(      periods = NA ,
         }
         
         cat( '\n - combining previous values \n' )
-        saveRDS( current.values, 'current.values.rds')
+        # saveRDS( current.values, 'current.values.rds')
         
         current.values = bind_rows( current.values )
         cat( '\n - rows =' , nrow( current.values ) , "\n")
         
       #TESTING
-      saveRDS( current.counts, 'current.counts.rds')
-      saveRDS( current.values, 'current.values.rds')
+      # saveRDS( current.counts, 'current.counts.rds')
+      # saveRDS( current.values, 'current.values.rds')
   
         # current.values = bind_rows( current.values )
         # current.values = bind_rows( lapply( current.values, function(x) if( !is.data.frame(x) ) NULL else x) )
@@ -873,7 +873,7 @@ api_data = function(      periods = NA ,
 
     # v2 <- expand_grid( period_vectors , orgUnits )
     # df of imputs for parallel mapping (pmap)
-    pmap.df = expand.grid( period_vectors, orgUnits, elements$id ) 
+    pmap.df = expand.grid(  orgUnits, period_vectors, elements$id ) 
     
     # Testing
     saveRDS( pmap.df, 'pmap.df.rds' )
@@ -1014,16 +1014,27 @@ api_data = function(      periods = NA ,
                                  pmap.df[i, 1] , i , nrow( pmap.df )   )  # period
                 )
             
-             incProgress( amount = 1 / nrow( pmap.df ) )
+            incProgress( amount = 1 / nrow( pmap.df ) )
+             
+            # Speed-up... 
+            ## If previous count was missing, null, or zero, 
+            ## and current level is not LEVEL-1, 
+            ## should go to next iteration
+            cat( "\n - ", i )
+            if ( i > 1 && pmap.df$Var2[i-1] %in% "LEVEL-1" && ( is.na( d[[i-1]]$COUNT ) || d[[i-1]]$COUNT == 0 ) && ! pmap.df$Var2[i] %in% "LEVEL-1" ){
+              cat("\n - previous", pmap.df[i-1, 1] , "was empty so skipping next lower level,", pmap.df[i, 1]) 
+              next
+            }
             
               cat('\n - api_data for:', baseurl, username )
               
               d.sum = fetch_get(  baseurl. = baseurl , username , password ,
                                   de. = pmap.df[i, 3] , 
-                                  periods. = pmap.df[i, 1] , 
-                                  orgUnits. = pmap.df[i, 2] , 
+                                  periods. = pmap.df[i, 2] , 
+                                  orgUnits. = pmap.df[i, 1] , 
                                   aggregationType. = "SUM" ,
-                                  get.print = print)  
+                                  get.print = print) 
+              
               
               # progress$set( value = i , detail = paste( "COUNT" , i ) )
               # p( sprintf("requesting count for %d of %d", i , nrow( pmap.df ) ) )
@@ -1032,8 +1043,8 @@ api_data = function(      periods = NA ,
               #   )
               d.count = fetch_get(  baseurl. = baseurl , username , password ,
                                     de. = pmap.df[i, 3] , 
-                                    periods. = pmap.df[i, 1] , 
-                                    orgUnits. = pmap.df[i, 2] , 
+                                    periods. = pmap.df[i, 2] , 
+                                    orgUnits. = pmap.df[i, 1] , 
                                     aggregationType. = "COUNT" ,
                                     get.print = print) 
               
@@ -1051,7 +1062,8 @@ api_data = function(      periods = NA ,
                 .by = c("dataElement", "period", "orgUnit")
               }
               
-              cat( "\n - joining sum and count downloads by" , .by )
+              # Testing
+              cat( "\n - ", i , "-joining sum and count downloads by" , .by , "..." )
               
               d[[i]] = d.count %>%
                     rename( COUNT = value ) %>%
@@ -1059,6 +1071,9 @@ api_data = function(      periods = NA ,
                               # ,  by = c("dataElement", "dataElement.id", "Categories" , "categoryOptionCombo.ids", "period", "orgUnit", "orgUnitName" ,  "level" , "levelName")
                               , by = .by
                               ) %>% select(-starts_with('aggreg'))
+              #Testing
+              saveRDS( d, "d.rds")
+              cat("\n done")
              
           }
                         }
@@ -1100,11 +1115,11 @@ api_data = function(      periods = NA ,
             # cat( Var1, Var2, Var3 )
             
             d.sum = fetch_get(  baseurl. = baseurl , de. = Var3 , 
-                                periods. = Var1, orgUnits. = Var2 , "SUM" ,
+                                periods. = Var2, orgUnits. = Var1 , "SUM" ,
                                 get.print = print)  
            
             d.count = fetch_get(  baseurl. = baseurl , de. = Var3 , 
-                                  periods. = Var1  , orgUnits. = Var2 , "COUNT" ,
+                                  periods. = Var2  , orgUnits. = Var1 , "COUNT" ,
                                   get.print = print) 
             
             #if elements have a period, then include categoryOptionCombo
@@ -1144,7 +1159,8 @@ api_data = function(      periods = NA ,
     cat( '\n' , nrow(d), 'records with sum and count' )
     cat( '\n' , 'of these, there was no value for' , sum( is.na(d$SUM) ), 'records \n' )
     
-    saveRDS( d, 'data_download.rds')
+    # Testing
+    # saveRDS( d, 'data_download.rds')
     
     # update value in most_recent_data_file
     if ( update &&  nrow( prev.data ) > 0 ){
