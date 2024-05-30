@@ -33,7 +33,8 @@ pacman::p_load(
     'officer' , 'openxlsx' , 'pacman' , 'patchwork' , 'plotly' , 'progress' , 'progressr' , 
     'prophet' , 'purrr' , 'RColorBrewer' , 'readxl' , 'renv' , 'rlang' , 'rmarkdown' , 
     'rsconnect' , 'rvg' , 'scales' , 'sf' , 
-    'shiny' , "shinyjs" , 'shinybusy' , 'shinyWidgets' , 'shinythemes' , 'shinydashboard', 'shinyBS', 'shinyLP', 'shinyFiles' ,
+    'shiny' , "shinyjs" , 'shinybusy' , 'shinyWidgets' , 
+    'shinythemes' , 'shinydashboard', 'shinyBS', 'shinyLP', 'shinyFiles' ,
     'slider' , 'sugrrants' , 
     'leaflet' , 
     'tibbletime' , 'tictoc' , 'tidyfast' , 
@@ -222,7 +223,7 @@ ui <- fluidPage(
     theme = bslib::bs_theme(bootswatch = "yeti"),
     # shinythemes::themeSelector(),
     
-    setBackgroundColor( color = c( "#F5F5F5" ) ),
+    shinyWidgets::setBackgroundColor( color = c( "#F5F5F5" ) ),
 
   
     # Application title
