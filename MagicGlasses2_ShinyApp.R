@@ -18,11 +18,29 @@ packages = c(
  'officer' , 'openxlsx' , 'pacman' , 'patchwork' , 'plotly' , 'progress' , 'progressr' , 
  'prophet' , 'purrr' , 'RColorBrewer' , 'readxl' , 'renv' , 'rlang' , 'rmarkdown' , 
  'rsconnect' , 'rvg' , 'scales' , 'sf' , 'shinybusy' , 'slider' , 'sugrrants' , 
+ 'leaflet' , 
  'tibbletime' , 'tictoc' , 'tidyfast' , 'tidytable' , 'tidyverse' , 'tsbox' , 'tsibble' , 
  'zoo'
 )
 
-pacman::p_load( packages , character.only = TRUE )
+pacman::p_load( 
+  c( 
+    'base' , 'CausalImpact' , 'cowplot' , 'data.tree' , 'dplyr' , 'DT' , 'dygraphs' , 
+    'data.table' , 
+    'fable' , 'fable.prophet' , 'fabletools' , 'feasts' , 'forecast' , 'fpp3' , 
+    'furrr' , 'future' , 'GGally' , 'ggExtra' , 'gtable' , 'HDInterval' , 'hrbrthemes' , 
+    'htmltools' , 'httr' , 'igraph' , 'jsonlite' , 'lubridate' , 'magrittr' , 'mapview' , 
+    'officer' , 'openxlsx' , 'pacman' , 'patchwork' , 'plotly' , 'progress' , 'progressr' , 
+    'prophet' , 'purrr' , 'RColorBrewer' , 'readxl' , 'renv' , 'rlang' , 'rmarkdown' , 
+    'rsconnect' , 'rvg' , 'scales' , 'sf' , 
+    'shiny' , "shinyjs" , 'shinybusy' , 'shinyWidgets' , 'shinythemes' , 'shinydashboard', 'shinyBS', 'shinyLP', 'shinyFiles' ,
+    'slider' , 'sugrrants' , 
+    'leaflet' , 
+    'tibbletime' , 'tictoc' , 'tidyfast' , 
+    # 'tidytable' , 
+    'tidyverse' , 'tsbox' , 'tsibble' , 
+    'zoo', 'conflicted', 'assertthat'
+  ) , character.only = TRUE )
 
 options("menu.graphics" = FALSE)
 rstudioapi::writeRStudioPreference("console_max_lines", 2000L )
@@ -194,7 +212,9 @@ conflicts_prefer( stats::mad )
 conflicts_prefer( stats::sd )
 conflicts_prefer( purrr::map )
 conflicts_prefer( shiny::isolate )
-
+conflicts_prefer(base::`%in%`)
+conflicts_prefer(purrr::map_df)
+conflicts_prefer(dplyr::pull)
 
 # Define UI  ####
 ui <- fluidPage(

@@ -513,8 +513,6 @@ metadata_widget_server <- function( id ,
           categoryOptionCombo.ids = paste( categoryOptionCombo.id , collapse = ' ;\n '  )
         )
       
-      
-      removeModal()
     } else {
     
         file = paste0( dir(), metadata.files()[1] )
@@ -531,6 +529,7 @@ metadata_widget_server <- function( id ,
     }
     
     cat( '\n -finished metadata_widget categories \n')
+    removeModal()
     return( categories )
   })
   
@@ -576,7 +575,7 @@ metadata_widget_server <- function( id ,
         dsde = data.frame( dataSet = NULL , dataElement = NULL )
       }
       
-    cat( '\nglimpse(dsde):\n') ; glimpse(dsde)
+    cat( '\n - glimpse(dsde):\n') ; glimpse(dsde)
     
     # Base Dictionary Line List (with categories collapsed)
     cat( '\n -creating dictionary..' )
@@ -1377,7 +1376,7 @@ metadata_widget_server <- function( id ,
   })
   
   # * CROSSTALK
-  shared_geofeatures <- SharedData$new(  geoFeatures.ous )
+  # shared_geofeatures <- SharedData$new(  geoFeatures.ous )
   
   gf.map = reactive({
     req( geoFeatures.ous() )
