@@ -75,7 +75,8 @@ dqa_widget_server <- function( id ,
     aggregateselected_data = reactive({ reporting_widget_output$aggregateselected_data() })
     data.total = reactive({ reporting_widget_output$data.total() })
     selected_data = reactive({ reporting_widget_output$selected_data() })
-    
+    reportingSelectedOUs = reactive({ reporting_widget_output$reportingSelectedOUs() })
+
     data2 = reactive({ cleaning_widget_output$data2() })
    
     formula_elements = reactive({ data_widget_output$formula_elements() })
@@ -97,10 +98,6 @@ dqa_widget_server <- function( id ,
     num_facilities = reactive({ reporting_widget_output$num_facilities() })
     
     caption.text = reactive({ reporting_widget_output$caption.text() })
-    
-    aggregateselected_data = reactive({ reporting_widget_output$aggregateselected_data() })
-    reportingSelectedOUs = reactive({ reporting_widget_output$reportingSelectedOUs() })
-
     
 
   plotDqaReporting = reactive({

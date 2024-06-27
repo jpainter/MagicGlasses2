@@ -7,6 +7,10 @@
 #    https://shiny.posit.co/
 #
 
+installed = installed.packages()
+if ( ! 'pacman' %in% installed ) install.packages( 'pacman' )
+require( pacman )
+
 # setup ####
 mg2 = "./"
 
@@ -18,7 +22,7 @@ packages = c(
  'officer' , 'openxlsx' , 'pacman' , 'patchwork' , 'plotly' , 'progress' , 'progressr' , 
  'prophet' , 'purrr' , 'RColorBrewer' , 'readxl' , 'renv' , 'rlang' , 'rmarkdown' , 
  'rsconnect' , 'rvg' , 'scales' , 'sf' , 'shinybusy' , 'slider' , 'sugrrants' , 
- 'leaflet' , 
+ 'leaflet' , 'ggrepel' ,
  'tibbletime' , 'tictoc' , 'tidyfast' , 'tidytable' , 'tidyverse' , 'tsbox' , 'tsibble' , 
  'zoo'
 )
@@ -36,7 +40,7 @@ pacman::p_load(
     'shiny' , "shinyjs" , 'shinybusy' , 'shinyWidgets' , 
     'shinythemes' , 'shinydashboard', 'shinyBS', 'shinyLP', 'shinyFiles' ,
     'slider' , 'sugrrants' , 
-    'leaflet' , 
+    'leaflet' , 'ggrepel' ,
     'tibbletime' , 'tictoc' , 'tidyfast' , 
     # 'tidytable' , 
     'tidyverse' , 'tsbox' , 'tsibble' , 

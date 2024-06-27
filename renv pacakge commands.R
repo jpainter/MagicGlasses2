@@ -2,6 +2,11 @@
 # Initial method to update packages with renv library, but it may fail.  
 renv::restore()
 
+# Compare installed libraries with those required for project (renv::dependencies)
+installed = installed.packages()
+dependencies = renv::dependencies()
+setdiff( rownames(installed) , dependencies$Package )
+
 # update packages so that not trying to install old version
 renv::update()
 
