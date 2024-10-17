@@ -238,6 +238,7 @@ mostFrequentReportingOUs <- function(
     
     
     periods_per_year = data %>% 
+        ungroup %>%
         distinct( !! rlang::sym( period )  ) %>%
         mutate( year = year( !! rlang::sym( period )  )) %>%
         count( year ) %>%

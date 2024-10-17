@@ -118,7 +118,7 @@ ous_tree = function( ous , ouLevels ){
       pivot_longer( cols = c(-orgUnit,-level) , names_to = 'Level') %>%
       left_join( ous %>% dplyr::select( id, name ) , by = c( 'value' = 'id') ) %>%
       pivot_wider( -value , names_from = Level, values_from = name ) %>%
-      left_join( ous %>% dplyr::select( id, name ) , by = c( 'orgUnit' = 'id') ) %>%
+      left_join( ous %>% dplyr::select( id, name , leaf ) , by = c( 'orgUnit' = 'id') ) %>%
       rename( orgUnitName = name ) %>%
       arrange( level ) %>%
       select( orgUnit, orgUnitName ,  everything() )
@@ -131,7 +131,8 @@ data_leaves = function( d ){
   cat('\n* determining effective leaf')
   data.leaves = d  %>%
     as_tibble() %>%
-    group_by( orgUnit, dataElement.id ) %>%
+    group_by( orgUnit, dataElement.id, leaf ) %>%
+    # group_by( orgUnit, dataElement.id ) %>%
     summarise( 
       n = ifelse( !all(is.na( COUNT ) ) , 
                   max( as.integer( COUNT ) , na.rm = TRUE ) , # as integer because character value may be "1" or "1.0"
@@ -140,9 +141,18 @@ data_leaves = function( d ){
          ) %>%
     mutate( 
       effectiveLeaf = ifelse( n == 1, TRUE, FALSE ) ) %>%
-    select( orgUnit , dataElement.id , effectiveLeaf ) %>%
+    mutate( effectiveLeaf = ifelse( n == 1 | leaf == TRUE , TRUE, FALSE ) ) %>%
+    # select( orgUnit , dataElement.id , leaf , effectiveLeaf ) %>%
     ungroup()
   
+   data.leaves = d  %>%
+    as_tibble() %>%
+    group_by( orgUnit, dataElement.id, leaf ) %>%
+    summarise( n = max( COUNT , na.rm = TRUE ) ) %>%
+    mutate( effectiveLeaf = ifelse( n == 1 | leaf == TRUE , TRUE, FALSE ) ) %>%
+    select( orgUnit , dataElement.id , leaf, effectiveLeaf ) 
+  
+   
   return( data.leaves )
 }
 
@@ -240,9 +250,11 @@ data_1 = function( data , formula_elements , ousTree , timing = FALSE  ){
     filter( !is.na( SUM ) ) %>%
     # select( dataElement.id , categoryOptionCombo.ids , orgUnit , period ,  COUNT , SUM  ) %>%
     # rename( dataElement = dataElement.id , categoryOptionCombo = categoryOptionCombo.ids ) %>%
-    translate_dataset( . , formula_elements ) 
+    translate_dataset( . , formula_elements ) %>%
+    left_join( ousTree , by = 'orgUnit') 
     
     data.leaves = data_leaves( d. )
+    
 
   if ( timing ) cat( "/n - d." , toc()$callback_msg )
     
@@ -250,7 +262,7 @@ data_1 = function( data , formula_elements , ousTree , timing = FALSE  ){
   d.. = 
     setDT(d.) %>%
     table.express::left_join( setDT( data.leaves ) , orgUnit , dataElement.id  )  %>%
-    table.express::left_join( setDT( ousTree ) , orgUnit )  %>%
+    # table.express::left_join( setDT( ousTree ) , orgUnit )  %>%
     as_tibble() %>%
     df_pre_ts( . , period = p  ) %>%
     df_ts( . , period = p ) %>%

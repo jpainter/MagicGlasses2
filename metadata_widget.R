@@ -1151,6 +1151,15 @@ metadata_widget_server <- function( id ,
           
           cat('\n- reading from'  )
           ous.tree = read_excel( file , sheet = 'orgUnitHierarchy', guess_max = 1e6 )
+          
+          # if leaf not in ous.tree, add it
+          if ( ! 'leaf' %in% names( ous.tree ) ){
+            cat('\n- adding leaf to ous.tree'  )
+            # cat('\n- orgUnits() names:'  , names(orgUnits()  ))
+            # cat('\n- ous.tree names:'  , names( ous.tree  ))
+            ous.tree = ous.tree %>% left_join( orgUnits()  %>% select( id, leaf ) , by = c('orgUnit' = 'id') )
+          }
+          
           cat('\n- ous.tree has' , nrow(ous.tree) , "rows" ) 
         
           } else {

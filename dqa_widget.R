@@ -105,6 +105,8 @@ dqa_widget_server <- function( id ,
       cat('\n*  dqa_widget plotDqaReporting')
 
      dqa_data = data1()
+     # TESTING 
+     # saveRDS( dqa_data , 'dqa_data.rds')
      dqa_data %>% dqaPercentReporting() %>% dqa_reporting_plot()
 })
 

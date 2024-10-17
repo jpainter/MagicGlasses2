@@ -15,136 +15,30 @@ require( pacman )
 mg2 = "./"
 
 packages = c(
- 'base' , 'CausalImpact' , 'cowplot' , 'data.tree' , 'dplyr' , 'DT' , 'dygraphs' , 
- 'fable' , 'fable.prophet' , 'fabletools' , 'feasts' , 'forecast' , 'fpp3' , 
+ 'base' , 'CausalImpact' , 'cowplot' , 'data.tree' , 'DT' , 'dygraphs' , 
+ 'tidyfast' ,  'tidyverse' ,
+ # 'tidytable' ,
+ 'tsibble' , 'feasts' , 'forecast' , 'fpp3' , 'tibbletime' ,
+ 'fable' , 'fable.prophet' , 'fabletools' , 
+ 'table.express' , 'data.table' , 
  'furrr' , 'future' , 'GGally' , 'ggExtra' , 'gtable' , 'HDInterval' , 'hrbrthemes' , 
  'htmltools' , 'httr' , 'igraph' , 'jsonlite' , 'lubridate' , 'magrittr' , 'mapview' , 
  'officer' , 'openxlsx' , 'pacman' , 'patchwork' , 'plotly' , 'progress' , 'progressr' , 
  'prophet' , 'purrr' , 'RColorBrewer' , 'readxl' , 'renv' , 'rlang' , 'rmarkdown' , 
- 'rsconnect' , 'rvg' , 'scales' , 'sf' , 'shinybusy' , 'slider' , 'sugrrants' , 
- 'leaflet' , 'ggrepel' ,
- 'tibbletime' , 'tictoc' , 'tidyfast' , 'tidytable' , 'tidyverse' , 'tsbox' , 'tsibble' , 
- 'zoo'
+ 'rsconnect' , 'rvg' , 'scales' , 'sf' , 
+ 'shiny' , "shinyjs" , 'shinybusy' , 'shinyWidgets' , 
+  'shinythemes' , 'shinydashboard', 'shinyBS', 'shinyLP', 'shinyFiles' ,
+ 'slider' , 'sugrrants' , 
+ 'leaflet' ,  'leaflegend' , 'ggrepel' ,
+ 'tibbletime' , 'tictoc' , 'tsbox' , 
+ 'zoo', 'conflicted', 'assertthat'
 )
 
-pacman::p_load( 
-  c( 
-    'base' , 'CausalImpact' , 'cowplot' , 'data.tree' , 'dplyr' , 'DT' , 'dygraphs' , 
-    'data.table' , 
-    'fable' , 'fable.prophet' , 'fabletools' , 'feasts' , 'forecast' , 'fpp3' , 
-    'furrr' , 'future' , 'GGally' , 'ggExtra' , 'gtable' , 'HDInterval' , 'hrbrthemes' , 
-    'htmltools' , 'httr' , 'igraph' , 'jsonlite' , 'lubridate' , 'magrittr' , 'mapview' , 
-    'officer' , 'openxlsx' , 'pacman' , 'patchwork' , 'plotly' , 'progress' , 'progressr' , 
-    'prophet' , 'purrr' , 'RColorBrewer' , 'readxl' , 'renv' , 'rlang' , 'rmarkdown' , 
-    'rsconnect' , 'rvg' , 'scales' , 'sf' , 
-    'shiny' , "shinyjs" , 'shinybusy' , 'shinyWidgets' , 
-    'shinythemes' , 'shinydashboard', 'shinyBS', 'shinyLP', 'shinyFiles' ,
-    'slider' , 'sugrrants' , 
-    'leaflet' , 'ggrepel' ,
-    'tibbletime' , 'tictoc' , 'tidyfast' , 
-    # 'tidytable' , 
-    'tidyverse' , 'tsbox' , 'tsibble' , 
-    'zoo', 'conflicted', 'assertthat'
-  ) , character.only = TRUE )
+pacman::p_load( packages ,install = TRUE , character.only = TRUE )
 
 options("menu.graphics" = FALSE)
 rstudioapi::writeRStudioPreference("console_max_lines", 2000L )
 
-
-# library(shiny)
-# 
-# library(conflicted) # For diagnosing function name conflicts
-# library(tidyverse)
-# library( stringr )
-# library(data.table) # for clean install, run from clean session: 
-# # remove.packages("data.table")
-# # install.packages("data.table", type = "source",
-# # repos = "https://Rdatatable.gitlab.io/data.table")
-# library( table.express )
-# 
-# library( flexdashboard )
-# # library( bslib )
-# library( shiny)
-# library( shinyjs)
-# library( shinyWidgets )
-# # library( shinydashboard)
-# library( shinythemes )
-# library( shinyBS)
-# library( shinyLP)
-# library( shinyFiles )
-# library( rstudioapi )
-# library(  leaflet)
-# library( progressr )
-# library( RColorBrewer)
-# library( plotly)
-# library( cowplot )
-# library( ggrepel )
-# library( ragg )
-# library( scales)
-# library( lemon ) # for reposition_legend() 
-# # if ( 'summarytools' %in% installed.packages() )  library( summarytools ) # invokes Xquartz on mac.
-# # library( describer )
-# 
-# # library( tidyfast )
-# # library( tidytable )
-# # library(googleVis)
-# 
-# library( zoo )
-# library( knitr)
-# library( rlang)
-# library( stringi)
-# library( tidyselect)
-# library( geojsonsf)
-# library( geojsonio)
-# library( jsonlite)
-# library( httr)
-# library( curl)
-# library( assertthat)
-# 
-# library(futile.logger)
-# # library(utils)
-# library(DT)
-# # library(textutils)
-# library(readxl)
-# library(openxlsx)
-# # library(anytime)
-# library(lubridate)
-# library( tictoc )
-# 
-# library(ipc)
-# library(future)
-# library( future.apply )
-# library(furrr)
-# library( purrr )
-# library(promises)
-# 
-# library( data.tree )
-# library( igraph )
-# 
-# # library( knitrProgressBar)
-# # library( progressr )
-# library( progress )
-# library(sf)
-# # library( mapview )
-# library( leaflet )
-# library( leaflegend )
-# library( crosstalk )
-# # library(rmapshaper)
-# 
-# library( tsibble  )
-# library( fable )
-# library( fabletools )
-# library( feasts )
-# library( fable.prophet )
-# # library( Metrics )
-# library( forecast ) 
-
-
-# older package that may not be able to install on some machines (e.g. Mac ARM)
-# if ( 'fable.bsts' %in% installed.packages() ) library( fable.bsts )
-
-# busy spinner
-# library(shinybusy)
 
 options(shiny.trace=FALSE)
 options(shiny.reactlog=FALSE)
@@ -220,6 +114,10 @@ conflicts_prefer( shiny::isolate )
 conflicts_prefer(base::`%in%`)
 conflicts_prefer(purrr::map_df)
 conflicts_prefer(dplyr::pull)
+conflicts_prefer(dplyr::between)
+conflicts_prefer(dplyr::count)
+conflicts_prefer(tidytable::map_lgl)
+# conflicts_prefer(tidytable::ungroup)
 
 # Define UI  ####
 ui <- fluidPage(

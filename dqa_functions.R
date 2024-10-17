@@ -5,7 +5,8 @@ data_ous = function( dqa_data ) dqa_data %>% as_tibble %>%
   count( orgUnit, orgUnitName , level ) %>%
   select( -n )
 
-dqa_years = function( dqa_data ) dqa_data %>% as_tibble %>%
+dqa_years = function( dqa_data ) dqa_data %>% 
+  as_tibble %>% ungroup %>%
   count( Year = year( Month ) ) %>%
   select( -n )
 
@@ -15,7 +16,7 @@ dqa_reporting = function( dqa_data , missing_reports = 0 , count.any= TRUE , .ca
   startingMonth = yearmonth( paste0( dqa_years(dqa_data)$Year , "Jan") )
   endingMonth = yearmonth( paste0( dqa_years(dqa_data)$Year , "Dec") )
   
-  
+  cat( "\n *dqa_reporting - reprtingOUS")
   reportingOUS = map( 1:length( startingMonth ) ,  
                       ~mostFrequentReportingOUs( data = dqa_data , 
                             startingMonth = startingMonth[.x] ,

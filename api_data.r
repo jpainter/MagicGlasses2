@@ -14,13 +14,16 @@
 
 # Functions ####
 # Login ####
-loginDHIS2<-function( baseurl, username, password, timeout = 30 ) {
-  cat("\n* api_data:")
+loginDHIS2<-function( baseurl, username, password, timeout = 30 , ...  ) {
+  # cat("\n* loginDHIS2:" 
+      # , "\n ", baseurl, "\n" , username , "\n" , password
+      # )
+  
   url<-paste0( baseurl, "api/me" )
   
   r <-  GET( url, authenticate( username, password) , config = httr::config(connecttimeout = timeout ) ) 
   
-  cat( "/n - status_code:", r$status_code )
+  if (  r$status_code != 200 ) cat( "\n - status_code:", r$status_code )
   assert_that( r$status_code == 200L ) 
 }
 
@@ -65,23 +68,27 @@ retry <- function( expr, isError=function(x) "try-error" %in% class(x),
 
 # JSON helper function ####
 ## gets json text from url and converts to data frame 
-get = function( source_url , .print = TRUE , json = TRUE , ...){
+get = function( baseurl , source_url , .print = TRUE , json = TRUE , 
+                username = NULL, password = NULL ){
   
   # Login if credentials provided
   if ( exists( 'baseurl' ) ){
-    if ( !loginDHIS2( baseurl, username, password) ) return('no connection')
-  }
+ 
+    if ( !loginDHIS2( baseurl , username, password ) ) return( 'no connection' )
+  
+    } else { return( 'missing or incorrect instance url')}
     
   # https://stackoverflow.com/questions/57198836
   httr::set_config(httr::config(ssl_verifypeer=0L))
   
   if ( .print ){
+    
     cat( paste( "\n - downloading " , 
                 source_url,  
                 "...") ) 
     # print( Sys.time() )
   } 
-  
+
   from_url =  GET( source_url  ) 
   
   # print( 'GET completed')
@@ -410,12 +417,30 @@ fetch <- function( baseurl. , de. , periods. , orgUnits. , aggregationType. , .p
     return( bind_rows( data ) )
 }
 
-api_url = function( baseurl, de ,  periods, orgUnits , aggregationType ){
+api_url = function( baseurl, de ,  periods, orgUnits , aggregationType, childOnly = FALSE ){
   
   # cat( '\n* api_url:' ) 
   # # print( orgUnits ); print( aggregationType )
   
-  url <- paste0( baseurl , 
+  #example from JG providing acutal values entered with no aggregations
+  # https://play.im.dhis2.org/stable-2-41-1/
+  # api/dataValueSets?
+  # dataElement=pikOziyCXbM
+  # &period=202401
+  # &orgUnit=YuQRtpLP10I  (YuQRtpLP10I is Bndjia; dGheVylzol6 is bargbe
+  # &children=true
+  
+  if ( childOnly ){
+      url <- paste0( baseurl , 
+                 # username, password ,
+                 "api/dataValueSets.json?" ,
+                 "&orgUnit=" , orgUnits , 
+                 "&period=" , periods ,
+                 "&dataElement=" , de ,
+                 "&children=" , childOnly )
+} else {
+  
+    url <- paste0( baseurl , 
                  # username, password ,
                  "api/analytics/dataValueSet.json?" ,
                  # "api/analytics.json?" ,
@@ -424,7 +449,7 @@ api_url = function( baseurl, de ,  periods, orgUnits , aggregationType ){
                  "&dimension=dx:" , de ,
                  # "&displayProperty=NAME",
                  "&aggregationType=" , aggregationType )
-  
+} 
   # cat( '\n* api_url:' , url )
   return( url )
 }
@@ -432,14 +457,28 @@ api_url = function( baseurl, de ,  periods, orgUnits , aggregationType ){
   
 fetch_get <- function( baseurl. , de. , periods. , orgUnits. , 
                        aggregationType. ,
-                       get.print = FALSE, username. = NULL , password. = NULL ){
+                       get.print = FALSE, 
+                       username. = NULL , password. = NULL,
+                       childOnly. = FALSE ){
   
-    if ( get.print )  cat( '\n* fetch_get:' ) 
+    # if ( get.print )  cat( '\n* fetch_get:' ) 
     
-    url = api_url( baseurl. , de. , periods. , orgUnits. , aggregationType. )
-    if ( get.print )  cat( '\n - url:', url ) 
+    url = api_url( baseurl. , de. , periods. , orgUnits. , aggregationType., childOnly.  )
     
-    fetch = retry( get( url , .print = get.print , username., password. )[[1]] ) # if time-out or other error, will retry 
+    # if ( get.print )  cat(
+    #                        '\n - baseurl:', baseurl. ,  
+    #                        '\n - username:', username. ,
+    #                        '\n - password:', password. ,
+                           # '\n - url:', url ) 
+    
+    tic()
+    fetch = retry( get( baseurl = baseurl. , 
+                        source_url = url , 
+                        username = username. , 
+                        password = password. ,
+                        .print = get.print  )[[1]] ) # if time-out or other error, will retry 
+    t = toc( quiet = TRUE )
+    
     # fetch = get( url , .print = get.print )
     
     # print( paste( 'fetch class' , class( fetch ) ) )
@@ -463,7 +502,7 @@ fetch_get <- function( baseurl. , de. , periods. , orgUnits. ,
       #               )
       # )
       
-      if ( get.print ) cat( paste( nrow( fetch ) , 'records\n' ) )
+      if ( get.print ) cat( paste( nrow( fetch ) , 'records (', t$callback_msg , ')\n' ) )
       
       } else {
       
