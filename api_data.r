@@ -455,10 +455,12 @@ api_url = function( baseurl, de ,  periods, orgUnits , aggregationType, childOnl
 }
 
   
-fetch_get <- function( baseurl. , de. , periods. , orgUnits. , 
+fetch_get <- function( baseurl. , 
+                       username. = NULL , password. = NULL, 
+                       de. , periods. , orgUnits. , 
                        aggregationType. ,
                        get.print = FALSE, 
-                       username. = NULL , password. = NULL,
+                      
                        childOnly. = FALSE ){
   
     # if ( get.print )  cat( '\n* fetch_get:' ) 
