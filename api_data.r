@@ -73,10 +73,11 @@ get = function( baseurl , source_url , .print = TRUE , json = TRUE ,
   
   # Login if credentials provided
   if ( exists( 'baseurl' ) ){
- 
-    if ( !loginDHIS2( baseurl , username, password ) ) return( 'no connection' )
+    
+    if ( is.character( username )  && !loginDHIS2( baseurl , username , password ) ) return( 'no connection' )
   
-    } else { return( 'missing or incorrect instance url')}
+  } else { return( 'missing or incorrect instance url') }
+
     
   # https://stackoverflow.com/questions/57198836
   httr::set_config(httr::config(ssl_verifypeer=0L))
@@ -456,16 +457,21 @@ api_url = function( baseurl, de ,  periods, orgUnits , aggregationType, childOnl
 
   
 fetch_get <- function( baseurl. , 
-                       username. = NULL , password. = NULL, 
+                       username = NULL , password = NULL, 
                        de. , periods. , orgUnits. , 
                        aggregationType. ,
                        get.print = FALSE, 
-                      
-                       childOnly. = FALSE ){
+                       childOnly = FALSE ){
   
     # if ( get.print )  cat( '\n* fetch_get:' ) 
+  
+   # if childOnly - i.e. using api/dataSets call to only entered data, 
+   # cannot use categoryOptions - just data element.
+   if ( childOnly ){
+     if ( grepl( "." , de. ) ) de. = sub("\\..*", "", de.)  
+   }
     
-    url = api_url( baseurl. , de. , periods. , orgUnits. , aggregationType., childOnly.  )
+    url = api_url( baseurl. , de. , periods. , orgUnits. , aggregationType., childOnly  )
     
     # if ( get.print )  cat(
     #                        '\n - baseurl:', baseurl. ,  
@@ -476,8 +482,8 @@ fetch_get <- function( baseurl. ,
     tic()
     fetch = retry( get( baseurl = baseurl. , 
                         source_url = url , 
-                        username = username. , 
-                        password = password. ,
+                        username = username , 
+                        password = password ,
                         .print = get.print  )[[1]] ) # if time-out or other error, will retry 
     t = toc( quiet = TRUE )
     

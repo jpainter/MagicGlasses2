@@ -38,7 +38,7 @@ pacman::p_load( packages ,install = TRUE , character.only = TRUE )
 
 options("menu.graphics" = FALSE)
 rstudioapi::writeRStudioPreference("console_max_lines", 2000L )
-
+options(future.globals.maxSize = 6 * 1024^3)
 
 options(shiny.trace=FALSE)
 options(shiny.reactlog=FALSE)
@@ -56,6 +56,7 @@ source( paste0( mg2 , 'Deviation_Expected_Functions.R') )
 source( paste0( mg2 , 'DToptions.R') )
 source( paste0( mg2 , 'model_ts2.R' ) )
 source( paste0( mg2 , 'api_data.r' ) )
+source( paste0( mg2 , 'api_data_function_revision.R') )  # revision October 2024
 source( paste0( mg2 , 'dqa.r' ) )
 source( paste0( mg2 , 'Cleaning.R' ) )
 source( paste0( mg2 , 'prepareDataset.R' ) )
@@ -117,6 +118,7 @@ conflicts_prefer(dplyr::pull)
 conflicts_prefer(dplyr::between)
 conflicts_prefer(dplyr::count)
 conflicts_prefer(tidytable::map_lgl)
+conflicts_prefer(fable.prophet::prophet)
 # conflicts_prefer(tidytable::ungroup)
 
 # Define UI  ####

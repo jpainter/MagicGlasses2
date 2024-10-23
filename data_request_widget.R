@@ -211,6 +211,14 @@ data_request_widget_server <- function( id ,
           .orgUnits = orgUnitRequest()
           .formula.name = indicator()
           
+          # TESTING
+          saveRDS( orgUnits(), 'orgUnits.rds' )
+          
+          # To use jim Grace api/dataSets, need to set .orgunits to the highest level
+          .orgUnits = orgUnits() %>% 
+            filter( level %in% min( orgUnits()$level, na.rm = T)  ) %>%
+            pull( id )
+          
           
           # If categoryOption is NA, then omit from request.  This will return 'total' with no categories.  
           # NB this happens if any category is missing 
@@ -287,7 +295,8 @@ data_request_widget_server <- function( id ,
                          level1.id = .level1.id ,
                          dir =  data.folder() ,
                          shinyApp = TRUE,
-                         parallel = FALSE )
+                         parallel = FALSE,
+                         childOnly = TRUE )
           
           if ( is.na( .periods ) ) .periods = paste0( .years, 'yrs' )
           

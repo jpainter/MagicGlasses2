@@ -259,7 +259,7 @@ metadata_widget_server <- function( id ,
                      paste(cols, collapse = ",") , 
                      "&paging=false")
       
-      x = get( url )[[1]] 
+      x = get( source_url = url )[[1]] 
       
       cat( '\n -dataElement() colnames(x) : ' ,
            colnames(x) , '\n')
@@ -299,7 +299,7 @@ metadata_widget_server <- function( id ,
       
       cols = c( 'id', 'name' , 'dataElements' )
       
-      dataElementGroups =  get( url )[[1]] %>% select( !!cols ) %>%
+      dataElementGroups =  get( source_url = url )[[1]] %>% select( !!cols ) %>%
         rename( dataElementGroups.id = id , dataElementGroup = name )
 
       deg = map_df( 1:length( dataElementGroups$dataElementGroup) ,
@@ -351,7 +351,7 @@ metadata_widget_server <- function( id ,
                      paste(cols, collapse = ",") , 
                      "&paging=false")
       
-      x = get( url )[[1]]
+      x = get( source_url = url )[[1]]
       
       if( !all( cols %in% colnames(x) ) ) return( data.frame() ) 
             
@@ -404,7 +404,7 @@ metadata_widget_server <- function( id ,
                      paste(cols, collapse = ",") , 
                      "&paging=false")
       
-      x = get( url )[[1]]
+      x = get( source_url = url )[[1]]
       
       if( !all( cols %in% colnames(x) ) ) return( data.frame() ) 
       
@@ -441,7 +441,7 @@ metadata_widget_server <- function( id ,
                      paste(cols, collapse = ",") , 
                      "&paging=false")
           
-    x = get( url )[[1]]
+    x = get( source_url = url )[[1]]
       
     if( !all( cols %in% colnames(x) ) ) return( data.frame() ) 
       
@@ -745,7 +745,7 @@ metadata_widget_server <- function( id ,
                 'annualized'
       )
       
-      indicators =  get( url )$indicators  %>% select( !!cols ) 
+      indicators =  get( source_url = url )$indicators  %>% select( !!cols ) 
     
       removeModal()
     } else { return() }
@@ -914,13 +914,13 @@ metadata_widget_server <- function( id ,
                      paste(cols, collapse = ",") , 
                      "&paging=false")
       
-      print('\n - orgUnit URL'); print(url)
+      cat('\n - orgUnitLevels URL'); print(url)
       
       #Testing
       # saveRDS( get( url )[[1]] , "getOusLevels.rds")
       # saveRDS( cols , "cols.rds")
       
-      ousLevels =  get( url )[[1]]  %>% 
+      ousLevels =  get( source_url = url )[[1]]  %>% 
         select( !!cols ) %>% 
         arrange( level ) %>%
         rename( levelName = name ) 
@@ -1009,7 +1009,7 @@ metadata_widget_server <- function( id ,
                      paste( cols, collapse = ",") , 
                      "&paging=false")
       
-      ous =  get( url )[[1]] 
+      ous =  get( source_url = url )[[1]] 
       
       cat( '\n*joining ous with itself to get parent names')
 
@@ -1709,7 +1709,7 @@ metadata_widget_server <- function( id ,
         cat( '\n **Resources'  )
         
         url = paste0( baseurl() , "api/resources.json" )
-        resources =  get( url )[[1]]
+        resources =  get( source_url = url )[[1]]
         
         cat( '\n **class(resources)' , class(resources) , '\n')
         glimpse(resources)
