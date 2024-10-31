@@ -16,7 +16,7 @@ mg2 = "./"
 
 packages = c(
  'base' , 'CausalImpact' , 'cowplot' , 'data.tree' , 'DT' , 'dygraphs' , 
- 'tidyfast' ,  'tidyverse' ,
+ 'tidyfast' ,  'tidyverse' , 'stringr' ,
  # 'tidytable' ,
  'tsibble' , 'feasts' , 'forecast' , 'fpp3' , 'tibbletime' ,
  'fable' , 'fable.prophet' , 'fabletools' , 
@@ -133,8 +133,8 @@ ui <- fluidPage(
     # Application title
     titlePanel(h1("Magic Glasses 2" , style='background-color:#61A1FA;padding-left: 15px' )),
     
-    navlistPanel( widths = c(1, 11) ,
-    # tabsetPanel(type = "tabs",
+    navlistPanel( widths = c(1, 11) , id = "tabs", 
+    # tabsetPanel(type = "tabs", 
                 tabPanel( "Welcome" ,
                            br() ,    
                            h2('An epidemiological look at DHIS2 data') ,
