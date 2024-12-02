@@ -7,13 +7,10 @@
 #    https://shiny.posit.co/
 #
 
-installed = installed.packages()
-if ( ! 'pacman' %in% installed ) install.packages( 'pacman' )
-require( pacman )
-
 # setup ####
 mg2 = "./"
 
+# Define the list of packages
 packages = c(
  'base' , 'CausalImpact' , 'cowplot' , 'data.tree' , 'DT' , 'dygraphs' , 
  'tidyfast' ,  'tidyverse' , 'stringr' ,
@@ -34,7 +31,14 @@ packages = c(
  'zoo', 'conflicted', 'assertthat'
 )
 
-pacman::p_load( packages ,install = TRUE , character.only = TRUE )
+# cat( 'Recommended packages:' ,  packages )
+
+installed = installed.packages()
+if ( ! 'pacman' %in% installed ) install.packages( 'pacman' )
+require( pacman )
+
+# Load packages dynamically using pacman
+pacman::p_load( char = packages, install = TRUE )
 
 options("menu.graphics" = FALSE)
 rstudioapi::writeRStudioPreference("console_max_lines", 2000L )
