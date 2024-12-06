@@ -1,10 +1,6 @@
 #
 # This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    https://shiny.posit.co/
+# the 'Run App' button (above right).
 #
 
 # setup ####
@@ -12,7 +8,9 @@ mg2 = "./"
 
 # Define the list of packages ####
 packages = c(
- 'base' , 'CausalImpact' , 'cowplot' , 'data.tree' , 'DT' , 'dygraphs' , 
+ 'base' , 
+ # 'CausalImpact' , 
+ 'cowplot' , 'data.tree' , 'DT' , 'dygraphs' , 
  'tidyfast' ,  'tidyverse' , 'stringr' ,
  'tsibble' , 'feasts' , 'forecast' , 'fpp3' , 'tibbletime' ,
  'fable' , 'fabletools' , 'fable.prophet' , 'prophet' ,  "distributional" ,
