@@ -12,6 +12,11 @@ data_request_widget_ui = function ( id ) {
           
   fluidPage(
 
+        div(
+        h5( "Request Data (download) from DHIS2"), # Header text for the top of the page
+        style = "font-weight: bold; text-align: center; text-decoration: underline;" # Center alignment and spacing
+      ),
+      
       fluidRow( 
        
         column( 6, offset=0,
@@ -51,15 +56,17 @@ data_request_widget_ui = function ( id ) {
       
     fluidRow( # height = '25%' ,
        
-       column( 3 , actionButton( ns( "requestDataButton" ) , height = "10%" ,
+       column( 2 , actionButton( ns( "requestDataButton" ) , height = "10%" ,
                               "Request data"   , style='margin-top:25px'
                               ) ,
               ) ,
-       column( 6, tags$blockquote( "**After download complete, use refresh button to see file." )
-               )
-      ) 
-)
-)
+       column( 10, 
+               div( 
+                 p("**After download complete, use refresh button (above) and then \nre-select the formula to see the download file." ),
+                 style = "font-weight: bold; text-align: center;" )
+               ) 
+      )
+) )
 }
         
 data_request_widget_server <- function( id , 

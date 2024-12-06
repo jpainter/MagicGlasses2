@@ -12,59 +12,58 @@ formula_widget_ui <- function( id ) {
     
     fluidPage(
 
-
+    div(
+            # Header text for the top of the page
+            p( "Data elements and indicators associated with the selected formula (left panel)"), 
+            style = "font-weight: bold; text-align: left; margin-bottom: 20px;" # Center alignment and spacing 
+          ),
+    div(
+            # Header text for the top of the page
+            p( "Use the 'Select' and 'Review' tabs here:"), 
+            style = "font-weight: bold; text-align: left; margin-bottom: 20px;" # Center alignment and spacing 
+          ),
+    
     tabsetPanel(type = "tabs",
-
-
-                tabPanel("List of Selected Elements", 
-                         
-                      # fluidRow(
-                        # column( 5 , 
-                        #  actionButton( ns("removeSelected") , 
-                        #                              "Remove Selected Elements" , style='margin-top:25px' 
-                        #                          ) 
-                        #  ) ,
-                        # column( 3 , 
-                         downloadButton( ns( 'saveFormula' ), 'Save Formula') 
-                        # ) 
-                        ,
+                
+                tabPanel( "Select", 
+                        fluidRow(
+                          column( 8 , br() ,
+                                  p( "Click on a row below to select each element:" ),
+                                  style = "font-weight: bold; text-align: left; margin-bottom: 20px;" ) ,
+                          column( 4 , 
+                                  selectInput( ns('element_indicator_choice'), "" ,
+                                       choices = c( 'data elements' , 'indicators' ),
+                                       selected = 'data elements'
+                                       ) )
+                          ) ,
                         
-                        # column( 3 , 
-                         actionButton( ns( 'deleteRows' ), 'Delete Selected Rows') 
-                        # )
-                        # ) 
-                      ,
- 
-                           # DTOutput( ns('forumlaDictionaryTable') ) 
-                      
+                        fluidRow( 
+                          column( 12 , verbatimTextOutput( ns("selected") ) )
+                          ) ,
+                        
+                        fluidRow(
+                           column( 12, 
+                              div( DT::dataTableOutput(  ns('dataElementDictionaryTable') ), 
+                               style = "font-size: 65%; width: 100%" )
+                           )
+                        )
+                ) ,
+               
+                tabPanel("Review", 
+                         h5( "List of selected elements with a row for each disaggregation" ) ,
+                         fluidRow( 
+                           column( 7, div( p('Use this button to delete unwanted selection', style = "font-size: 16px" )) ) ,
+                           column( 2, downloadButton( ns( 'deleteRows' ), 'Delete Selected Rows') ) 
+                              ),
+                         fluidRow( 
+                           column( 7, div( p('Use this button tosave changes', style = "font-size: 16px" )) ),
+                           column( 2, actionButton( ns( 'saveFormula' ) , 'Save Formula') ) 
+                              )
+                              ,
                       div(DT::dataTableOutput( ns('forumlaDictionaryTable') ), 
                           style = "font-size: 75%; width: 100%"
                       )
                          ) ,
-                
-                tabPanel("Select from all Elements/Indicators", 
-                         # actionButton( ns("addSelected") , 
-                         #                             "Add Selected Elements" , style='margin-top:25px' 
-                         #                         ) ,
-                         
-                         # wellPanel(
-                           h5("selected elements:") ,
-                         
-                           verbatimTextOutput( ns("selected") ),
-                           
-                           # DTOutput( ns('dataElementDictionaryTable') ) 
-                         
-                          selectInput( ns('element_indicator_choice'), "" ,
-                                       choices = c( 'data elements' , 'indicators' ),
-                                       selected = 'data elements'
-                                       ) ,
-                         
-                           div(DT::dataTableOutput(  ns('dataElementDictionaryTable') ), 
-                               style = "font-size: 65%; width: 100%"
-                               )
-                         
-                         # )
-                ) 
 
 
                 ) 

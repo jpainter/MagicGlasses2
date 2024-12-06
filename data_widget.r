@@ -12,12 +12,13 @@ data_widget_ui = function ( id )
             # , margins = c(70, 1200)
           ) ,
   
-        # h5('The files here are in the directory specified in the setup section') ,
-        
-      # fillCol( height = 600, flex = c(NA ) ,
-      # textOutput( ns("directory") ) ,
+       div(
+        # Header text for the top of the page
+        p( "Create groupings (formulas) of data by subject (e.g. confirmed malaria cases) with a file that indicates which DHIS2 data elements or indicators are included"), 
+        style = "font-weight: bold; text-align: left; margin-bottom: 20px;" # Center alignment and spacing 
+      ),
       
-      # inputPanel(
+        actionButton( ns("refresh"), "Refresh") ,
         
         selectInput( ns("formula.file") , 
                      label = "Formula Files:" ,
@@ -39,27 +40,21 @@ data_widget_ui = function ( id )
                       # selectize = FALSE, 
                       size = 4  ##needed for `selected = FALSE` to work ) 
                      ) ,
-        
-        # textInput( ns("file.keywords"), "key words for searching data files" ,
-        #            # value = '_formulaData|Seasonal|dts|rds' 
-        #            value = 'Seasonal|dts|rds' ) ,
-        #
+
        div(
         selectInput( ns("dataset") , 
                      label = div( "Data previously downloaded from DHIS2:" ,
-                                  style = "font-size: 150%"  ) ,
-              width = '95%',
-              choices = NULL , 
-              selected = FALSE,
-              multiple = FALSE ,
-              selectize = FALSE, 
-              size = 8  ##needed for `selected = FALSE` to work ) 
-             ) ,
-        style = "font-size: 66%; width: 100%" ) ,
+                                  style = "font-size: 100%"  ) ,
+                    width = '95%',
+                    choices = NULL , 
+                    selected = FALSE,
+                    multiple = FALSE ,
+                    selectize = FALSE, 
+                    size = 4  ##needed for `selected = FALSE` to work ) 
+                   ) ,
+        style = "overflow-y: auto; font-size: 66%; width: 100%" ) ,
       
       checkboxInput( ns("rescan") , "Rescan dataset for analysis" ) ,
-      
-      actionButton( ns("refresh"), "Refresh") ,
       
       br()
 
@@ -257,7 +252,8 @@ data_widget_server <- function( id ,
                   # grepl( 'All levels' , dir.files ) &
                   grepl( file.type , dir.files, ignore.case = T ) &
                   # grepl( file.other, dir.files, fixed = TRUE  ) &
-                  grepl( file.keywords, dir.files, ignore.case = T ) ]
+                  grepl( file.keywords, dir.files, ignore.case = T ) &
+                  ! grepl( "Update_", dir.files, ignore.case = T )]
         
           cat('\nall levels data files:' , data.files )
           
@@ -363,9 +359,9 @@ data_widget_server <- function( id ,
             cat( '\n* data_widget data1')
             
             # Testing 
-              saveRDS( dataset() , 'dataset.rds' )
-              saveRDS( formula_elements() , 'formula_elements.rds' )
-              saveRDS( ousTree() , 'ousTree.rds' )
+              # saveRDS( dataset() , 'dataset.rds' )
+              # saveRDS( formula_elements() , 'formula_elements.rds' )
+              # saveRDS( ousTree() , 'ousTree.rds' )
               
             cat( '\n -  data_widget data1() class( dataset() )', class( dataset() ))
           
@@ -406,15 +402,15 @@ data_widget_server <- function( id ,
                 select( -dataElement ) %>%
                 rename( dataElement = dataElement.id )
               
-              data = data %>%
-                select( dataElement, categoryOptionCombo, period, orgUnit, COUNT, SUM ) 
+              # data = data %>%
+              #   select( dataElement, categoryOptionCombo, period, orgUnit, COUNT, SUM ) 
               
               d1 = data_1( data , formula_elements() , ousTree()  )
               cat( '\n - data1 names:', names( d1 ))
               cat( '\n - data1 rows:', nrow( d1 ))
               
               #Testing 
-              saveRDS( d1, 'd1.rds', compress = FALSE )
+              # saveRDS( d1, 'd1.rds', compress = FALSE )
               
               removeModal()
               
@@ -450,7 +446,7 @@ data_widget_server <- function( id ,
               # data1 = setDT( data1 )[ , value := !is.na( SUM ) ] 
             }
             
-            removeModal()
+            # removeModal()
             
             # keyvars = key_vars( dataset() )
             # indexvars = index2_var( dataset() )
@@ -463,14 +459,14 @@ data_widget_server <- function( id ,
             return( d1 )
       })
       
-        dt1 = reactive({
-          req( data1() )
-          cat( "\n* dt1 " )
-          cat( "\n - data1() class:" , class( data1()  ) )
-          d1 = data1()
-          cat( "\n - dt1 class:" , class( d1 ) )
-          return( d1 )
-        })
+        # dt1 = reactive({
+        #   req( data1() )
+        #   cat( "\n* dt1 " )
+        #   cat( "\n - data1() class:" , class( data1()  ) )
+        #   d1 = data1()
+        #   cat( "\n - dt1 class:" , class( d1 ) )
+        #   return( d1 )
+        # })
       
             
 
@@ -483,8 +479,8 @@ data_widget_server <- function( id ,
           formula_elements = formula_elements ,
           dataset.file = reactive({ input$dataset }) ,
           dataset =  dataset ,
-          data1 = data1 ,
-          dt1 = dt1
+          data1 = data1 
+          # dt1 = dt1
             )
             )
         })
