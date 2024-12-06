@@ -180,48 +180,29 @@ mostFrequentReportingOUs <- function(
     if ( !count.any   ){
           if ( .cat ) cat( '\n - not count.any'  )
           data = data %>% filter( data %in% data_categories )
-       }
+    }
+    
+    if ( .cat ) cat( '\n - mostFrequentReportingOUs between '
+                     , as.character(startingMonth)
+                     , as.character(endingMonth ) )
   
     if ( period %in% 'Month' ){
-         if ( .cat ) cat( '\n - reportingSelectedOUs by Month, between ', startingMonth, endingMonth )
-         data = data %>% as_tibble %>%
-         filter( 
-           Month >=   startingMonth   ,
-           Month <=   endingMonth 
-                 ) 
+         
+         data.dt = data %>% as.data.table() 
+         data.dt = data.dt[Month >= startingMonth & Month <= endingMonth ]
+         data = as_tibble( data.dt )
+         
        } 
       
     if ( period %in% 'Week' ){
-         if ( .cat ) cat( '\n - reportingSelectedOUs by Week')
-         data = data %>% as_tibble %>%
-         filter( 
-           Week >=  yearweek( startingMonth  )  ,
-           Week <=  yearweek( endingMonth )  
-                 ) 
+
+         data.dt = data %>% as.data.table() 
+         data.dt = data.dt[Week >=  yearweek( startingMonth  ) & Week <=  yearweek( endingMonth )   ]
+         data = as_tibble( data.dt )
        } 
   
   # Testing
   if ( testing ) saveRDS( data, "mostFrequentReportingOUs.data.rds" )
-    
-  # mr = data %>%
-       #   filter( !is.na( original  ) ) %>%
-       #   distinct( !! rlang::sym( period() ) , orgUnit ) %>%
-       #   group_by( orgUnit ) %>%
-       #   summarise( n = n() ) %>%
-       #   arrange( desc( n ))
-       #
-       # #print( "mr" ); #print( summary( mr$n ) )
-       #
-       # s = mr %>%
-       #   filter( n == max( mr$n ) ) %>%
-       #   pull( orgUnit ) %>% unique
-
-    # mr = data %>% 
-    #      filter( !is.na( original  ) ) %>%
-    #      distinct( !! rlang::sym( .period ) , orgUnit ) %>%
-    #      group_by( orgUnit ) %>%
-    #      summarise( n = n() ) %>%
-    #      arrange( desc( n ))
     
     if ( .cat ) cat( '\n - mr')
     mr = data %>%
