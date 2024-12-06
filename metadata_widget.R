@@ -15,32 +15,31 @@ metadata_widget_ui <- function( id ) {
 
     tabsetPanel(type = "tabs",
 
-                tabPanel( "systemInfo", 
+            tabPanel( "systemInfo", 
                          
                           # Set up shinyjs
                           useShinyjs() , 
-                          
-                          # fluidRow(
-                          #   
-                          #  column( 6 , div(style = "height:100px" ) , 
+
+                         fluidRow(
+                           column( 1 , 
+                                   tags$br() ,
                                    actionButton( ns("getMetadataButton") , 
                                                      "Request Metadata" , style='margin-top:25px' 
-                                                 ) ,
+                                                 ) ) ,
                           
-                          tags$br() ,
-                           # ) ,
-                           # 
-                           # column( 6 , div(style = "height:100px" ) , 
-                                    downloadButton( ns( 'downloadInfo' ), 'Save metadata and system info' , 
-                                                    style = "width: 100px") ,
-                         
-                           # ) )
-                           # , 
-                          tags$br() ,
-                         
-                         fluidRow(
-                           column( 6, DTOutput( ns('systemInfo') ) ) ,
-                           column( 6 , tableOutput( ns('variables') ) )
+                           column( 1 , 
+                                   tags$br() , tags$br() ,
+                                   downloadButton( ns( 'downloadInfo' ), 'Save metadata and system info' , 
+                                                            style = "width: 100px") 
+                          ) ,
+                           column( 2 , 
+                                   tags$br() , tags$br() ,
+                                   tableOutput( ns('variables') ) ) ,
+                          
+                           column( 8, 
+                                   tags$br() , tags$br() ,
+                                   DTOutput( ns('systemInfo') ) ) 
+                           
                            ) 
                           ) ,
                 
@@ -86,33 +85,33 @@ metadata_widget_ui <- function( id ) {
                          DTOutput( ns( 'OrgUnit_duplicates' )  ) 
                          ) ,
 
-                tabPanel("Map", style = "height:90vh;" ,
-                         
-                         # DTOutput( ns( 'geoFeaturesTable' ) ) ,
-                         # fluidPage(
-                          fluidRow( style = "height:80vh;",
-                          column(6, 
-                                 leafletOutput( ns( "geoFeatures_map" )  )
-                          ) ,
-                          column(6, 
-                                 DTOutput( ns( 'geoFeaturesTable' ) ) 
-                                 )
-                          ) ,
-                         br() ,
-                         # 
-                         downloadButton( ns( 'downloadGeoFeatures' ), 'Save geo features (.rds file)' )
-                         
-                         # fluidRow(
-                           # column( 4, DTOutput( ns( 'geoFeaturesTable' )  )  ) ,
-                           # column( 8 , leafletOutput( ns("geoFeatures_map") ) )
-                           # )
-                ) ,
+                tabPanel(
+                  "Map",
+                  fluidRow(
+                    column(
+                      6, # Half-width column for the map
+                      leafletOutput(ns("geoFeatures_map"), height = "80vh") # Adjust height dynamically
+                    ),
+                    column(
+                      6, # Half-width column for the table
+                      div(
+                        downloadButton(ns('downloadGeoFeatures'), 'Save geo features (.rds file)'),
+                        br(), # Add some spacing between the button and the table
+                        div(
+                          style = "overflow-y: auto; height: 75vh;", # Adjust height to fit within the viewport
+                          DTOutput(ns("geoFeaturesTable"))
+                        )
+                      )
+                    )
+                  )
+                ) , 
+
                 
                 tabPanel("API Resources", 
                          
                          h4( "The table below lists a link to retrieve metadata (not the data) for each DHIS2 attribute.") ,
                          
-                         h5("Simply paste the link into a new brower window.  This is the mechanism used to retrieve all the information displayed in this app." ) ,
+                         h5( "Simply paste the link into a new brower window.  This is the mechanism used to retrieve all the information displayed in this app." ) ,
                          
                          h5( "Note that the user will need to login into the DHIS2 in order to see the metadata.") ,
                          
@@ -1395,7 +1394,7 @@ metadata_widget_server <- function( id ,
 
     
     gf = geoFeatures.ous()
-    gf. = shared_geofeatures
+    # gf. = shared_geofeatures
     
     
     cat( '\n - split geofeatures')
