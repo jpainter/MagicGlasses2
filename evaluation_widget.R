@@ -792,18 +792,32 @@ evaluation_widget_server <- function( id ,
     })
 
     tsModel = reactive({
+      
       req( trend_Data() )
       req( model_formula() )
       req( input$evaluation_month )
+      
+      trend_Data =  trend_Data()
+      model_formula = model_formula()
+      evaluation_month  = input$evaluation_month 
+      period = period()
+      model = input$model
+      transform  = input$transform 
+      
+      #Testing
+      # save( trend_Data ,  model_formula , evaluation_month ,  period ,
+      #       file = 'tsModelTesting.rda' )
 
       if ( !input$evaluation ) return( NULL )
+      
       cat( '\n* evaluation_widget tsModel():' )
       cat( '\n - ' , paste('available vars:',
-                   paste( names(trend_Data()), collapse = ',')
+                   paste( names( trend_Data ), collapse = ',')
                    )
       )
       
-      cat( '\n* evaluation_widget tsModel():' , as.character( model_formula() ) )
+      if (!exists( "model.formula") ) model.formula = model_formula
+      cat( '\n* evaluation_widget tsModel():' , as.character( model.formula ) )
 
       # Dickey-Fuller test for stationary series
       # Null hypothese is non-stationary.
@@ -812,36 +826,34 @@ evaluation_widget_server <- function( id ,
       # print( dickeyFuller )
 
       # Filter data to period just before evaluation start
-      print( input$evaluation_month )
-      eval_month = input$evaluation_month
-      if ( period() %in% "Month" ) time_period = yearmonth( eval_month  ) # - month(1)
-      if ( period() %in% "Week" ) time_period = yearweek( eval_month  )
+      cat( "\n -evaluation_month:" , evaluation_month )
+      eval_month = evaluation_month
+      if ( period %in% "Month" ) time_period = yearmonth( eval_month  ) # - month(1)
+      if ( period %in% "Week" ) time_period = yearweek( eval_month  )
 
-      fit.data  = trend_Data() %>%
-        filter_index( ~ as.character( time_period ) ,
-                      .preserve = TRUE )
+      # index( trend_Data )
+      # fit model with pre-intervention data
+      fit.data  = trend_Data %>%
+        filter( Month < time_period )
       
-
-      model.formula = model_formula()
       if ( grepl( "~" ,  model.formula , fixed = TRUE ) ) model.formula = as.formula ( model.formula )
 
 
-
-      if (input$model %in% 'TSLM (trend)' ){
+      if ( model %in% 'TSLM (trend)' ){
         fit = fit.data %>% model( l = TSLM( model.formula  ) )
 
         cat( '\n - end tsModel():' )
         return( fit )
       }
 
-      if (input$model %in% 'TSLM (trend+season)' ){
+      if ( model %in% 'TSLM (trend+season)' ){
         fit = fit.data %>% model( l = TSLM( model.formula ) )
 
         cat( '\n - end tsModel():' )
         return( fit )
       }
 
-      if (input$model %in% 'ARIMA' ){
+      if ( model %in% 'ARIMA' ){
         fit = fit.data %>% model(
           arima = ARIMA(  model.formula )
           )
@@ -859,7 +871,7 @@ evaluation_widget_server <- function( id ,
         return( fit )
       }
       
-      if (input$model %in% 'NNETAR' ){
+      if ( model %in% 'NNETAR' ){
         fit = fit.data %>%
           model(
                 nnetar = NNETAR( !! rlang::sym( model.formula  ) )
@@ -872,7 +884,7 @@ evaluation_widget_server <- function( id ,
         return( fit )
       }
 
-      if (input$model %in% 'BSTS' ){
+      if ( model %in% 'BSTS' ){
         fit = fit.data %>%
           model(
             # b = BSTS( model_formula() )
@@ -883,7 +895,7 @@ evaluation_widget_server <- function( id ,
         return( fit )
       }
 
-      if (input$model %in% 'ETS' ){
+      if ( model %in% 'ETS' ){
 
         # if ( input$transform ){
         #   fit = fit.data %>% model( a = ETS( fabletools::box_cox( total , lambda = .5  ) )  )
@@ -909,7 +921,7 @@ evaluation_widget_server <- function( id ,
         return( fit )
       }
       
-      if (input$model %in% 'SNAIVE' ){
+      if ( model %in% 'SNAIVE' ){
         
         fit = fit.data %>% model( snaive = SNAIVE( model.formula ) )
         
@@ -917,10 +929,10 @@ evaluation_widget_server <- function( id ,
         return( fit )
       }
 
-      if (input$model %in% 'Prophet' ){
+      if ( model %in% 'Prophet' ){
         
         
-        if ( input$transform ){
+        if ( transform ){
           
           fit =  fit.data %>% model(
             prophet = prophet( fabletools::box_cox( total , lambda = .5  )  ~
@@ -967,9 +979,17 @@ evaluation_widget_server <- function( id ,
       req( trend_Data() )
       req( input$evaluation_month )
       req( model_formula() )
+      
+      trend_Data =  trend_Data()
+      model_formula = model_formula()
+      evaluation_month  = input$evaluation_month 
+      period = period()
+      model = input$model
+      transform  = input$transform 
+      
 
       if ( !input$pre_evaluation ) return( NULL )
-      cat( '\n* evaluation_widget tsPreModel():' , as.character( model_formula() ) )
+      cat( '\n* evaluation_widget tsPreModel():' , as.character( model_formula ) )
 
       eval_month = input$evaluation_month
       if ( period() %in% "Month" ) time_period = yearmonth( eval_month  ) - 12
@@ -977,9 +997,7 @@ evaluation_widget_server <- function( id ,
 
       cat("\n - time_period:" , time_period )
 
-      fit.data  = trend_Data() %>%
-        filter_index( ~ as.character( time_period ) ,
-                      .preserve = TRUE )
+      fit.data  = trend_Data %>% filter( Month < time_period )
 
       cat("\n - nrow(trend_Data()):" , nrow( trend_Data() )  )
       cat("\n - nrow(fit.data:" , nrow( fit.data )  )
@@ -988,7 +1006,7 @@ evaluation_widget_server <- function( id ,
       # saveRDS( trend_Data() , 'trend_Data.rds' )
       # saveRDS( fit.data , 'fit.data.rds' )
 
-      model.formula = model_formula()
+      model.formula = model_formula
       if ( grepl( "~" ,  model.formula , fixed = TRUE ) ) model.formula = as.formula (model.formula )
 
       if (input$model %in% 'TSLM (trend)' ){
@@ -998,14 +1016,14 @@ evaluation_widget_server <- function( id ,
         return( fit )
       }
 
-      if (input$model %in% 'TSLM (trend+season)' ){
+      if ( model %in% 'TSLM (trend+season)' ){
         fit = fit.data %>% model( l = TSLM( model.formula ) )
 
         cat( '\n - end tsPreModel() TSLM(trend + season):' )
         return( fit )
       }
 
-      if (input$model %in% 'ARIMA' ){
+      if ( model %in% 'ARIMA' ){
         fit = fit.data %>% model(
           arima = ARIMA( model.formula  )
           )
@@ -1024,7 +1042,7 @@ evaluation_widget_server <- function( id ,
       }
       
       
-      if (input$model %in% 'NNETAR' ){
+      if ( model %in% 'NNETAR' ){
         fit = fit.data %>%
           model(
             nnetar = NNETAR( total  )
@@ -1037,7 +1055,7 @@ evaluation_widget_server <- function( id ,
         return( fit )
       }
       
-      if (input$model %in% 'BSTS' ){
+      if ( model %in% 'BSTS' ){
         fit = fit.data %>%
           model(
             # b = BSTS( model_formula() )
@@ -1048,7 +1066,7 @@ evaluation_widget_server <- function( id ,
         return( fit )
       }
 
-      if (input$model %in% 'ETS' ){
+      if ( model %in% 'ETS' ){
         
         fit = fit.data %>% model( ets = ETS( !! model.formula ))
     
@@ -1060,7 +1078,7 @@ evaluation_widget_server <- function( id ,
         return( fit )
       }
       
-      if (input$model %in% 'SNAIVE' ){
+      if ( model %in% 'SNAIVE' ){
         
         fit = fit.data %>% model( ets = SNAIVE(  model.formula ) )
         
@@ -1068,10 +1086,10 @@ evaluation_widget_server <- function( id ,
         return( fit )
       }
 
-      if (input$model %in% 'Prophet' ){
+      if ( model %in% 'Prophet' ){
 
 
-        if ( input$transform ){
+        if (  transform ){
           
           fit =  fit.data %>% model(
                 prophet = prophet( fabletools::box_cox( total , lambda = .5  )  ~
@@ -1120,39 +1138,54 @@ evaluation_widget_server <- function( id ,
       req( input$horizon )
       cat( '\n* evaluation_widget tsForecast()' )
       
-      eval_month = yearmonth( input$evaluation_month ) 
-      time_period = seq( eval_month , eval_month + as.integer( input$horizon ) -1 , by = 1 ) 
-
+      trend_Data =  trend_Data()
+      model_formula = model_formula()
+      evaluation_month  = input$evaluation_month 
+      period = period()
+      model = input$model
+      transform  = input$transform 
+      horizon = input$horizon
+      bootstrap = input$bootstrap 
+      Reps = input$Reps
+      covariates = input$covariates
+      tsModel = tsModel()
+      
+      eval_month = yearmonth( evaluation_month ) 
+      time_period = seq( eval_month , eval_month + as.integer( horizon ) -1 , by = 1 ) 
+      
+      if ( period() %in% "Month" ) time_period = yearmonth( evaluation_month  ) # - month(1)
+      if ( period() %in% "Week" ) time_period = yearweek( evaluation_month  )
+      
+      forecast.fit.data  = trend_Data %>%
+        select( - total ) %>%
+        # filter_index( as.character( time_period ) ~ . ,
+        #             .preserve = TRUE ) %>%
+        filter( Month %in% time_period )
+      
+      
       if ( input$bootstrap ){
 
-        fcast = tsModel() %>%
-          fabletools::forecast( h = as.integer( input$horizon ) ,
+        fcast = model %>%
+          fabletools::forecast( h = as.integer( horizon ) ,
                     bootstrap = TRUE,
-                    times = as.integer( input$Reps )
+                    times = as.integer( Reps )
           )
       } else {
-        # fcast = tsModel() %>%
-        #   forecast( h = as.numeric( input$horizon ) )
-        
-        if ( nchar( input$covariates ) > 0 ){
-          cat( '\n - covariates')
-          if ( period() %in% "Month" ) time_period = yearmonth( input$evaluation_month  ) # - month(1)
-          if ( period() %in% "Week" ) time_period = yearweek( input$evaluation_month  )
- 
-          forecast.fit.data  = trend_Data() %>%
-            select( - total ) %>%
-            # filter_index( as.character( time_period ) ~ . ,
-            #             .preserve = TRUE ) %>%
-            filter( Month %in% time_period )
-          
-          fcast = tsModel() %>% fabletools::forecast( new_data = forecast.fit.data )
-          
-        } else {
-          fcast = tsModel() %>% fabletools::forecast(  h = as.integer( input$horizon ) )
-        }
-          
-      }
 
+        # if ( nchar( covariates ) > 0 ){
+        #   cat( '\n - covariates')
+        #   
+        #   fcast = tsModel %>% fabletools::forecast( new_data = forecast.fit.data )
+        #   
+        # } else {
+        #   
+        #   fcast = tsModel %>% fabletools::forecast(  h = as.integer( horizon ) )
+        # }
+        #   fcast = tsModel %>% fabletools::forecast(  h = as.integer( horizon ) )
+      # }
+
+      fcast = tsModel %>% fabletools::forecast( new_data = forecast.fit.data )
+        
       # preserve tsibble key and index,
       indexVar = index_var( fcast )
       keyVars = key_vars( fcast )
@@ -1198,7 +1231,7 @@ evaluation_widget_server <- function( id ,
       cat( '\n - fcast end:' );  #glimpse( fcast )
       # print( names( fcast ) )
       return( fcast )
-      })
+      } })
 
     
     tsPreForecast = reactive({
