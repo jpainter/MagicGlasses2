@@ -363,9 +363,9 @@ data_widget_server <- function( id ,
             cat( '\n* data_widget data1')
             
             # Testing 
-              # saveRDS( dataset() , 'dataset.rds' )
-              # saveRDS( formula_elements() , 'formula_elements.rds' )
-              # saveRDS( ousTree() , 'ousTree.rds' )
+              saveRDS( dataset() , 'dataset.rds' )
+              saveRDS( formula_elements() , 'formula_elements.rds' )
+              saveRDS( ousTree() , 'ousTree.rds' )
               
             cat( '\n -  data_widget data1() class( dataset() )', class( dataset() ))
           
@@ -406,15 +406,15 @@ data_widget_server <- function( id ,
                 select( -dataElement ) %>%
                 rename( dataElement = dataElement.id )
               
-              # data = data %>%
-              #   select( dataElement, categoryOptionCombo, period, orgUnit, COUNT, SUM ) 
+              data = data %>%
+                select( dataElement, categoryOptionCombo, period, orgUnit, COUNT, SUM ) 
               
               d1 = data_1( data , formula_elements() , ousTree()  )
               cat( '\n - data1 names:', names( d1 ))
               cat( '\n - data1 rows:', nrow( d1 ))
               
               #Testing 
-              # saveRDS( d1, 'd1.rds', compress = FALSE )
+              saveRDS( d1, 'd1.rds', compress = FALSE )
               
               removeModal()
               
@@ -450,7 +450,7 @@ data_widget_server <- function( id ,
               # data1 = setDT( data1 )[ , value := !is.na( SUM ) ] 
             }
             
-            # removeModal()
+            removeModal()
             
             # keyvars = key_vars( dataset() )
             # indexvars = index2_var( dataset() )
@@ -463,14 +463,14 @@ data_widget_server <- function( id ,
             return( d1 )
       })
       
-        # dt1 = reactive({
-        #   req( data1() )
-        #   cat( "\n* dt1 " )
-        #   cat( "\n - data1() class:" , class( data1()  ) )
-        #   d1 = data1()
-        #   cat( "\n - dt1 class:" , class( d1 ) )
-        #   return( d1 )
-        # })
+        dt1 = reactive({
+          req( data1() )
+          cat( "\n* dt1 " )
+          cat( "\n - data1() class:" , class( data1()  ) )
+          d1 = data1()
+          cat( "\n - dt1 class:" , class( d1 ) )
+          return( d1 )
+        })
       
             
 
@@ -483,8 +483,8 @@ data_widget_server <- function( id ,
           formula_elements = formula_elements ,
           dataset.file = reactive({ input$dataset }) ,
           dataset =  dataset ,
-          data1 = data1 
-          # dt1 = dt1
+          data1 = data1 ,
+          dt1 = dt1
             )
             )
         })

@@ -10,13 +10,12 @@
 # setup ####
 mg2 = "./"
 
-# Define the list of packages
+# Define the list of packages ####
 packages = c(
  'base' , 'CausalImpact' , 'cowplot' , 'data.tree' , 'DT' , 'dygraphs' , 
  'tidyfast' ,  'tidyverse' , 'stringr' ,
- # 'tidytable' ,
  'tsibble' , 'feasts' , 'forecast' , 'fpp3' , 'tibbletime' ,
- 'fable' , 'fable.prophet' , 'fabletools' , 
+ 'fable' , 'fabletools' , 'fable.prophet' , 'prophet' ,  "distributional" ,
  'table.express' , 'data.table' , 
  'furrr' , 'future' , 'GGally' , 'ggExtra' , 'gtable' , 'HDInterval' , 'hrbrthemes' , 
  'htmltools' , 'httr' , 'igraph' , 'jsonlite' , 'lubridate' , 'magrittr' , 'mapview' , 
@@ -24,12 +23,19 @@ packages = c(
  'prophet' , 'purrr' , 'RColorBrewer' , 'readxl' , 'renv' , 'rlang' , 'rmarkdown' , 
  'rsconnect' , 'rvg' , 'scales' , 'sf' , 
  'shiny' , "shinyjs" , 'shinybusy' , 'shinyWidgets' , 
-  'shinythemes' , 'shinydashboard', 'shinyBS', 'shinyLP', 'shinyFiles' ,
+ 'shinythemes' , 'shinydashboard', 'shinyBS', 'shinyLP', 
+ 'shinyFiles' , 'shinyalert' , 
  'slider' , 'sugrrants' , 
  'leaflet' ,  'leaflegend' , 'ggrepel' ,
  'tibbletime' , 'tictoc' , 'tsbox' , 
- 'zoo', 'conflicted', 'assertthat'
+ 'zoo', 'conflicted', 'assertthat' 
 )
+
+# optional packages (from previous versions): forecast, Bolstad, bsts, fable.bsts 
+# "gt",  "magick" , "kableExtra" , "tidyfst" ,  "gtsummary" , "flextable" ,
+# "comparator" , "fuzzyjoin", "ggthemes",  "maps", "ggspatial", "leaflet.extras",
+# "nngeo" , "overlapping" , "fitdistrplus","MLmetrics" ,"coin", "webshot" , "webshot2"
+# 'tidytable' 
 
 # cat( 'Recommended packages:' ,  packages )
 
@@ -37,69 +43,16 @@ installed = installed.packages()
 if ( ! 'pacman' %in% installed ) install.packages( 'pacman' )
 require( pacman )
 
+# if ( ! 'BiocManager' %in% installed ) install.packages( 'BiocManager' )
+# BiocManager::install(version = "3.20")
+
 # Load packages dynamically using pacman
 pacman::p_load( char = packages, install = TRUE )
 
-options("menu.graphics" = FALSE)
-rstudioapi::writeRStudioPreference("console_max_lines", 2000L )
-options(future.globals.maxSize = 6 * 1024^3)
+x=conflict_scout()
+save(x, file = 'conflicted' )
 
-options(shiny.trace=FALSE)
-options(shiny.reactlog=FALSE)
-knitr::opts_chunk$set(echo = FALSE)
-
-# add_busy_spinner(spin = "fading-circle", position = "bottom-right")
-
-source( paste0( mg2 , "ingest_formula_data.R") ) 
-source( paste0( mg2 , 'TS_Modeling_Functions.R') )
-source( paste0( mg2 , "Summary_TS.R") ) # new version of summary_ts()
-source( paste0( mg2 , 'TS_model_outlier_impute.R') ) # model_ts()
-source( paste0( mg2 , 'Deviation_Expected_Functions.R') )
-# source( 'theme_ppt.R')
-# source( 'clean_ts.r' )
-source( paste0( mg2 , 'DToptions.R') )
-source( paste0( mg2 , 'model_ts2.R' ) )
-source( paste0( mg2 , 'api_data.r' ) )
-source( paste0( mg2 , 'api_data_function_revision.R') )  # revision October 2024
-source( paste0( mg2 , 'dqa.r' ) )
-source( paste0( mg2 , 'Cleaning.R' ) )
-source( paste0( mg2 , 'prepareDataset.R' ) )
-source( paste0( mg2 , 'cleaning_functions.R' ) )
-source( paste0( mg2 , "data Functions.R" ) )
-source( paste0( mg2 , "dqa_functions.R" ) )
-
-
-# source( "key.mpe.distribution.R" )
-# source( "pre_mable_fit.R")
-
-# source( 'API.r' )
-
-Month_Year = function( x ){ yearmonth( zoo::as.yearmon( x , "%Y%m") ) }
-
-Week_Year = function( x ){ tsibble::yearweek( x) }
-
-options(dplyr.summarise.inform = FALSE)
-
-useShinyjs()   # Set up shinyjs
-
-# Modules ####
-
-source(  paste0( mg2, 'directory_widget.R' ) )
-source(  paste0( mg2, 'login_widget.R' ) )
-source(  paste0( mg2, 'metadata_widget.R' ) )
-source(  paste0( mg2, 'data_widget.r' ) )
-source(  paste0( mg2, 'data_request_widget.R' ) )
-source(  paste0( mg2, 'formula_widget.r' ) )
-source(  paste0( mg2, 'dqa_widget.R' ) )
-source(  paste0( mg2, 'reporting_widget_app.r' ) )
-source(  paste0( mg2, 'cleaning_widget.r' ) )
-source(  paste0( mg2, 'evaluation_widget.R' ) )
-
-options(shiny.trace=FALSE)
-options(shiny.reactlog=FALSE)
-
-# add_busy_spinner(spin = "fading-circle", position = "bottom-right")
-
+# Conflicts ####
 # Avoid naming conflicts for functions found in more than 1 package...
 conflict_prefer("filter", "dplyr")
 conflict_prefer("select", "dplyr")
@@ -123,7 +76,112 @@ conflicts_prefer(dplyr::between)
 conflicts_prefer(dplyr::count)
 conflicts_prefer(tidytable::map_lgl)
 conflicts_prefer(fable.prophet::prophet)
+conflicts_prefer(tsibble::index)
 # conflicts_prefer(tidytable::ungroup)
+conflicts_prefer( purrr::flatten )
+# conflicts_prefer(testthat::is_null)
+conflicts_prefer(purrr::compose)
+
+
+
+# Options ####
+options("menu.graphics" = FALSE)
+rstudioapi::writeRStudioPreference("console_max_lines", 2000L )
+options(future.globals.maxSize = 6 * 1024^3)
+
+options(shiny.trace=FALSE)
+options(shiny.reactlog=FALSE)
+knitr::opts_chunk$set(echo = FALSE)
+
+# Functions  ####
+source( paste0( mg2 , "ingest_formula_data.R") ) 
+source( paste0( mg2 , 'TS_Modeling_Functions.R') )
+source( paste0( mg2 , "Summary_TS.R") ) # new version of summary_ts()
+source( paste0( mg2 , 'TS_model_outlier_impute.R') ) # model_ts()
+source( paste0( mg2 , 'Deviation_Expected_Functions.R') )
+# source( 'theme_ppt.R')
+# source( 'clean_ts.r' )
+source( paste0( mg2 , 'DToptions.R') )
+source( paste0( mg2 , 'model_ts2.R' ) )
+source( paste0( mg2 , 'api_data.r' ) )
+source( paste0( mg2 , 'api_data_function_revision.R') )  # revision October 2024
+source( paste0( mg2 , 'dqa.r' ) )
+source( paste0( mg2 , 'Cleaning.R' ) )
+source( paste0( mg2 , 'prepareDataset.R' ) )
+source( paste0( mg2 , 'cleaning_functions.R' ) )
+source( paste0( mg2 , "data Functions.R" ) )
+source( paste0( mg2 , "dqa_functions.R" ) )
+source( paste0( mg2 , "MG2_Forecast_Functions.R" ) )
+
+
+as.yearmonth = function( date.string , fmt = "%B%Y" ) zoo::as.yearmon( date.string , fmt) %>% yearmonth
+
+knitr::opts_chunk$set(echo = FALSE , warning = FALSE )
+
+get_date_part = function(x){
+  x.parts = str_split( x , "_" , simplify = TRUE ) 
+  date.part = x.parts[ length( x.parts ) ]
+  date = str_split( date.part , fixed(".") , simplify = TRUE )[1] 
+  return( ymd( date ))
+}
+
+get_file_date = function(x){
+  file.info( x )$mtime
+}
+
+as.yearmonth = function( date.string , fmt = "%B%Y" ) zoo::as.yearmon( date.string , fmt) %>% yearmonth
+
+knitr::opts_chunk$set(echo = FALSE , warning = FALSE )
+
+if ( ! 'flextable' %in% installed ) install.packages( 'flextable' )
+library( flextable ) 
+         
+# Flextable
+set_flextable_defaults(font.size = 11)
+
+# Function to have tables autofit to page
+FitFlextableToPage <- function(ft, pgwidth = 6.5 ){
+  # set as autofit to make width parameters adjustable
+  
+  ft_out <- ft %>% autofit()
+  
+  # set width as function of page width
+  
+  ft_out <- width(ft_out, width = dim(ft_out)$widths*pgwidth /(flextable_dim(ft_out)$widths))
+  
+  return(ft_out)
+}
+
+intersect_length = function(x,y ) intersect( x, y) %>% length 
+
+Month_Year = function( x ){ yearmonth( zoo::as.yearmon( x , "%Y%m") ) }
+
+Week_Year = function( x ){ tsibble::yearweek( x) }
+
+options(dplyr.summarise.inform = FALSE)
+
+useShinyjs()   # Set up shinyjs
+
+# Modules ####
+
+source(  paste0( mg2, 'directory_widget.R' ) )
+source(  paste0( mg2, 'login_widget.R' ) )
+source(  paste0( mg2, 'metadata_widget.R' ) )
+source(  paste0( mg2, 'data_widget.r' ) )
+source(  paste0( mg2, 'data_request_widget.R' ) )
+source(  paste0( mg2, 'formula_widget.r' ) )
+source(  paste0( mg2, 'dqa_widget.R' ) )
+source(  paste0( mg2, 'reporting_widget_app.r' ) )
+source(  paste0( mg2, 'cleaning_widget.r' ) )
+source(  paste0( mg2, 'evaluation_widget.R' ) )
+# source(  paste0( mg2, 'evaluation_widget_2.R' ) )
+
+options(shiny.trace=FALSE)
+options(shiny.reactlog=FALSE)
+
+# add_busy_spinner(spin = "fading-circle", position = "bottom-right")
+
+
 
 # Define UI  ####
 ui <- fluidPage(
@@ -156,7 +214,7 @@ ui <- fluidPage(
                            br() ,
                            p( "(Note: The layout of each page depends on your browser. 
                               You can adjust screen layout and text size by pressing ctrl- or ctrl+)" ),
-                          p( "Ver ( December 11, 2023 )" )
+                          p( "Ver ( December 5, 202 )" )
                           ) ,
                           
                 tabPanel( "Setup" ,
