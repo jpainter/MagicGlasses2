@@ -542,7 +542,7 @@ reporting_widget_server <- function( id ,
   
   # d Filter data1 to selected level ####
   d = reactive({
-      req( input$reportingTab == "summary" )
+
       req( data1() )
       req( period() )
       cat( '\n* reporting_widget d:')
@@ -722,7 +722,9 @@ reporting_widget_server <- function( id ,
       data = d()
       
       #Testing
-      if ( testing )  saveRDS( data, 'orgunits.reports.data.rds')
+      testing = TRUE
+      cat( "\n - saving data, selected_data_categories as 'orgunits.reports.data.rda' ")
+      if ( testing )  save( data,selected_data_categories, file= 'orgunits.reports.data.rds')
       
       if ( !input$count.any  ){
         
@@ -1809,6 +1811,7 @@ reporting_widget_server <- function( id ,
   })
   
   facility_chart = reactive({
+    req( input$reportingTab == "facilities" )
     req( champion_facilities() )
     cat( "\n * facility_chart:")
     
