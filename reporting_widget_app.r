@@ -167,8 +167,8 @@ reporting_widget_ui = function ( id ){
       
       mainPanel(  width = 9, 
                   
-        tabsetPanel( type = "tabs", 
-        tabPanel( "Summary",  style = "height:90vh;" ,
+        tabsetPanel( type = "tabs", id = ns("reportingTab") ,
+        tabPanel( "Summary", value = 'summary' ,  style = "height:90vh;" ,
       
                   # fluidPage(
                     
@@ -236,7 +236,7 @@ reporting_widget_ui = function ( id ){
                   # )
         ) ,
         
-        tabPanel( "Facilities", 
+        tabPanel( "Facilities", value = 'facilities' , 
                   
                  # tableOutput( ns('orgUnitReportingTable')) 
                  
@@ -542,7 +542,7 @@ reporting_widget_server <- function( id ,
   
   # d Filter data1 to selected level ####
   d = reactive({
-
+      req( input$reportingTab == "summary" )
       req( data1() )
       req( period() )
       cat( '\n* reporting_widget d:')
@@ -707,6 +707,7 @@ reporting_widget_server <- function( id ,
   #  Reports ####
 
   orgunit.reports = reactive({ 
+      # req( input$reportingTab == "summary")
       req( selected_data_categories$elements )
       req( most_recent_period() )
       req( period() )
@@ -1246,6 +1247,7 @@ reporting_widget_server <- function( id ,
   
   plot1 = reactive({
       #print( 'plot1():' )
+      # req(input$reportingTab == "summary")
       req( annual.reports() )
       req( period() )
       .period = period()
