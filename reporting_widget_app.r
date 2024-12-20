@@ -891,7 +891,7 @@ reporting_widget_server <- function( id ,
 
   # level 3
   observe({ #Event( data1()  , {  
-    req( selected_org_levels$level2 )
+    req( input$level2 )
     if( nrow( data1() ) > 0 && 'level' %in% names( data1() )){
               cat( '\n* reporting_widget updating level3' )
       
