@@ -722,7 +722,7 @@ reporting_widget_server <- function( id ,
       data = d()
       
       #Testing
-      testing = TRUE
+      # testing = TRUE
       cat( "\n - saving data, selected_data_categories as 'orgunits.reports.data.rda' ")
       if ( testing )  save( data,selected_data_categories, file= 'orgunits.reports.data.rds')
       
@@ -893,9 +893,10 @@ reporting_widget_server <- function( id ,
   observe({ #Event( data1()  , {  
     req( input$level2 )
     if( nrow( data1() ) > 0 && 'level' %in% names( data1() )){
-              cat( '\n* reporting_widget updating level3' )
+              cat( '\n* reporting_widget updating level3,', levelNames()[3], ", within",
+                   input$level2 )
       
-              ls = setDT( data1() )[ base::get( levelNames()[2] ) %in% selected_org_levels$level2 , 
+              ls = setDT( data1() )[ base::get( levelNames()[2] ) %in% input$level2 , 
                                      base::get( levelNames()[3]  ), 
               ] %>%
                 unique %>% str_sort()
