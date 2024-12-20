@@ -578,6 +578,8 @@ metadata_widget_server <- function( id ,
     
     # Base Dictionary Line List (with categories collapsed)
     cat( '\n -creating dictionary..' )
+    #Testing
+    # save( de, ds, dsde , deg, cats , file = 'dataElementDictionary.rda')
    
     dictionary = de  %>%  rename( dataElement.id = id ) %>%
       
@@ -589,7 +591,8 @@ metadata_widget_server <- function( id ,
       
       left_join( ds  , by = 'dataSet.id' ) %>%
       
-      left_join( deg , by = 'dataElement.id' ) %>%
+      left_join( deg  , by = 'dataElement.id' , 
+                 relationship = "many-to-many") %>%
       
       left_join( cats  , by = 'categoryCombo.id' ) %>%
       
@@ -735,14 +738,19 @@ metadata_widget_server <- function( id ,
                      )
         )
       
-      # if available, use resources method
-      url<-paste0( baseurl() ,"api/indicators.json?fields=:all&pageing=false")
-      
       cols = c( 'id', 'name', 'displayName', 
                 # 'description' , # col not available in Guinea Feb 2022
                 'numerator' , 'denominator' ,
                 'annualized'
       )
+            
+      # if available, use resources method
+      # url<-paste0( baseurl() ,"api/indicators.json?fields=:all&paging=false")
+      url <- paste0( baseurl() ,"api/indicators.json?fields=" ,
+                     paste(cols, collapse = ",") , 
+                     "&paging=false")
+      
+
       
       indicators =  get( source_url = url )$indicators  %>% select( !!cols ) 
     
@@ -804,7 +812,6 @@ metadata_widget_server <- function( id ,
   }
 
   indicatorDictionary = reactive({
-
     
     if (login() & loginFetch() ){
     cat( '\n *collating indicators ')
@@ -1611,7 +1618,7 @@ metadata_widget_server <- function( id ,
   
  meta_variables = reactive({
     req( dataElementDictionary() )
-    # req( indicatorDictionary() )
+    req( indicatorDictionary() )
     
     cat( "\n* metadata_widget: meta_variables")
     
@@ -1636,7 +1643,7 @@ metadata_widget_server <- function( id ,
     
         # 'Category option combos' = nrow( categoryOptionCombos() ) %>% scales::comma() ,
     
-        # 'Indicators' = nrow( indicatorDictionary() ) %>% scales::comma()
+        'Indicators' = nrow( indicatorDictionary() ) %>% scales::comma()
     
     
         )  %>% gather( 'Attribute', 'Number' )
