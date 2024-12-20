@@ -14,56 +14,51 @@ formula_widget_ui <- function( id ) {
 
     div(
             # Header text for the top of the page
-            p( "Data elements and indicators associated with the selected formula (left panel)"), 
-            style = "font-weight: bold; text-align: left; margin-bottom: 20px;" # Center alignment and spacing 
-          ),
-    div(
-            # Header text for the top of the page
-            p( "Use the 'Select' and 'Review' tabs here:"), 
+            p( "Data elements and indicators associated with the selected formula (left panel). Use the 'Select' and 'Review' tabs:"), 
             style = "font-weight: bold; text-align: left; margin-bottom: 20px;" # Center alignment and spacing 
           ),
     
     tabsetPanel(type = "tabs",
                 
-                tabPanel( "Select", 
-                        fluidRow(
-                          column( 8 , br() ,
-                                  p( "Click on a row below to select each element:" ),
-                                  style = "font-weight: bold; text-align: left; margin-bottom: 20px;" ) ,
-                          column( 4 , 
-                                  selectInput( ns('element_indicator_choice'), "" ,
-                                       choices = c( 'data elements' , 'indicators' ),
-                                       selected = 'data elements'
-                                       ) )
-                          ) ,
-                        
-                        fluidRow( 
-                          column( 12 , verbatimTextOutput( ns("selected") ) )
-                          ) ,
-                        
-                        fluidRow(
-                           column( 12, 
-                              div( DT::dataTableOutput(  ns('dataElementDictionaryTable') ), 
-                               style = "font-size: 65%; width: 100%" )
-                           )
-                        )
-                ) ,
-               
                 tabPanel("Review", 
-                         h5( "List of selected elements with a row for each disaggregation" ) ,
+                         # h5( "List of selected elements with a row for each disaggregation" ) ,
+                         # fluidRow( 
+                         #   column( 7, div( p('Use this button to delete unwanted selection', style = "font-size: 16px" )) ) ,
+                         #   column( 2, downloadButton( ns( 'deleteRows' ), 'Delete Selected Rows') ) 
+                         #      ),
                          fluidRow( 
-                           column( 7, div( p('Use this button to delete unwanted selection', style = "font-size: 16px" )) ) ,
-                           column( 2, downloadButton( ns( 'deleteRows' ), 'Delete Selected Rows') ) 
-                              ),
-                         fluidRow( 
-                           column( 7, div( p('Use this button tosave changes', style = "font-size: 16px" )) ),
-                           column( 2, actionButton( ns( 'saveFormula' ) , 'Save Formula') ) 
+                           column( 7, div( p('List of selected elements with a row for each disaggregation', style = "font-size: 16px" )) ),
+                           column( 2, downloadButton( ns( 'saveFormulaXLS' ) , 'Save Formula') ) 
                               )
                               ,
                       div(DT::dataTableOutput( ns('forumlaDictionaryTable') ), 
-                          style = "font-size: 75%; width: 100%"
+                          style = "font-size: 65%; width: 100%"
                       )
                          ) ,
+                
+                tabPanel( "Select", 
+                          fluidRow(
+                            column( 8 , br() ,
+                                    p( "Click on a row below to select each element:" ),
+                                    style = "font-weight: bold; text-align: left; margin-bottom: 20px;" ) ,
+                            column( 4 , 
+                                    selectInput( ns('element_indicator_choice'), "" ,
+                                                 choices = c( 'data elements' , 'indicators' ),
+                                                 selected = 'data elements'
+                                    ) )
+                          ) ,
+                          
+                          fluidRow( 
+                            column( 12 , verbatimTextOutput( ns("selected") ) )
+                          ) ,
+                          
+                          fluidRow(
+                            column( 12, 
+                                    div( DT::dataTableOutput(  ns('dataElementDictionaryTable') ), 
+                                         style = "font-size: 65%; width: 100%" )
+                            )
+                          )
+                ) 
 
 
                 ) 
@@ -235,24 +230,28 @@ formula_widget_server <- function( id ,
                   # ,zeroIsSignificant = as.logical( zeroIsSignificant )
           )
       
-      
-      if ( nrow( updated_formula_elements$df ) == 0 ){
-        
-        cat( '\n- updated_formula_elements == 0')
-        
         updated_formula_elements$df = selected_categories  %>%
           arrange( dataElement ) %>%
           select( Formula.Name, everything() ) %>%
           distinct()
-        
-      } else {
-        cat('\n - adding' , nrow( selected_categories ), 'selected elements' )
-        
-        updated_formula_elements$df = bind_rows( updated_formula_elements$df , selected_categories ) %>%
-          arrange( dataElement ) %>%
-          select( Formula.Name, everything() ) %>%
-          distinct()
-      }
+      
+      # if ( nrow( updated_formula_elements$df ) == 0 ){
+      #   
+      #   cat( '\n- updated_formula_elements == 0')
+      #   
+      #   updated_formula_elements$df = selected_categories  %>%
+      #     arrange( dataElement ) %>%
+      #     select( Formula.Name, everything() ) %>%
+      #     distinct()
+      #   
+      # } else {
+      #   cat('\n - adding' , nrow( selected_categories ), 'selected elements' )
+      #   
+      #   updated_formula_elements$df = bind_rows( updated_formula_elements$df , selected_categories ) %>%
+      #     arrange( dataElement ) %>%
+      #     select( Formula.Name, everything() ) %>%
+      #     distinct()
+      # }
     
   })
   
@@ -296,7 +295,7 @@ formula_widget_server <- function( id ,
   output$formulaName = renderPrint({ formulaName() })
 
 # Save Formula ####
-  output$saveFormula <- downloadHandler(
+  output$saveFormulaXLS <- downloadHandler(
    
     filename = function() {
       paste0( "Formulas_", Sys.Date()  ,".xlsx"  )
@@ -342,7 +341,7 @@ formula_widget_server <- function( id ,
       
         new.Formula.Name = c( formulaName() , origninal_formula$Formula.Name )
         
-        new.Formula = c( selectedElementNames() , origninal_formula$Formula  )
+        new.Formula = c( selectedElementNames() , origninal_formula$Elements  )
         
         new.formula_elements = rbind( updated_formula_elements$df ,
                                       orginal_formula_elements 
