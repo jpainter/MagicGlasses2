@@ -1365,12 +1365,21 @@ metadata_widget_server <- function( id ,
 
     # shared_geofeatures %>% as_tibble() %>% select( -geometry ),
     geoFeatures.ous() %>% as_tibble() %>% select( -geometry ),
-    
-    rownames = FALSE, 
+
+    rownames = FALSE,
     filter = 'top' ,
-    options = DToptions_no_buttons()
+    options = DToptions_no_buttons(),
+    selection = "single", # Allow single row selection
 
     ))
+  
+  #   output$geoFeaturesTable <- renderDT({
+  #   datatable(
+  #     geoFeatures.ous() %>% as_tibble() %>% select( -geometry ) ,
+  #     selection = "single", # Allow single row selection
+  #     options = list(pageLength = 5)
+  #   )
+  # })
 
 ## Map ####
   
@@ -1405,25 +1414,16 @@ metadata_widget_server <- function( id ,
     
     
     cat( '\n - split geofeatures')
-    split_geofeatures = split( geoFeatures.ous() , f = gf[['levelName']]  )
+    split_geofeatures = split( gf , f = gf[['levelName']]  )
 
         
     # levels = names( split_geofeatures )
     levels = bind_rows(gf %>% st_drop_geometry()) %>% filter( !is.na( level)) %>% distinct( level, levelName ) 
 
     cat( '\n geoFeatures map for:' , levels$levelName  , '\n')
-
-    # levels = gf %>% as_tibble %>% count( level, levelName ) %>% 
-    #   filter( !is.na( level ) ) %>%
-    #   arrange(level) %>% pull(levelName)
-    
-    # levels = ouLevels %>% pull( levelName )
     
     # reorder levels
     split_geofeatures = split_geofeatures[ levels$levelName ]
-
-
-    # match( levels, orgUnitLevels() , )]
 
     # test for empty geometry
     not_all_empty_geo = map_lgl( split_geofeatures , ~!all(is.na(st_dimension(.x))) )
@@ -1439,35 +1439,6 @@ metadata_widget_server <- function( id ,
 
 
     split_gf = split_geofeatures[ not_all_empty_geo ]
-    
-    # Set option to display points (https://stackoverflow.com/questions/65485747/mapview-points-not-showing-in-r)
-    # mapviewOptions(fgb = FALSE)
-
-    # gf.map = mapView( 
-    #   
-    #         split_gf ,
-    #         
-    #         color = level.colors ,
-    #         col.regions = level.colors  ,
-    #         
-    #         # zcol = "parentName"  ,
-    #         
-    #         alpha.regions = 0, cex = 1 ,
-    #     
-    #         label = map( split_gf , ~paste( .x$name ,  
-    #                                         ifelse( .x$level < 3 , '' , 
-    #                                                 paste( 'in' , .x$parentName ) )
-    #                                         )
-    #                      ),
-    # 
-    #         burst = TRUE ,
-    #         hide = FALSE 
-    # )
-    # 
-    # cat('\n**geoFeatures Map prepared for output-\n')
-    # 
-    # return( gf.map@map )  # return leaflet slot of mapview object https://github.com/r-spatial/mapview/issues/58
-    # ]
     
     admins = gf %>% filter( st_geometry_type(.) != 'POINT') %>% filter( !st_is_empty(.) )
     
@@ -1498,9 +1469,11 @@ metadata_widget_server <- function( id ,
         
         addCircleMarkers( data = gf %>%
                             filter( st_geometry_type(.) == 'POINT') , group = "Facility" ,
-          radius = 2 ,
+          radius = 3 ,
           color = "blue" ,
-          stroke = FALSE, fillOpacity = .9
+          stroke = FALSE, fillOpacity = .9,
+          label = ~name,
+          layerId = ~name
       ) 
     
     admin.levels = admins$levelName %>% unique 
@@ -1513,6 +1486,7 @@ metadata_widget_server <- function( id ,
                                      ifelse( level < 3 , '' , 
                                              paste( 'in' ,  parentName ) )
                                             ) ,
+                     layerId = ~name,
                      color = "black", 
                      weight = 1, smoothFactor = 0.5,
                      opacity = 1.0, fillOpacity = 0 , fillColor = "lightblue" ,
@@ -1536,11 +1510,94 @@ metadata_widget_server <- function( id ,
 
   })
   
-  # test map:
   output$geoFeatures_map <- renderLeaflet({
     gf.map()
-    # leaflet() %>% addTiles() %>% setView(-93.65, 42.0285, zoom = 18)
     }) 
+  
+# Observe map marker click and highlight corresponding row in table
+  observeEvent(input$geoFeatures_map_shape_click, {
+    click <- input$geoFeatures_map_shape_click
+    
+    if (!is.null(click)) {
+
+      selected_name <- click$id
+      cat( paste('\n - clicked on:', selected_name ) )
+      proxy <- dataTableProxy("geoFeaturesTable")
+      
+      # Apply the selected name to the filter box
+      updateSearch(proxy, keywords = list(global = NULL, 
+                                          columns = list(NULL, selected_name, NULL, NULL, NULL , NULL, NULL, NULL, NULL, NULL, NULL  ) ) )
+  
+    } else {
+      updateSearch(proxy, keywords = list(global = NULL, 
+                                          columns = list(NULL, NULL, NULL, NULL, NULL , NULL, NULL, NULL, NULL, NULL, NULL  ) ) )
+    }
+  })
+  
+    observeEvent(input$geoFeatures_map_marker_click, {
+    click <- input$geoFeatures_map_marker_click
+    
+    if (!is.null(click)) {
+
+      selected_name <- click$id
+      cat( paste('\n - clicked on:', selected_name ) )
+      proxy <- dataTableProxy("geoFeaturesTable")
+      
+      # Apply the selected name to the filter box
+      updateSearch(proxy, keywords = list(global = NULL, 
+                                          columns = list(NULL, selected_name, NULL, NULL, NULL , NULL, NULL, NULL, NULL, NULL, NULL  ) ) )
+  
+    } else {
+      updateSearch(proxy, keywords = list(global = NULL, 
+                                          columns = list(NULL, NULL, NULL, NULL, NULL , NULL, NULL, NULL, NULL, NULL, NULL  ) ) )
+    }
+  })
+  
+  # Observe table row selection and highlight corresponding marker on map
+  observeEvent(input$geoFeaturesTable_rows_selected, {
+    
+    selected_row <- input$geoFeaturesTable_rows_selected
+    
+    cat( paste('\n - selected geofeatures row:', selected_row ) )
+    
+    gf = geoFeatures.ous()
+    selected_location <- gf[selected_row, ]
+    
+    # If row is selected and is a point
+    if ( length(selected_row) > 0 && st_geometry_type( selected_location ) %in% "POINT" ) {
+
+      leafletProxy("geoFeatures_map") %>%
+        clearMarkers() %>%
+         addCircleMarkers( data = gf %>%
+                            filter( st_geometry_type(.) == 'POINT') , group = "Facility" ,
+          radius = 3 ,
+          color = "blue" ,
+          layerId = ~name,
+          stroke = FALSE, fillOpacity = .9,
+          label = ~name
+      ) %>%
+        addCircleMarkers(
+          data = selected_location ,
+          radius = 3,
+          color = "red",
+          layerId = ~name,
+          fill = TRUE,
+          fillOpacity = 1,
+          label = ~name
+        )
+    } else {
+      leafletProxy("geoFeatures_map") %>%
+        clearMarkers() %>%
+        addCircleMarkers( data = gf %>%
+                            filter( st_geometry_type(.) == 'POINT') , group = "Facility" ,
+                          radius = 3 ,
+                          color = "blue" ,
+                          layerId = ~name,
+                          stroke = FALSE, fillOpacity = .9,
+                          label = ~name
+        )
+    }
+  })
 
 # Save geoFeatures to an rds file ####
 
