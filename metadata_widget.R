@@ -1257,92 +1257,92 @@ metadata_widget_server <- function( id ,
     req( orgUnits() , orgUnitLevels() )
     cat('\n * geoFeatures():'  )
     
-    if (  login() & loginFetch() ){
-      
-      cat( '\n - geoFeatures...')
- 
-      showModal(
-        modalDialog( title = "Downloading list of geoFeatures", 
-                     easyClose = TRUE ,
-                     size = 'm' ,
-                     footer=NULL
-                     )
-        )
- 
-      levels = orgUnitLevels()$level %>% unique 
-      cat( '\n - geoFeatures has levels:' , length( levels ) , '\n')
-
-      geosf = list()
-      
-        # login_status = try( loginDHIS2( baseurl() , username(), password() ) )
-        # print( paste( 'try loginDHIS2 is' , login_status , 
-        #               baseurl()  
-        #               # , username(), password()  
-        #               ))
-        
-      # pb = progress_estimated( length( levels ) )
-      
-      for ( l in levels ){
-        
-        cat( '\n -geoFeatures download level-' , l , '\n' )
-        
-        # xx= data.frame()
-        xx =  geoFeatures_download( level = l  )
-        # glimpse( x )
-        if ( "sf" %in% class(xx) ){  
-          cat('\n - this level is SF \n')
-          geosf[[ l ]] = xx  
-        } else { next }
-      }
-      
-      # print( 'geosf[[ l ]]') ; print(  glimpse( geosf[[ l ]] ) )
-      
- 
-      # saveRDS( geosf, 'pre_bind_geosf.rds')
-      
-      # before binding, find common col
-      geo_nonzero_rows = map_dbl( geosf, ~ifelse( !is_empty(.x) , nrow(.x), 0  )) > 0
-      geo_names_in_common = map(  geosf[geo_nonzero_rows], names ) %>% Reduce(intersect, .)
-      geosf. = lapply( geosf[geo_nonzero_rows] , "[", geo_names_in_common ) 
-      
-      geosf. <- do.call( rbind , geosf.)
-
-      cat( '\n - names geosf: ' ,  names( geosf. ) )
-        # 
-      # ous = ous %>% select( id, geometry ) 
-      # ous = orgUnits()
-      cat( '\n - geoFeatures:' , nrow( geosf. ) , 'rows \n' )
-      
-      cat( '\n - join ous with orgUnits()')
-   
-      geosf. = geosf. %>%
-        right_join( orgUnits() %>%
-                     # filter( ! is.na( code ) ) %>%
-                     select( id, name, levelName, leaf, parent ) %>%
-                      rename( parentName = parent ),
-                   by = c( 'id' ,  'name' )
-        )
-      
-      cat( "\n - rows with ous linked to orgUnits" , nrow( geosf. ) , '\n')
-      
-      # test
-      # saveRDS( geosf. , 'geosf.rds')
-      
-      filename = paste0( dir() , "geoFeatures_", Sys.Date()  , ".rds"  )
-      saveRDS( geosf. , filename )
-      
-      # TODO: impute location of missing facilities/admin areas 
-      
-      # glimpse( ous )
-      cat( '\n - missing geometry for' , sum( is.na( geosf.$geometry )), '\n' )
-      
-      # test
-      
-      # saveRDS( ous , 'geometry.rds')
-      
-      removeModal()
-
-    } else {
+    # if (  login() & loginFetch() ){
+    #   
+    #   cat( '\n - geoFeatures...')
+    # 
+    #   showModal(
+    #     modalDialog( title = "Downloading list of geoFeatures", 
+    #                  easyClose = TRUE ,
+    #                  size = 'm' ,
+    #                  footer=NULL
+    #                  )
+    #     )
+    # 
+    #   levels = orgUnitLevels()$level %>% unique 
+    #   cat( '\n - geoFeatures has levels:' , length( levels ) , '\n')
+    # 
+    #   geosf = list()
+    #   
+    #     # login_status = try( loginDHIS2( baseurl() , username(), password() ) )
+    #     # print( paste( 'try loginDHIS2 is' , login_status , 
+    #     #               baseurl()  
+    #     #               # , username(), password()  
+    #     #               ))
+    #     
+    #   # pb = progress_estimated( length( levels ) )
+    #   
+    #   for ( l in levels ){
+    #     
+    #     cat( '\n -geoFeatures download level-' , l , '\n' )
+    #     
+    #     # xx= data.frame()
+    #     xx =  geoFeatures_download( level = l  )
+    #     # glimpse( x )
+    #     if ( "sf" %in% class(xx) ){  
+    #       cat('\n - this level is SF \n')
+    #       geosf[[ l ]] = xx  
+    #     } else { next }
+    #   }
+    #   
+    #   # print( 'geosf[[ l ]]') ; print(  glimpse( geosf[[ l ]] ) )
+    #   
+    # 
+    #   # saveRDS( geosf, 'pre_bind_geosf.rds')
+    #   
+    #   # before binding, find common col
+    #   geo_nonzero_rows = map_dbl( geosf, ~ifelse( !is_empty(.x) , nrow(.x), 0  )) > 0
+    #   geo_names_in_common = map(  geosf[geo_nonzero_rows], names ) %>% Reduce(intersect, .)
+    #   geosf. = lapply( geosf[geo_nonzero_rows] , "[", geo_names_in_common ) 
+    #   
+    #   geosf. <- do.call( rbind , geosf.)
+    # 
+    #   cat( '\n - names geosf: ' ,  names( geosf. ) )
+    #     # 
+    #   # ous = ous %>% select( id, geometry ) 
+    #   # ous = orgUnits()
+    #   cat( '\n - geoFeatures:' , nrow( geosf. ) , 'rows \n' )
+    #   
+    #   cat( '\n - join ous with orgUnits()')
+    # 
+    #   geosf. = geosf. %>%
+    #     right_join( orgUnits() %>%
+    #                  # filter( ! is.na( code ) ) %>%
+    #                  select( id, name, levelName, leaf, parent ) %>%
+    #                   rename( parentName = parent ),
+    #                by = c( 'id' ,  'name' )
+    #     )
+    #   
+    #   cat( "\n - rows with ous linked to orgUnits" , nrow( geosf. ) , '\n')
+    #   
+    #   # test
+    #   # saveRDS( geosf. , 'geosf.rds')
+    #   
+    #   filename = paste0( dir() , "geoFeatures_", Sys.Date()  , ".rds"  )
+    #   saveRDS( geosf. , filename )
+    #   
+    #   # TODO: impute location of missing facilities/admin areas 
+    #   
+    #   # glimpse( ous )
+    #   cat( '\n - missing geometry for' , sum( is.na( geosf.$geometry )), '\n' )
+    #   
+    #   # test
+    #   
+    #   # saveRDS( ous , 'geometry.rds')
+    #   
+    #   removeModal()
+    # 
+    # } else {
     
         file = paste0( dir(), geofeatures.files()[1] )
         cat('\n - looking for metadata file:' , file )
@@ -1355,31 +1355,34 @@ metadata_widget_server <- function( id ,
         } else {
             return()
         }
-    }
+    # }
+    
+    # Fill latitude and longitude only if geometry is POINT
+    cat( '\n add lat and long when geometry is point')
+    geosf.$geom_type <- st_geometry_type( geosf. )
+    is_point <- geosf.$geom_type == "POINT"
+    geosf.$latitude[is_point] <- st_coordinates(geosf.[is_point, ])[, "Y"]
+    geosf.$longitude[is_point] <- st_coordinates(geosf.[is_point, ])[, "X"]
     
     return( geosf. )
     
   })
   
-  output$geoFeaturesTable = DT::renderDT(DT::datatable(
+  output$geoFeaturesTable = DT::renderDT( 
+    DT::datatable(
 
-    # shared_geofeatures %>% as_tibble() %>% select( -geometry ),
-    geoFeatures.ous() %>% as_tibble() %>% select( -geometry ),
+    geoFeatures.ous() %>% 
+      st_drop_geometry() %>%
+      as_tibble() %>% 
+      select( name, level, levelName, parentName, id, leaf, latitude, longitude ) ,
 
     rownames = FALSE,
     filter = 'top' ,
-    options = DToptions_no_buttons(),
+    options = list( DToptions_no_buttons(), scrollX = TRUE ) ,
     selection = "single", # Allow single row selection
 
     ))
   
-  #   output$geoFeaturesTable <- renderDT({
-  #   datatable(
-  #     geoFeatures.ous() %>% as_tibble() %>% select( -geometry ) ,
-  #     selection = "single", # Allow single row selection
-  #     options = list(pageLength = 5)
-  #   )
-  # })
 
 ## Map ####
   
@@ -1443,7 +1446,7 @@ metadata_widget_server <- function( id ,
     admins = gf %>% filter( st_geometry_type(.) != 'POINT') %>% filter( !st_is_empty(.) )
     
     gf.map =
-              leaflet( options = leafletOptions( preferCanvas = TRUE ,  updateWhen = FALSE ) ) %>%
+      leaflet( options = leafletOptions( preferCanvas = TRUE ,  updateWhen = FALSE ) ) %>%
       addTiles(group = "OSM (default)") %>%
       
       addMeasure(
@@ -1457,28 +1460,11 @@ metadata_widget_server <- function( id ,
       # addProviderTiles( "Stadia.Stamen.Terrain" , group = "Stamen.Terrain" ) %>%
       addProviderTiles( "Esri.WorldStreetMap", group = "Esri.WorldStreetMap" )  %>%
       addProviderTiles( "Esri.WorldImagery", group = "Esri.WorldImagery" ) %>%
-      addTiles( group = "No Background" , options = providerTileOptions( opacity = 0 ) ) %>%
+      addTiles( group = "No Background" , options = providerTileOptions( opacity = 0 ) ) 
 
-      addLayersControl(
-        baseGroups = c("OSM (default)", "Toner", 
-                       "Esri.WorldStreetMap" , "Esri.WorldImagery", "No Background" ) ,
-        overlayGroups = c( "Facility" ) ,
-        options = layersControlOptions( collapsed = TRUE )
-
-      )  %>%
-        
-        addCircleMarkers( data = gf %>%
-                            filter( st_geometry_type(.) == 'POINT') , group = "Facility" ,
-          radius = 3 ,
-          color = "blue" ,
-          stroke = FALSE, fillOpacity = .9,
-          label = ~name,
-          layerId = ~name
-      ) 
-    
     admin.levels = admins$levelName %>% unique 
     
-    for ( i in seq_along( admin.levels ) ){
+    for ( i in rev( seq_along( admin.levels ) ) ){
       gf.map = gf.map %>%
               addPolygons( data = admins %>% filter( levelName == admin.levels[ i ] ) ,
                      group = admin.levels[ i ] ,
@@ -1491,16 +1477,35 @@ metadata_widget_server <- function( id ,
                      weight = 1, smoothFactor = 0.5,
                      opacity = 1.0, fillOpacity = 0 , fillColor = "lightblue" ,
                      highlightOptions = highlightOptions( color = "white", weight = 2,
-                                                         bringToFront = TRUE)
+                                                         bringToFront = TRUE) ,
+                     labelOptions = labelOptions(
+                       noHide = FALSE,
+                       direction = "auto",
+                       opacity = 0.5
+                     )
                      ) 
     }
     
     gf.map = gf.map %>%
+      addCircleMarkers( data = gf %>%
+                          filter( st_geometry_type(.) == 'POINT') , group = "Facility" ,
+                        radius = 3 ,
+                        color = "blue" ,
+                        stroke = FALSE, fillOpacity = .9,
+                        label = ~name,
+                        layerId = ~name,
+                        labelOptions = labelOptions(
+                          noHide = FALSE,
+                          direction = "auto",
+                          opacity = 1
+                          )
+      ) %>%
+    
       # Layers control
       addLayersControl(
         baseGroups = c("OSM (default)", "Toner", "Toner Lite", "Stamen.Terrain", 
                        "Esri.WorldStreetMap" , "Esri.WorldImagery" ),
-        overlayGroups = c( admin.levels , "Facility"),
+        overlayGroups = c( "Facility" , rev( admin.levels )   ),
         options = layersControlOptions( collapsed = FALSE )
       )
     
@@ -1526,15 +1531,15 @@ metadata_widget_server <- function( id ,
       
       # Apply the selected name to the filter box
       updateSearch(proxy, keywords = list(global = NULL, 
-                                          columns = list(NULL, selected_name, NULL, NULL, NULL , NULL, NULL, NULL, NULL, NULL, NULL  ) ) )
+                                          columns = list( selected_name, NULL, NULL, NULL , NULL, NULL  ) ) )
   
     } else {
       updateSearch(proxy, keywords = list(global = NULL, 
-                                          columns = list(NULL, NULL, NULL, NULL, NULL , NULL, NULL, NULL, NULL, NULL, NULL  ) ) )
+                                          columns = list(NULL, NULL, NULL, NULL, NULL , NULL  ) ) )
     }
   })
   
-    observeEvent(input$geoFeatures_map_marker_click, {
+  observeEvent(input$geoFeatures_map_marker_click, {
     click <- input$geoFeatures_map_marker_click
     
     if (!is.null(click)) {
@@ -1545,22 +1550,46 @@ metadata_widget_server <- function( id ,
       
       # Apply the selected name to the filter box
       updateSearch(proxy, keywords = list(global = NULL, 
-                                          columns = list(NULL, selected_name, NULL, NULL, NULL , NULL, NULL, NULL, NULL, NULL, NULL  ) ) )
+                                          columns = list( selected_name, NULL, NULL, NULL , NULL, NULL  ) ) )
   
     } else {
       updateSearch(proxy, keywords = list(global = NULL, 
-                                          columns = list(NULL, NULL, NULL, NULL, NULL , NULL, NULL, NULL, NULL, NULL, NULL  ) ) )
+                                          columns = list(NULL, NULL, NULL, NULL, NULL , NULL  ) ) )
     }
   })
   
-  # Observe table row selection and highlight corresponding marker on map
-  observeEvent(input$geoFeaturesTable_rows_selected, {
     
-    selected_row <- input$geoFeaturesTable_rows_selected
+# Observe table row selection and highlight corresponding marker on map
+    # Create a reactive value to monitor selection
+    selected_row <- reactive({
+      input$geoFeaturesTable_rows_selected
+    }) 
+    
+  observe({
+    
+    gf = geoFeatures.ous()
+    
+    # revert to all points when input deselected
+    if ( is.null( selected_row() ) ){
+      cat('\n - no row selected')
+      
+      leafletProxy("geoFeatures_map") %>%
+        clearMarkers() %>%
+        addCircleMarkers( data = gf %>%
+                            filter( st_geometry_type(.) == 'POINT') , group = "Facility" ,
+                          radius = 3 ,
+                          color = "blue" ,
+                          layerId = ~name,
+                          stroke = FALSE, fillOpacity = .9,
+                          label = ~name
+        )
+      return()
+    }
+    
+    selected_row <- selected_row()
     
     cat( paste('\n - selected geofeatures row:', selected_row ) )
     
-    gf = geoFeatures.ous()
     selected_location <- gf[selected_row, ]
     
     # If row is selected and is a point
@@ -1586,6 +1615,7 @@ metadata_widget_server <- function( id ,
           label = ~name
         )
     } else {
+      
       leafletProxy("geoFeatures_map") %>%
         clearMarkers() %>%
         addCircleMarkers( data = gf %>%

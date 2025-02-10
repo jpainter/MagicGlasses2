@@ -1,3 +1,4 @@
+
 api_data = function(      periods = NA ,
                           periodType = 'Monthly' ,
                           YrsPrevious = 1 ,
@@ -34,8 +35,8 @@ api_data = function(      periods = NA ,
   cat('\n - setting periods - ') 
   # if ( all( is.na( periods )  ) ) 
   # # check for last x years only 
-  if ( periodType == 'Monthly' ) periods = date_code( YrsPrevious = YrsPrevious ) # 'months_last_5_years' # 
-  if ( periodType == 'Weekly') periods = date_code_weekly( YrsPrevious = YrsPrevious )
+  if ( periodType == 'Monthly' ) periods = date_code( YrsPrevious = YrsPrevious ) %>% unique # 'months_last_5_years' # 
+  if ( periodType == 'Weekly') periods = date_code_weekly( YrsPrevious = YrsPrevious ) %>% unique
   
   # periods = date_code( YrsPrevious = YrsPrevious )
   cat('\n -  ' , periods )  
@@ -62,7 +63,7 @@ api_data = function(      periods = NA ,
   if ( childOnly ){
       if ( any( grepl( "." , elements$id )) ){
         elements$id = sub("\\..*", "", elements$id )  
-        elements$name = sub("\\..*", "", elements$name ) 
+        elements$name = sub( "(.*)\\..*", "\\1" ,  elements$name ) 
         elements = distinct( elements )
       } 
     }
@@ -313,8 +314,8 @@ api_data = function(      periods = NA ,
                 ( current.value == prev.value ) 
       )
     
-    
-    saveRDS( update_compare ,  paste0( dir, 'update_compare_', formula,"_", Sys.Date() , ".rds") )
+    # Testing
+    # saveRDS( update_compare ,  paste0( dir, 'update_compare_', formula,"_", Sys.Date() , ".rds") )
     
     prev.periods.same.data = update_compare %>% 
       group_by( period , dataElement , categoryOptionCombo ) %>%
@@ -336,11 +337,7 @@ api_data = function(      periods = NA ,
     
     period_vectors = update.periods
     
-  } else {
-    if ( print ) cat( '\n - Requesting data for periods:\n' ,
-                      paste( period_vectors , collapse = ';') , "\n" )
   } 
-  
   
   if ( print ) cat( '\n - Requesting data for orgUnits:\n' , 
                     paste( orgUnits , collapse = ';') , "\n" 
@@ -364,7 +361,7 @@ api_data = function(      periods = NA ,
   pmap.df = expand.grid(  orgUnits, period_vectors, elements$id ) 
   
   # Testing
-  saveRDS( pmap.df, 'pmap.df.rds' )
+  # saveRDS( pmap.df, 'pmap.df.rds' )
   
   if ( print ){
     cat( '\n Making' , 
@@ -586,7 +583,7 @@ api_data = function(      periods = NA ,
                             
                             
                             #Testing
-                            saveRDS( d, "d.rds")
+                            # saveRDS( d, "d.rds")
                             # cat("\n done")
                             
                           }
@@ -702,7 +699,7 @@ api_data = function(      periods = NA ,
   d = bind_rows( d )
   
   # Testing
-  saveRDS( d, 'data_download.rds')
+  # saveRDS( d, 'data_download.rds')
   
   cat( '\n' , nrow(d), 'records with sum and count' )
   cat( '\n' , 'of these, there was no value for' , sum( is.na(d$SUM) ), 'records \n' )
@@ -732,4 +729,19 @@ api_data = function(      periods = NA ,
   }
   
   return( d )
+}
+
+
+
+# find lowest non-null value ####
+find_lowest_nonnull <- function(selected) {
+  levels <- c("level2", "level3", "level4", "level5")
+  
+  for (lvl in rev(levels) ){
+    if (!is.null(selected[[lvl]])) {
+      return(lvl)
+    }
+  }
+  
+  return(NULL)  # Return NULL if all levels are NULL
 }

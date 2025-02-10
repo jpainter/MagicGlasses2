@@ -73,7 +73,8 @@ data_request_widget_server <- function( id ,
                                     loginDetails = list() , 
                                     dataDirectory = NULL ,
                                     metadata_widget_output = NULL,
-                                    data_widget_output = NULL ){
+                                    data_widget_output = NULL,
+                                    regions_widget_output = NULL){
   moduleServer(
     id ,
     function( input, output, session 
@@ -95,7 +96,8 @@ data_request_widget_server <- function( id ,
       dataset = reactive({ data_widget_output$dataset() })
       orgUnitLevels = reactive({ metadata_widget_output$orgUnitLevels() })
       orgUnits = reactive({ metadata_widget_output$orgUnits() })
-      
+      selected_regions =  reactive({ regions_widget_output$selected_regions() })
+  
   
       formula.names = reactive({ 
           req( formulas() ) 
@@ -139,6 +141,7 @@ data_request_widget_server <- function( id ,
       if ( login()  ){
           request( TRUE )       
           cat('\n * data_request_widget requestData Button' , request(), '\n')
+          
           x = formula.request()
   
         } else {
@@ -159,31 +162,59 @@ data_request_widget_server <- function( id ,
     orgUnitRequest = reactive({
       req( input$level )
       cat( '\n* data_request_widget orgUnits reactive')
-      .orgUnitLevels = orgUnitLevels()
       
-      ou = case_when(
+      # Update Feb 20225
+      # if all_levels (national), then null and api will pull from all child values below highest level.
+      # if Regions has selection and sub-national selected, then return the selected  ou 
+      
+      # .orgUnitLevels = orgUnitLevels()
+      
+      # ou = case_when(
+      #   
+      #   input$level %in% 'All-levels' ~ 
+      #     list( .orgUnitLevels %>% arrange( level ) %>% pull( level ) %>%
+      #     paste0( "LEVEL-" , .  ) )  ,
+      # 
+      #   # input$level %in% 'Leaf-only' ~ 
+      #   #   list( 
+      #   #   # split orgunit ids into chunks of 100
+      #   #   orgUnits  %>% 
+      #   #     filter( leaf == TRUE ) %>% pull( id ) %>%
+      #   #           split( . , ceiling(seq_along( . )/100) ) %>%
+      #   #           map_chr( . , ~paste( .x , collapse = ";" ) )
+      #   #   )  , 
+      # 
+      #   TRUE ~ list(
+      #     .orgUnitLevels %>% 
+      #       filter( levelName %in% input$level ) %>%
+      #       pull( level ) %>%  paste0( "LEVEL-" , .  )  ) 
+      # 
+      # ) %>% unlist #nb: each case evaluated as list, otherwise always returns vector of max length
+      # 
+      # cat( '\n - data_request_widget orgUnits:' , ou )
+      
+      # if regions selected...
+      cat( "\n - selected_regions:"  )
+      # selected_regions = selected_regions()
+      sr = selected_regions()
+      # sr = list( level2 = selected_regions$level2 ,
+      #          level3 = selected_regions$level3 ,
+      #          level4 = selected_regions$level4 ,
+      #          level5 = selected_regions$level5 )
+            
+      cat( "\n - selected_regions:" , unlist( sr ) )
+      # cat( "\n - observer(selected_regions):" , unlist( isolate(selected_regions() ) ) )
+      
+      if ( !is.null( sr[[1]] ) ){
+        cat( "\n - data_request_widget orgUnitRequest selected_regions" )
+
+        level = find_lowest_nonnull( sr )
+        # ou = paste( sr[[ level ]] , collapse = ";" )
+        ou = sr[[ level ]] 
+        cat( "\n\n -- ", level, ou )
         
-        input$level %in% 'All-levels' ~ 
-          list( .orgUnitLevels %>% arrange( level ) %>% pull( level ) %>%
-          paste0( "LEVEL-" , .  ) )  ,
+      } else { ou = NULL }
       
-        # input$level %in% 'Leaf-only' ~ 
-        #   list( 
-        #   # split orgunit ids into chunks of 100
-        #   orgUnits  %>% 
-        #     filter( leaf == TRUE ) %>% pull( id ) %>%
-        #           split( . , ceiling(seq_along( . )/100) ) %>%
-        #           map_chr( . , ~paste( .x , collapse = ";" ) )
-        #   )  , 
-      
-        TRUE ~ list(
-          .orgUnitLevels %>% 
-            filter( levelName %in% input$level ) %>%
-            pull( level ) %>%  paste0( "LEVEL-" , .  )  ) 
-      
-      ) %>% unlist #nb: each case evaluated as list, otherwise always returns vector of max length
-    
-      cat( '\n - data_request_widget orgUnits:' , ou )
       return( ou )
       })
     
@@ -215,16 +246,30 @@ data_request_widget_server <- function( id ,
           .years = input$years
           .level = input$level
           # .orgUnitLevels = orgUnitLevels()
-          .orgUnits = orgUnitRequest()
+          # .orgUnits = orgUnitRequest()
           .formula.name = indicator()
           
           # TESTING
           saveRDS( orgUnits(), 'orgUnits.rds' )
           
           # To use jim Grace api/dataSets, need to set .orgunits to the highest level
-          .orgUnits = orgUnits() %>% 
-            filter( level %in% min( orgUnits()$level, na.rm = T)  ) %>%
-            pull( id )
+          # If orgUnits specified, then use them 
+          if ( is.null( orgUnitRequest() ) ){
+            cat( "\n - National data request")
+            .orgUnits = orgUnits() %>% 
+              filter( level %in% min( orgUnits()$level, na.rm = T)  ) %>%
+              pull( id )
+            
+          } else {
+            cat( "\n - subNational data request")
+            # Testing
+            saveRDS( orgUnits(), 'orgUnits.rds')
+            saveRDS( orgUnitRequest() , "orgUnitRequest.rds" )
+            
+            .orgUnits = orgUnits() %>% 
+              filter( name %in% orgUnitRequest()  ) %>%
+              pull( id ) 
+          }
           
           
           # If categoryOption is NA, then omit from request.  This will return 'total' with no categories.  

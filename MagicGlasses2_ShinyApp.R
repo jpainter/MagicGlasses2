@@ -26,7 +26,7 @@ packages = c(
  'slider' , 'sugrrants' , 
  'leaflet' ,  'leaflegend' , 'ggrepel' ,
  'tibbletime' , 'tictoc' , 'tsbox' , 
- 'zoo', 'conflicted', 'assertthat' 
+ 'zoo', 'conflicted', 'assertthat' , 'stringi' 
 )
 
 # optional packages (from previous versions): forecast, Bolstad, bsts, fable.bsts 
@@ -172,7 +172,7 @@ source(  paste0( mg2, 'dqa_widget.R' ) )
 source(  paste0( mg2, 'reporting_widget_app.r' ) )
 source(  paste0( mg2, 'cleaning_widget.r' ) )
 source(  paste0( mg2, 'evaluation_widget.R' ) )
-# source(  paste0( mg2, 'evaluation_widget_2.R' ) )
+source(  paste0( mg2, 'regions_widget.R' ) )
 
 options(shiny.trace=FALSE)
 options(shiny.reactlog=FALSE)
@@ -226,6 +226,8 @@ ui <- fluidPage(
                          ),
 
                 tabPanel("Metadata", metadata_widget_ui( "metadata1" ) ) ,
+    
+                tabPanel("Regions", regions_widget_ui( "regions1" ) ) ,
 
                 tabPanel("Data",
 
@@ -263,6 +265,12 @@ server <- function(input, output, session ) {
                               directory_widget_output = directory_widget_output
       )
 
+    regions_widget_output =  regions_widget_server( "regions1" ,
+                              directory_widget_output = directory_widget_output ,
+                              metadata_widget_output = metadata_widget_output,
+                              data_widget_output = data1_Widget_output
+      )
+    
     data1_Widget_output =  data_widget_server( "data1" ,
                       directory_widget_output = directory_widget_output ,
                       metadata_widget_output = metadata_widget_output  ,
@@ -273,7 +281,8 @@ server <- function(input, output, session ) {
                                   loginDetails  =  login_widget_output ,
                                   dataDirectory = directory_widget_output ,
                                   metadata_widget_output = metadata_widget_output ,
-                                  data_widget_output = data1_Widget_output
+                                  data_widget_output = data1_Widget_output ,
+                                  regions_widget_output = regions_widget_output
       )
 
     formula1_Widget_output = formula_widget_server( "formula1" ,

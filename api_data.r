@@ -11,7 +11,6 @@
 # options( dplyr.summarise.inform = FALSE )
 
 
-
 # Functions ####
 # Login ####
 loginDHIS2<-function( baseurl, username, password, timeout = 30 , ...  ) {
@@ -67,6 +66,8 @@ retry <- function( expr, isError=function(x) "try-error" %in% class(x),
 }
 
 # JSON helper function ####
+
+
 ## gets json text from url and converts to data frame 
 get = function( baseurl , source_url , .print = TRUE , json = TRUE , 
                 username = NULL, password = NULL ){
@@ -136,6 +137,7 @@ get = function( baseurl , source_url , .print = TRUE , json = TRUE ,
   
 }
 
+
 get_in_parts = function( baseurl. , de. , periods. , orgUnits. , aggregationType. ){
   
   # withProgress( message = 'requesting data' ,  value = 0, {
@@ -189,8 +191,14 @@ date_code = function(
     years = YrsPrevious:this.year
   }
   
-  # endMonth: get current month.  
-  endMonth = Sys.yearmon()
+  # endMonth.  
+  if ( currentMonth ){
+    endMonth = Sys.yearmon() 
+  } else {
+      # Subtract one month using seq.Date()
+      previous_month <- seq( as.Date( Sys.yearmon() ), length = 2, by = "-1 month")[2] %>% 
+        format( "%b %Y" )
+  } 
   
   # start month
   if ( !is.null( startPeriod ) ){
@@ -203,8 +211,9 @@ date_code = function(
         }
     }
   
-  months = seq( startMonth, endMonth , 1/12 ) %>% format(., "%Y%m")
-  
+  months =seq(from = as.Date(startMonth), to = as.Date(endMonth), by = "month") %>% 
+    as.yearmon() %>% format(., "%Y%m")
+
   # remove current month ;
   if (currentMonth == FALSE )
   months = months[ 1:( length(months) - 1)]
@@ -222,6 +231,8 @@ date_code_weekly = function(
   currentWeek = TRUE  # include current month
   ){
   
+  if ( is.null( weeks ) )  weeks = 1:52
+  
   if ( is.null( years ) ){
     
     this.year = year( Sys.Date() )
@@ -230,30 +241,38 @@ date_code_weekly = function(
     years = YrsPrevious:this.year
   }
   
-  # endMonth: get current month.  
-  endDate =Sys.Date()  # %>% format( "%Y%W" )
-                    
+  # endMonth.  
+  if ( currentMonth ){
+    endMonth = Sys.yearmon() 
+  } else {
+      # Subtract one month using seq.Date()
+      previous_month <- seq( as.Date( Sys.yearmon() ), length = 2, by = "-1 month")[2] %>% 
+        format( "%b %Y" )
+  } 
   
   # start month
   if ( !is.null( startPeriod ) ){
     startMonth = as.yearmon( startPeriod , "%Y%m")
     } else {
-      if ( !is.null( monthsPrevious ) ){
-        startMonth =  endWeek - monthsPrevious/12
+      if ( !is.null( monthsPrevious )){
+        startMonth =  endMonth - monthsPrevious/12
         } else {
-          startMonth = ymd( paste0( YrsPrevious, "0101" ) )
+          startMonth = as.yearmon( YrsPrevious )
         }
     }
-  
 
-  weeks = seq( startMonth , endDate, by = '1 week') %>% 
-    yearweek() %>% format( "%YW%W")
+  
+  weeks = seq(from = as.Date(startMonth), to = as.Date(endMonth), by = '1 week' ) %>% 
+    yearweek() %>% format( "%YW%W" )
+
   
   # remove current month ;
   if (currentWeek == FALSE ) weeks = weeks[ 1:( length(weeks) - 1)]
   
-  period = paste( weeks, collapse = ";" )
+  
+  period = paste( months, collapse = ";" )
   return( period )
+
 }
 
 
@@ -422,6 +441,9 @@ api_url = function( baseurl, de ,  periods, orgUnits , aggregationType, childOnl
   
   # cat( '\n* api_url:' ) 
   # # print( orgUnits ); print( aggregationType )
+  
+  # if multiple orgUnits, need to separate with semicolon
+  # e.g. ou = c("lc3eMKXaEfw" ,"ImspTQPwCqd") orgUnits = paste( ou, collapse =";")
   
   #example from JG providing acutal values entered with no aggregations
   # https://play.im.dhis2.org/stable-2-41-1/
@@ -771,7 +793,7 @@ api_data = function(      periods = NA ,
           current.counts[[i]] = fetch_get(  baseurl. = baseurl , username , password ,
                                       de. = new.elements , 
                                       periods. = prev.periods.in.year , 
-                                      orgUnits. = "LEVEL-1" , 
+                                      orgUnits. = orgUnits , 
                                       aggregationType. = "COUNT" ,
                                       get.print = print ) %>%
                                   mutate( current.count = as.integer( value )  )
@@ -810,7 +832,7 @@ api_data = function(      periods = NA ,
           current.values[[i]] = fetch_get(  baseurl. = baseurl , username , password ,
                                     de. = new.elements , 
                                     periods. = prev.periods.in.year ,
-                                    orgUnits. = "LEVEL-1" , 
+                                    orgUnits. = orgUnits , 
                                     aggregationType. = "SUM" ,
                                     get.print = print ) %>%
                                 mutate( current.value = as.integer( value )  )
@@ -873,8 +895,9 @@ api_data = function(      periods = NA ,
                   ( current.value == prev.value ) 
         )
       
-        
-        saveRDS( update_compare ,  paste0( dir, 'update_compare_', formula,"_", Sys.Date() , ".rds") )
+      
+      # Testing  
+      # saveRDS( update_compare ,  paste0( dir, 'update_compare_', formula,"_", Sys.Date() , ".rds") )
       
         prev.periods.same.data = update_compare %>% 
           group_by( period , dataElement , categoryOptionCombo ) %>%
