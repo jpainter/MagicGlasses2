@@ -443,7 +443,7 @@ cleaning_widget_server <- function( id ,
           cat('\n* cleaning_widget data1.mad_seasonal' )
           cat('\n - scanForMAD:' , scanForMAD() )
           
-          cat( '\n - class(outlierData$df_data):' , class( outlierData$df_data ))
+          # cat( '\n - class(outlierData$df_data):' , class( outlierData$df_data ))
           cat('\n - cleaning_widget data1():' , class( data1() ) )
           
           if ( scanForMAD() ){

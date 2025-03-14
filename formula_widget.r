@@ -62,17 +62,17 @@ formula_widget_ui <- function( id ) {
                            column( 2, downloadButton( ns("downloadRDS") , "Download RDS") )
                               )
                               ,
-                      div(DT::dataTableOutput( ns('forumlaDictionaryTable') ), 
-                          style = "font-size: 75%; width: 100%"
-                      )
+                         fluidRow(
+                           column( 12, 
+                                   div(DT::dataTableOutput( ns('forumlaDictionaryTable') ), 
+                                       style = "font-size: 65%; width: 100%" )
+                                   )
                          ) ,
-
-
+                
+                selected = "Review"
                 ) 
-    ) 
-    
-    
-  )  # end fillColl
+    ) )
+  )  
           
           } # ui
 

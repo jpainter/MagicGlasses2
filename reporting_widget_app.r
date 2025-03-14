@@ -115,7 +115,11 @@ reporting_widget_ui = function ( id ){
                   
                   selectizeInput( ns("missing_reports") , label = "Number of missing reports allowed/yr" , 
                                   choices = 0:2 , 
-                                  selected = 0 ) 
+                                  selected = 0 ) ,
+                  
+                          
+                  checkboxInput( ns("count.any") , label ='Categorize facility as reporting if any data submitted, even when data not selected above', value = FALSE )
+
                   ) 
                   
               ) , 
@@ -155,10 +159,8 @@ reporting_widget_ui = function ( id ){
                            selected = 1 ,
                            width = "100%" ) ,
         
-             h5( "By default, facility counted as reporting if the selected data was reported") ,
-        
-              checkboxInput( ns("count.any") , label ='Categorize facility as reporting if any data submitted, even when data not selected above', value = FALSE )
-      
+          h5( "By default, facility counted as reporting if any of the selected data were reported.\n
+            See option in 'Reporting Consistency' to count as reporting if any of these - including non selected data - were reported)." ) 
 
                # ) # end inputPanel 
         ) # end tabPanel

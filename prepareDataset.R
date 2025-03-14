@@ -192,6 +192,10 @@ data_leaves = function( d ){
 #   return( d. )
 # }
 
+is_null_or_empty <- function(x) {
+  is.null(x) || length(x) == 0 || (is.character(x) && x == "")
+}
+
 data_1 = function( data , formula_elements , ousTree , timing = FALSE  ){
   cat('\n* prepareDataset.R preparing data_1:')
   
@@ -202,8 +206,12 @@ data_1 = function( data , formula_elements , ousTree , timing = FALSE  ){
   
   if ( ! 'COUNT' %in% names( data )) return()
   
+  # if periodType missing, assume Monthly
+  if ( ! "periodType" %in% names(x) ) formula_elements$periodType = "Monthly"
   ptype = min( formula_elements$periodType , na.rm = T)
+  if ( is_null_or_empty( ptype ) ) ptype = "Monthly" # if missing, assume Monthly 
   cat( '\n - ptype is' , ptype )
+  
   if ( grepl( "weekly" , ptype , ignore.case = T) ){
     p = "Week"
   } else {

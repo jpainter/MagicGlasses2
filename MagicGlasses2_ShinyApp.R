@@ -129,6 +129,7 @@ get_file_date = function(x){
 
 as.yearmonth = function( date.string , fmt = "%B%Y" ) zoo::as.yearmon( date.string , fmt) %>% yearmonth
 
+
 knitr::opts_chunk$set(echo = FALSE , warning = FALSE )
 
 if ( ! 'flextable' %in% installed ) install.packages( 'flextable' )
