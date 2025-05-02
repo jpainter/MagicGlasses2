@@ -76,6 +76,9 @@ data_widget_server <- function( id ,
           
        # Reactive dependecies
       data.folder = reactive({ directory_widget_output$directory() })
+      dataElements = reactive({ metadata_widget_output$dataElements() })
+      dataSets = reactive({ metadata_widget_output$dataSets() })
+      categories = reactive({ metadata_widget_output$categories() })
       ousTree = reactive({ metadata_widget_output$ousTree() })
       completedRequest = reactive({ data_request_output$completedRequest() })
       
@@ -203,7 +206,7 @@ data_widget_server <- function( id ,
           
             } else{
               
-            cat( '\n - reading formula elements from fromula rds file', file )
+            cat( '\n - reading formula elements from formula rds file', file )
             formulas = readRDS( file ) 
             }
         
@@ -255,11 +258,11 @@ data_widget_server <- function( id ,
                   grepl( file.keywords, dir.files, ignore.case = T ) &
                   ! grepl( "Update_", dir.files, ignore.case = T )]
         
-          cat('\nall levels data files:' , data.files )
+          cat('\n- all levels data files:' , length( data.files ) )
           
           f.indicator = grepl( indicator , data.files , fixed = TRUE )
           
-          cat("\n f.indicator:" , f.indicator ) 
+          cat("\n- f.indicator:" , sum( f.indicator , na.rm = TRUE ) ) 
           
           if ( sum( f.indicator ) == 0 ){
             cat( '\n - no data files for this indicator' )
@@ -390,7 +393,19 @@ data_widget_server <- function( id ,
               
               cat( '\n -- preparing data1')
               
-              data = dataset() 
+              if ( input$rescan ){
+                
+                # revert to original download
+                data = dataset() %>% as_tibble %>% ungroup %>%
+                  select( dataElement.id , categoryOptionCombo.ids , orgUnit , period ,  COUNT , SUM  ) %>%
+                  rename( dataElement = dataElement.id , categoryOptionCombo = categoryOptionCombo.ids ) %>%
+                  mutate( COUNT = round(COUNT, 0) , SUM = round(SUM, 0) ) %>%
+                  mutate_all( as.character )
+                
+              } else {
+                data = dataset() 
+              }
+              
               if ( 'categoryOptionCombo.ids' %in% names( data )) data = data %>% rename( categoryOptionCombo = categoryOptionCombo.ids )
               
               # when there is no category option combo, as when downloading totals with no dissagregations, 
@@ -405,7 +420,14 @@ data_widget_server <- function( id ,
               # data = data %>%
               #   select( dataElement, categoryOptionCombo, period, orgUnit, COUNT, SUM ) 
               
-              d1 = data_1( data , formula_elements() , ousTree()  )
+              # d1 = data_1( data , formula_elements() , ousTree()  )
+              d1 = data_1( data , 
+                           formula_elements = formula_elements() ,
+                           dataSets = dataSets() , 
+                           dataElements = dataElements() , 
+                           categories = categories() , 
+                           ousTree = ousTree()  )
+              
               cat( '\n - data1 names:', names( d1 ))
               cat( '\n - data1 rows:', nrow( d1 ))
               
@@ -414,20 +436,21 @@ data_widget_server <- function( id ,
               
               removeModal()
               
+              #### April 2024 - since file will be saved after outlier scan, no need to save here
               
-              showModal(
-                modalDialog( title = 'Saving prepared data....', 
-                             easyClose = TRUE ,
-                             size = 's' ,
-                             footer= '(click anywhere to continue)'
-                             )
-                )
-              
-              
-              # Save prepared file
-              cat('\n - saving prepared file'  )
-              saveRDS( d1, file = dataset.file() , compress = FALSE )
-              removeModal()
+              # showModal(
+              #   modalDialog( title = 'Saving prepared data....', 
+              #                easyClose = TRUE ,
+              #                size = 's' ,
+              #                footer= '(click anywhere to continue)'
+              #                )
+              #   )
+              # 
+              # 
+              # # Save prepared file
+              # cat('\n - saving prepared file'  )
+              # saveRDS( d1, file = dataset.file() , compress = FALSE )
+              # removeModal()
             
             } else {
               cat( '\n -- data1 already prepared') 
