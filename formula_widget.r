@@ -14,62 +14,63 @@ formula_widget_ui <- function( id ) {
 
     div(
             # Header text for the top of the page
-            p( "Data elements and indicators associated with the selected formula (left panel)"), 
-            style = "font-weight: bold; text-align: left; margin-bottom: 20px;" # Center alignment and spacing 
+            p( "Data elements (or indicators) associated with formula (left panel)"), 
+            style = "font-weight: bold; text-align: left; margin-bottom: 10px;" # Center alignment and spacing 
           ),
-    div(
-            # Header text for the top of the page
-            p( "Use the 'Select' and 'Review' tabs here:"), 
-            style = "font-weight: bold; text-align: left; margin-bottom: 20px;" # Center alignment and spacing 
-          ),
+    # div(
+    #         # Header text for the top of the page
+    #         p( "Use the 'Select' and 'Review' tabs here:"), 
+    #         style = "font-weight: bold; text-align: left; margin-bottom: 5px;" # Center alignment and spacing 
+    #       ),
     
     tabsetPanel(type = "tabs",
-                
-                tabPanel( "Select", 
-                        fluidRow(
-                          column( 8 , br() ,
-                                  p( "Click on a row below to select each element:" ),
-                                  style = "font-weight: bold; text-align: left; margin-bottom: 20px;" ) ,
-                          column( 4 , 
-                                  selectInput( ns('element_indicator_choice'), "" ,
-                                       choices = c( 'data elements' , 'indicators' ),
-                                       selected = 'data elements'
-                                       ) )
-                          ) ,
-                        
-                        fluidRow( 
-                          column( 12 , verbatimTextOutput( ns("selected") ) )
-                          ) ,
-                        
-                        fluidRow(
-                           column( 12, 
-                              div( DT::dataTableOutput(  ns('dataElementDictionaryTable') ), 
-                               style = "font-size: 65%; width: 100%" )
-                           )
-                        )
-                ) ,
                
                 tabPanel("Review", 
-                         h5( "List of selected elements with a row for each disaggregation" ) ,
+                         # h5( "List of selected elements with a row for each disaggregation" ) ,
                          fluidRow( 
                            column( 7, div( p('Use this button to delete unwanted selection', style = "font-size: 16px" )) ) ,
-                           # column( 2, downloadButton( ns( 'deleteRows' ), 'Delete Selected Rows') ) 
-                           column( 2, actionButton( ns("saveData"), "Save Data") )
+                           column( 2, actionButton( ns( 'deleteRows' ), 'Delete Selected Rows', width = '200px') ) 
+                           # column( 2, actionButton( ns("saveData"), "Save Changes") )
                               ),
-                         fluidRow( 
-                           column( 7, div( p('Use this button tosave changes', style = "font-size: 16px" )) ),
-                           column( 2, downloadButton( ns("downloadFormula") , "Save Formula") ) ,
-                           column( 2, downloadButton( ns("downloadRDS") , "Download RDS") )
+                         fluidRow(
+                           column( 7, div( p('Use this button to save changes', style = "font-size: 16px" )) ),
+                           column( 2, actionButton( ns("saveData"), "Save Changes" , width = '200px' ) )
+                           # column( 2, downloadButton( ns("downloadFormula") , "Save Formula") )
+                           # column( 2, downloadButton( ns("downloadRDS") , "Download RDS") )
                               )
                               ,
                          fluidRow(
                            column( 12, 
-                                   div(DT::dataTableOutput( ns('forumlaDictionaryTable') ), 
-                                       style = "font-size: 65%; width: 100%" )
+                                   div( DT::dataTableOutput( ns('forumlaDictionaryTable') ), 
+                                       style = "font-size: 60%; width: 100%" )
                                    )
                          ) ,
                 
                 selected = "Review"
+                ) ,
+                
+                tabPanel( "Select", 
+                          fluidRow(
+                            column( 8 , br() ,
+                                    p( "Click on a row below to select each element:" ),
+                                    style = "font-weight: bold; text-align: left; margin-bottom: 20px;" ) ,
+                            column( 4 , 
+                                    selectInput( ns('element_indicator_choice'), "" ,
+                                                 choices = c( 'data elements' , 'indicators' ),
+                                                 selected = 'data elements'
+                                    ) )
+                          ) ,
+                          
+                          fluidRow( 
+                            column( 12 , verbatimTextOutput( ns("selected") ) )
+                          ) ,
+                          
+                          fluidRow(
+                            column( 12, 
+                                    div( DT::dataTableOutput( ns('dataElementDictionaryTable') ), 
+                                         style = "font-size: 60%; width: 100%" )
+                            )
+                          )
                 ) 
     ) )
   )  
@@ -100,6 +101,7 @@ formula_widget_server <- function( id ,
 
 ## Browse and Select Elements/Indicators Here ####
   formulaChoices = reactive({
+    
     req(  dataElementDictionary()  )
     
     cat( '\n * formulaChoices ')
@@ -149,26 +151,25 @@ formula_widget_server <- function( id ,
             dom = 'tirp' ) ,
           fillContainer = TRUE
         ))
-      
   
   selected_elements = reactive({
     req( input$dataElementDictionaryTable_rows_selected  )
     
     cat('\n* formula_widget selected_elements():')
-    row_selected = input$dataElementDictionaryTable_rows_selected 
     
+    row_selected = input$dataElementDictionaryTable_rows_selected 
     cat('\n - row number selected is' ,  row_selected )
     
-    # if ( length(row_selected) ) {
-    selected = formulaChoices() %>% 
-               filter( row_number() %in% row_selected ) 
+    if ( length( row_selected ) >= 1 ) {
       
-    
-    return( selected )
-    # } else {
-    #   return()
-    # }
-    
+      selected_elements = formulaChoices()[ row_selected, , drop = FALSE]
+      return( selected_elements )
+      
+    } else {
+      cat("\n- No formula row selected")
+      return()
+    }
+
   })
   
   selectedElementNames = reactive({
@@ -198,12 +199,13 @@ formula_widget_server <- function( id ,
   })
   
 
-## Selected ELements ####
+## Review Selected ELements ####
   
-  
-  
+  # Save once for both DT and selection reference
+  # review_table_data <- updated_formula_elements$df
+  # 
   updated_formula_elements = reactiveValues( df = tibble() )
-  
+  # 
   observeEvent( updated_formula_elements$df , {
     cat( "\n* updated_formula_elements: there are", nrow(updated_formula_elements$df ),"elements")
   })
@@ -285,31 +287,57 @@ formula_widget_server <- function( id ,
     } 
   })
   
-
+  
   output$forumlaDictionaryTable = 
+    
     DT::renderDT( DT::datatable(
       
       updated_formula_elements$df ,
       
       rownames = FALSE, 
-      # filter = 'top' ,
+      filter = 'top' ,
       options = list(
         autoWidth = TRUE ,
-        scrollY = "65vh"  ,
+        scrollY = "55vh"  ,
         scrollX = TRUE ,
-        scrollCollapse = FALSE ,
-        paging = FALSE ,
+        scrollCollapse = TRUE ,
+        paging = TRUE ,
         searching = TRUE , 
         info = TRUE ,
+        lengthMenu = list( c(  5, 10, 25, -1 ) , 
+                           list( '5', '10', '25', 'All' ) ) ,
+        pageLength = 10 ,
         server = TRUE ,
-        pageLength = -1 ,
-        dom = 'tirp'),
+        dom = 'tirp' ),
       fillContainer = TRUE
       
       
 )
       # options = DToptions_no_buttons()
     )
+  
+  DT::renderDT( DT::datatable(
+    
+    formulaChoices()  ,
+    
+    selection = 'multiple' ,
+    rownames = FALSE, 
+    filter = 'top' ,
+    options = list(
+      autoWidth = TRUE ,
+      scrollY = "55vh"  ,
+      scrollX = TRUE ,
+      scrollCollapse = TRUE ,
+      paging = TRUE ,
+      searching = TRUE , 
+      info = TRUE ,
+      lengthMenu = list( c(  10, 25, 100, -1 ) , 
+                         list( '10', '25', '100', 'All' ) ) ,
+      pageLength = 10 ,
+      server = TRUE ,
+      dom = 'tirp' ) ,
+    fillContainer = TRUE
+  ))
   
   output$formulaName = renderPrint({ formulaName() })
 
@@ -358,7 +386,7 @@ formula_widget_server <- function( id ,
       
       no_existing_formulas = (  is.null( formulas() ) || nrow( formulas() ) == 0   )
       
-      cat( "\n - test for existing formulas:" , ! no_existing_formulas )
+      cat('\n - orignal formulas have', nrow( formulas() ), 'formulas')
       
       if (  no_existing_formulas  ){
 
