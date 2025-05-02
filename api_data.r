@@ -211,7 +211,7 @@ date_code = function(
         }
     }
   
-  months =seq(from = as.Date(startMonth), to = as.Date(endMonth), by = "month") %>% 
+  months = seq(from = as.Date(startMonth), to = as.Date(endMonth), by = "month") %>% 
     as.yearmon() %>% format(., "%Y%m")
 
   # remove current month ;
@@ -437,7 +437,7 @@ fetch <- function( baseurl. , de. , periods. , orgUnits. , aggregationType. , .p
     return( bind_rows( data ) )
 }
 
-api_url = function( baseurl, de ,  periods, orgUnits , aggregationType, childOnly = FALSE ){
+api_url = function( baseurl, de ,  periods, orgUnits , aggregationType, childOnly = TRUE ){
   
   # cat( '\n* api_url:' ) 
   # # print( orgUnits ); print( aggregationType )
@@ -456,24 +456,40 @@ api_url = function( baseurl, de ,  periods, orgUnits , aggregationType, childOnl
   if ( childOnly ){
       url <- paste0( baseurl , 
                  # username, password ,
+                 
+                 # Uses data entry values endpoint
                  "api/dataValueSets.json?" ,
-                 "&orgUnit=" , orgUnits , 
+                 
+                 # for all API 
+                 "orgUnit=" , orgUnits ,
                  "&period=" , periods ,
                  "&dataElement=" , de ,
+                 
                  "&children=" , childOnly )
 } else {
   
     url <- paste0( baseurl , 
                  # username, password ,
+                 
+                 # uses analytics values endpoint 
                  "api/analytics/dataValueSet.json?" ,
-                 # "api/analytics.json?" ,
-                 "dimension=ou:", orgUnits , 
+                 
+                 # for API 40 
+                 "dimension=ou:", orgUnits ,
                  "&dimension=pe:" , periods ,
                  "&dimension=dx:" , de ,
-                 # "&displayProperty=NAME",
+                 
+                 #  # For older API -
+                 # "orgUnit=" , orgUnits ,
+                 # "&period=" , periods ,
+                 # "&dataElement=" , de ,
+
+                  "&displayProperty=NAME",
                  "&aggregationType=" , aggregationType )
 } 
   # cat( '\n* api_url:' , url )
+  
+  
   return( url )
 }
 
@@ -483,7 +499,7 @@ fetch_get <- function( baseurl. ,
                        de. , periods. , orgUnits. , 
                        aggregationType. ,
                        get.print = FALSE, 
-                       childOnly = FALSE ){
+                       childOnly = TRUE ){
   
     # if ( get.print )  cat( '\n* fetch_get:' ) 
   
