@@ -12,7 +12,8 @@ reporting_widget_ui = function ( id ){
         # , margins = c(70, 1200)
       ) ,
       
-    fillPage(       
+    fillPage(    
+        
     tabsetPanel( type = "tabs",
                  # add_busy_spinner(spin = "fading-circle", position = "bottom-right") ,
                  
@@ -152,15 +153,28 @@ reporting_widget_ui = function ( id ){
         
                 actionButton( ns('update_data_categories') , label = "Update") ,
         
+
+              tags$style(HTML("
+              .scroll-checkbox-group {
+                overflow-y: auto;
+                max-height: 200px; /* Adjust this height */
+                border: 1px solid #ccc;
+                padding: 5px;
+              }
+            ")) ,
+                
+                  div(
+                    class = "scroll-checkbox-group",
+                    checkboxGroupInput( ns("data_categories") ,
+                                        label = "DataElement/Category" ,
+                                        choices = NULL  ,
+                                        selected = 1 ,
+                                        width = "100%" ) 
+                  ) , 
+
         
-                checkboxGroupInput( ns("data_categories") ,
-                                   label = "DataElement/Category" ,
-                           choices = NULL  ,
-                           selected = 1 ,
-                           width = "100%" ) ,
-        
-          h5( "By default, facility counted as reporting if any of the selected data were reported.\n
-            See option in 'Reporting Consistency' to count as reporting if any of these - including non selected data - were reported)." ) 
+          p( "By default, facility counted as reporting if any of the selected data were reported.\n
+            See option in 'Reporting Consistency' to count as reporting if any of these - including non selected data - were reported)." , style = "font-size: 16px" ) 
 
                # ) # end inputPanel 
         ) # end tabPanel
@@ -290,6 +304,7 @@ reporting_widget_ui = function ( id ){
 }
         
 reporting_widget_server <- function( id , 
+                                     trigger ,
                                      dataDirectory = NULL ,
                                      metadata_widget_output = NULL,
                                      data_widget_output = NULL ,
@@ -316,12 +331,16 @@ reporting_widget_server <- function( id ,
     formulas = reactive({ data_widget_output$formulas() })
     dataset.file = reactive({ data_widget_output$dataset.file() })
     dataset = reactive({ data_widget_output$dataset() })
-    data1 = reactive({ data_widget_output$data1() })
+    
+    data1 = reactive({ 
+      data_widget_output$data1() 
+      })
+    
     formula_elements = reactive({ data_widget_output$formula_elements() })
     orgUnits = reactive({ metadata_widget_output$orgUnits() })  
     orgUnitLevels = reactive({ metadata_widget_output$orgUnitLevels() })
     geoFeatures = reactive({ metadata_widget_output$geoFeatures() })
-    data2 = reactive({ cleaning_widget_output$data2() })
+    # data2 = reactive({ cleaning_widget_output$data2() })
     
     # see https://stackoverflow.com/questions/54438495/shift-legend-into-empty-facets-of-a-faceted-plot-in-ggplot2
     shift_legend3 <- function(p) {
@@ -465,9 +484,11 @@ reporting_widget_server <- function( id ,
     req( data1()$data )
     cat( '\n* updating data_categories to all' )
     
+    dataList = unique( data1()$data ) 
+
     updateCheckboxGroupInput( session, 'data_categories' , 
-                         choices =   unique( data1()$data ) ,
-                         selected = unique( data1()$data ) ) 
+                         choices =   sort( dataList ) ,
+                         selected =  dataList  ) 
 
     selected_data_categories$elements = unique( data1()$data )
     
@@ -544,13 +565,16 @@ reporting_widget_server <- function( id ,
   
   # d Filter data1 to selected level ####
   d = reactive({
-
+    
+      # req( trigger() )
+      cat( "\n*** Reporting tab is active" )
+      
       req( data1() )
       req( period() )
       cat( '\n* reporting_widget d:')
     
       # Testing 
-      if ( testing )  saveRDS( data1() , 'dataset.rds' )
+      # if ( testing )  saveRDS( data1() , 'dataset.rds' )
       # cat( "\n - reporting_widget data1() class/cols:" , class( data1() ) )
       
       if ( nrow( data1() ) == 0 ){
@@ -726,7 +750,7 @@ reporting_widget_server <- function( id ,
       #Testing
       # testing = TRUE
       cat( "\n - saving data, selected_data_categories as 'orgunits.reports.data.rda' ")
-      if ( testing )  save( data,selected_data_categories, file= 'orgunits.reports.data.rds')
+      if ( testing )  save( data, mrm, selected_data_categories, file= 'orgunits.reports.data.rda')
       
       if ( !input$count.any  ){
         
@@ -749,9 +773,11 @@ reporting_widget_server <- function( id ,
       # 
       #   calendar_year = year( !! rlang::sym( .period )  )
       
-      o.r. = setDT( data %>% as_tibble() %>% ungroup )[ , 
-                                                        calendar_year := year( base::get( .period ) ) , ] %>%
-      rename( year =  {{ year_var }} ) 
+      o.r. = setDT( data %>% 
+                      as_tibble() 
+                    %>% ungroup )[ , 
+                                   calendar_year := year( base::get( .period ) ) , ] %>%
+        rename( year =  {{ year_var }} ) 
       
       cat('\n - orgunit.reports--o.r.(DT)')
       
@@ -1032,7 +1058,7 @@ reporting_widget_server <- function( id ,
     return( selected )
   })
   
-  reportingSelectedOUs <- reactive({
+  reportingSelectedOUs = reactive({
     #print( 'reportingSelectedOUs()' )
     req( input$endingMonth )
     req( input$startingMonth  )
@@ -1300,8 +1326,20 @@ reporting_widget_server <- function( id ,
   output$plot_reports_in_a_year <- renderPlot({  plot1()  } )
   
   # selected_data. select ous and data element categories ####
+  
+# Only recompute summary if data has changed ####
+  # data1_change = reactiveVal( NULL )
+  # cached_data1 = reactiveVal( NULL )
+  # 
+  # if ( is.null( data1_change()) || !identical( cached_data1(), data1()) ) {
+  #   data1_change( TRUE )
+  #   cached_data1( data1() )  # update cached data
+  # } else { data1_change( FALSE )}
 
   selected_data = reactive({
+    
+   # req( data1_change() )
+    
    #print( 'selected_data():')
    req( data1() )
    req( selected_data_categories$elements )
