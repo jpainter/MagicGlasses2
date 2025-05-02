@@ -26,7 +26,8 @@ packages = c(
  'slider' , 'sugrrants' , 
  'leaflet' ,  'leaflegend' , 'ggrepel' ,
  'tibbletime' , 'tictoc' , 'tsbox' , 
- 'zoo', 'conflicted', 'assertthat' , 'stringi' 
+ 'zoo', 'conflicted', 'assertthat' , 'stringi' , 
+ 'digest'
 )
 
 # optional packages (from previous versions): forecast, Bolstad, bsts, fable.bsts 
@@ -172,7 +173,7 @@ source(  paste0( mg2, 'formula_widget.r' ) )
 source(  paste0( mg2, 'dqa_widget.R' ) )
 source(  paste0( mg2, 'reporting_widget_app.r' ) )
 source(  paste0( mg2, 'cleaning_widget.r' ) )
-source(  paste0( mg2, 'evaluation_widget.R' ) )
+source(  paste0( mg2, 'evaluation_widget_2.R' ) )
 source(  paste0( mg2, 'regions_widget.R' ) )
 
 options(shiny.trace=FALSE)
@@ -195,7 +196,7 @@ ui <- fluidPage(
     titlePanel(h1("Magic Glasses 2" , style='background-color:#61A1FA;padding-left: 15px' )),
     
     navlistPanel( widths = c(1, 11) , id = "tabs", 
-    # tabsetPanel(type = "tabs", 
+
                 tabPanel( "Welcome" ,
                            br() ,    
                            h2('An epidemiological look at DHIS2 data') ,
@@ -243,9 +244,9 @@ ui <- fluidPage(
                            )
                          ),
                 tabPanel("DQA", dqa_widget_ui( "dqa1" )) ,
-                tabPanel("Reporting", reporting_widget_ui( "reporting1" )) ,
-                tabPanel("Outliers", cleaning_widget_ui( "cleaning1" ) ) ,
-                tabPanel("Evaluation", evaluation_widget_ui( "evaluation1" ) )
+                tabPanel("Reporting", reporting_widget_ui( "reporting1" ), value = "reporting" ) ,
+                tabPanel("Outliers", cleaning_widget_ui( "cleaning1" ) , value = "outliers" ) ,
+                tabPanel("Evaluation", evaluation_widget_ui( "evaluation1" ) , value = "evaluation" )
     )
     
 )
@@ -298,11 +299,17 @@ server <- function(input, output, session ) {
                          reporting_widget_output = reporting_widget_output ,
                          cleaning_widget_output = cleaning_widget_output )
 
+    reporting_trigger <- reactive({
+      input$tabs == "reporting"
+    })
+
     reporting_widget_output =  reporting_widget_server( "reporting1" ,
+                               trigger = reporting_trigger ,
                                dataDirectory = directory_widget_output ,
                                metadata_widget_output = metadata_widget_output ,
                                data_widget_output = data1_Widget_output ,
                                cleaning_widget_output = cleaning_widget_output )
+
 
     cleaning_widget_output =  cleaning_widget_server( "cleaning1" ,
                               directory_widget_output = directory_widget_output ,
