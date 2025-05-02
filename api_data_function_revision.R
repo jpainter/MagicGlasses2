@@ -32,10 +32,10 @@ api_data = function(      periods = NA ,
   # if ( periods %in% 'months_last_5_years' ) periods = date_code( YrsPrevious = 5 )
   # if ( periods %in% 'weeks_last_5_years' ) periods = date_code_weekly( YrsPrevious = 5 )
   
-  cat('\n - setting periods - ') 
-  # if ( all( is.na( periods )  ) ) 
-  # # check for last x years only 
-  if ( periodType == 'Monthly' ) periods = date_code( YrsPrevious = YrsPrevious ) %>% unique # 'months_last_5_years' # 
+  cat('\n - setting periods for - ', YrsPrevious , "YrsPrevious"  ) 
+  # get months of previous years plus months of current year
+  if ( is.na( periodType ) ) periodType <- 'Monthly'
+  if ( periodType == 'Monthly' ) periods = date_code( YrsPrevious = YrsPrevious ) %>% unique 
   if ( periodType == 'Weekly') periods = date_code_weekly( YrsPrevious = YrsPrevious ) %>% unique
   
   # periods = date_code( YrsPrevious = YrsPrevious )
