@@ -62,15 +62,43 @@ df_pre_ts = function( df , period = "Month" , missing.value = NA  ){
          
    if (  period %in% 'Month'  ){
      
+      ym <- yearmonth(
+        paste0(substr(df$period, 1, 4), "-", substr(df$period, 5, 6))
+      )
+     
       if ( ! "data.table" %in% class( df ) ) df = data.table::as.data.table(df)
-      df_pre_ts = df[ , ':=' ( Month = Month_Year( period ) ,
-                       COUNT = as.integer( COUNT ) ,
-                       SUM = as.numeric( SUM ) 
-                       # , Categories = ifelse( is.na( Categories ), "", Categories )
-                       ) ]  %>%
-       as_tibble() %>%
-       unite( "data" , dataElement, Categories , remove = FALSE , na.rm = TRUE ) %>%
-       unite( "data.id" , dataElement.id, categoryOptionCombo.ids, remove = FALSE  , na.rm = TRUE ) 
+      
+      df_pre_ts = df[, `:=`(
+        Month = ym , 
+        COUNT = as.integer(COUNT),
+        SUM = as.numeric(SUM)
+        # , Categories = fifelse(is.na(Categories), "", Categories)
+      )]  %>%
+        
+        # unite data with dataElement and Category
+        # unite( "data" , dataElement, Categories , remove = FALSE , na.rm = TRUE ) %>%
+        .[, data := fifelse(
+          is.na(dataElement) & is.na(Category),
+          NA_character_,
+          paste0(
+            fifelse(is.na(dataElement), "", dataElement),
+            fifelse(is.na(Category), "", paste0("_", Category))
+          )
+        )] %>%
+        
+        # unite data.id dataElement.id and categoryOptionCombo.ids
+        # unite( "data.id" , dataElement.id, categoryOptionCombo.ids, remove = FALSE  , na.rm = TRUE ) 
+        .[, data.id := fifelse(
+          is.na(dataElement) & is.na(Category),
+          NA_character_,
+          paste0(
+            fifelse(is.na(dataElement.id), "", dataElement.id),
+            fifelse(is.na(categoryOptionCombo.ids), "", paste0("_", categoryOptionCombo.ids))
+          )
+        )] %>%
+       as_tibble() 
+      
+
 
        return( df_pre_ts )
      
