@@ -202,19 +202,29 @@ evaluation_widget_server <- function( id ,
     dataset.file = reactive({ data_widget_output$dataset.file() })
     # dataset = reactive({ data_widget_output$data1() })
     
-    data1 = reactive({ data_widget_output$data1() })
+    data1 = reactive({ 
+      # req( input$tabs == "evaluation" ) 
+      # cat( "\n*** Reporting tab is active" )
+      data_widget_output$data1() 
+      })
     
     data.total = reactive({ reporting_widget_output$data.total() })
     selected_data = reactive({ reporting_widget_output$selected_data() })
     
-    data2 = reactive({ cleaning_widget_output$data2() })
+    data2 = reactive({ 
+      # req( input$tabs == "evaluation" ) 
+      # cat( "\n*** Reporting tab is active" )
+      cleaning_widget_output$data2() 
+      })
    
     formula_elements = reactive({ data_widget_output$formula_elements() })
     
     orgUnits = reactive({ metadata_widget_output$orgUnits() })  
     orgUnitLevels = reactive({ metadata_widget_output$orgUnitLevels() })
     
-    dates = reactive({ reporting_widget_output$dates() })
+    dates = reactive({ 
+      req( input$tabs == "evaluation" ) 
+      reporting_widget_output$dates() })
     # dataset = reactive({ reporting_widget_output$data1() })
     # data.hts = reactive({ reporting_widget_output$data.hts() })
     levelNames = reactive({ reporting_widget_output$levelNames() })
