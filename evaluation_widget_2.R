@@ -9,9 +9,7 @@ evaluation_widget_ui = function ( id ){
             position = 'bottom-right'
             # , margins = c(70, 1200)
           ) ,
-          
-          useShinyalert(), 
-        
+
   fillPage(       
     tabsetPanel( type = "tabs",
     # add_busy_spinner(spin = "fading-circle", position = "bottom-right") ,
