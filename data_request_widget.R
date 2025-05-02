@@ -248,12 +248,15 @@ data_request_widget_server <- function( id ,
           # .orgUnitLevels = orgUnitLevels()
           # .orgUnits = orgUnitRequest()
           .formula.name = indicator()
-          
-          # TESTING
-          saveRDS( orgUnits(), 'orgUnits.rds' )
+  
           
           # To use jim Grace api/dataSets, need to set .orgunits to the highest level
           # If orgUnits specified, then use them 
+          
+          # Testing
+          # saveRDS( orgUnits(), 'orgUnits.rds')
+          # saveRDS( orgUnitRequest() , "orgUnitRequest.rds" )
+            
           if ( is.null( orgUnitRequest() ) ){
             cat( "\n - National data request")
             .orgUnits = orgUnits() %>% 
@@ -262,9 +265,6 @@ data_request_widget_server <- function( id ,
             
           } else {
             cat( "\n - subNational data request")
-            # Testing
-            saveRDS( orgUnits(), 'orgUnits.rds')
-            saveRDS( orgUnitRequest() , "orgUnitRequest.rds" )
             
             .orgUnits = orgUnits() %>% 
               filter( name %in% orgUnitRequest()  ) %>%
@@ -329,7 +329,10 @@ data_request_widget_server <- function( id ,
             .dataset = NA 
           }
           
-          .periods = NA  # use period (e.g. Month) and year (e.g. 5) instead of 'months_last_5_years'
+          
+          cat( "\n - .period is" , input$period  )
+          # If missing, assume period is monthly
+          if ( is.null( .period ) ) .period = "Monthly"
           
           x  = api_data( 
                          update = .update , 
@@ -350,12 +353,12 @@ data_request_widget_server <- function( id ,
                          parallel = FALSE,
                          childOnly = TRUE )
           
-          if ( is.na( .periods ) ) .periods = paste0( .years, 'yrs' )
+         .periods = paste0( .years, 'yrs' )
           
-          saveAs = paste0( .dir, .formula.name , "_" , 
+          saveAs = paste0( .dir, .formula.name , "_" ,
                            .level ,"_", .periods ,"_", Sys.Date() , ".rds")
-          
-          cat( '\n saving formula.request as', saveAs )  
+
+          cat( '\n saving formula.request as', saveAs )
           
         showModal(
           modalDialog( title = "Finished downloading.  Now saving the file", 
