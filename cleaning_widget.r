@@ -195,18 +195,16 @@ cleaning_widget_server <- function( id ,
     # dataset = reactive({ data_widget_output$dataset() })
     
     ## Set reactive data only when tab is active
-    data1 = reactive({ data_widget_output$data1() })
-    selected_data = reactive({ reporting_widget_output$selected_data() })
-    
-    # data1 =  reactive({ }) 
-    # observeEvent( input$tabs , {
-    #   if ( input$tabs == "Outliers"  ) data1 =  reactive({ data_widget_output$data1() }) 
-    #   } , ignoreNULL = TRUE, ignoreInit = TRUE )
-    
-    # data1 = reactive({ 
-    #   if ( input$tabs == "Outliers"  ) data1 =  reactive({ data_widget_output$data1() })  
-    #   return( data1 )
-    #   })
+    data1 = reactive({       
+      # req( input$tabs == "outliers" ) 
+      # cat( "\n*** Outlier tab is active" )
+      data_widget_output$data1() 
+      })
+    selected_data = reactive({ 
+      # req( input$tabs == "outliers" ) 
+      # cat( "\n*** Outlier tab is active" )
+      reporting_widget_output$selected_data() 
+      })
     
     
     formula_elements = reactive({ data_widget_output$formula_elements() })
@@ -215,7 +213,11 @@ cleaning_widget_server <- function( id ,
     orgUnits = reactive({ metadata_widget_output$orgUnits() })  
     ousTree = reactive({ metadata_widget_output$ousTree() })  
     orgUnitLevels = reactive({ metadata_widget_output$orgUnitLevels() })
-    reportingSelectedOUs = reactive({ reporting_widget_output$reportingSelectedOUs() })
+    
+    reportingSelectedOUs = reactive({ 
+      req( input$tabs == "evaluation" ) 
+      reporting_widget_output$reportingSelectedOUs() 
+      })
     
     dates = reactive({ reporting_widget_output$dates() })
     data.hts = reactive({ reporting_widget_output$data.hts() })
@@ -493,7 +495,6 @@ cleaning_widget_server <- function( id ,
           withProgress(     message = "Searchng for extreme values (MAD)",
                               detail = "starting ...",
                               value = 0, {
-            
   
                 data.mad = mad_outliers( d ,  .total = .total ,  .threshold = 50  )
           })
@@ -503,7 +504,7 @@ cleaning_widget_server <- function( id ,
         .total = length( key_size( data.mad ) )
          cat( '\n - .total' , .total )
     
-        withProgress(  message = "Seasonal Outliers",
+        withProgress(  message = "Searchng for seasonal Outliers",
                           detail = "starting ...",
                           value = 0, {
         
@@ -588,18 +589,18 @@ cleaning_widget_server <- function( id ,
 
         outlierData$df_data = data1.mad
 
-        # showModal(
-        #       modalDialog( title = "Finished scanning for extreme values",
-        #                    easyClose = TRUE ,
-        #                    size = 'm' ,
-        #                    footer = "(click anywhere to close dialog box)"
-        #                    )
-        #       )
+        showModal(
+              modalDialog( title = "Saving results of scan for extreme values",
+                           easyClose = TRUE ,
+                           size = 'm' ,
+                           footer = "(click anywhere to close dialog box)"
+                           )
+              )
 
         # Save data for next time...
         cat('\n - saving data1.mad to replace dataset')
         saveRDS( data1.mad , paste0( data.folder(), dataset.file() ) )
-        # removeModal()
+        removeModal()
 
         }
 
@@ -737,7 +738,6 @@ cleaning_widget_server <- function( id ,
     
     output$mase.summary <- renderPlot({
       
-      # req( data1() )
       req( selected_data() )
       cat( '\n* output$mase.summary')
       
