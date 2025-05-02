@@ -146,7 +146,8 @@ directory_widget_server <- function( id ) {
           
           dir.files = data.dir.files()
           
-          file.type = '.xl' # input$file.type 
+          # file.type = '.xl' # input$file.type 
+          file.type = '.rds'
           file.other = "metadata"
           
           search.index = 
