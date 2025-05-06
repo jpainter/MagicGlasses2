@@ -90,7 +90,7 @@ api_data = function(      periods = NA ,
     } 
     
     if ( nrow( prev.data ) == 0 ){
-      cat('\n - previous data file empty'); next()
+      cat('\n - previous data file empty'); return()
     }  
     
     first.period = min( prev.data$period  )

@@ -622,7 +622,7 @@ metadata_widget_server <- function( id ,
 
     de = dataElements()
     ds = dataSets()
-    dse = dataSetElements()
+    # dse = dataSetElements() # deprecated
     cats = categories()
     deg = dataElementGroups()
     
@@ -645,16 +645,37 @@ metadata_widget_server <- function( id ,
     
       # DSDE : create matrix of data elements within each dataset
       if ( nrow(ds) > 0 && 'dataSetElements.id' %in% names( ds )){
-        dsde = map_df( 1:length( ds$dataSet),
+        
+        # extract dataset and dataElement from dataSetElements.id matrix then remove from ds
+        dsde = map_df( 1:length( ds$dataSet ),
                        ~map_df( ds$dataSetElements.id[[.x]],
                                 ~as.matrix(.x) )) %>%
           select( dataSet, dataElement ) %>%
-          rename( dataElement.id = dataElement )
-      } else if ( nrow(ds) > 0) {
-        dsde = ds
+          rename( dataElement.id = dataElement ,
+                  dataSet.id = dataSet )
+        
+        ds. = ds %>% select( - dataSetElements.id )
+        
+      } else if ( nrow(ds) > 0 && 'dataSetElements' %in% names( ds ) ) {
+        
+        # extract dataset and dataElement from dataSetElements matrix then remove from ds
+        dsde <- ds %>%
+                # Step 1: Unnest the outer list-column
+                unnest(dataSetElements, names_sep = "_") %>%
+                
+                # Step 2: If any of the resulting columns are still list-columns (like from nested tibbles), flatten them
+                mutate(across(
+                  starts_with("dataSetElements_"),
+                  ~ if (is.list(.x)) unlist(.x) else .x
+                )) %>%
+          select( dataSet.id , dataSetElements_dataElement  ) %>%
+          rename( dataElement.id = dataSetElements_dataElement )
+        
+        ds. = ds %>% select( - dataSetElements )
+        
       } else { 
         # empty data.frame for demo instances with missing ds
-        dsde = data.frame( dataSet = NULL , dataElement = NULL )
+        dsde = tibble( dataSet.id = NA , dataElement.id = NA )
       }
       
     cat( '\n - glimpse(dsde):\n') ; glimpse(dsde)
@@ -665,15 +686,19 @@ metadata_widget_server <- function( id ,
     #Testing
     # save( de, ds, dsde , deg, cats , file = 'dataElementDictionary.rda')
    
-    dictionary = de  %>%  rename( dataElement.id = id ) %>%
+    dictionary = de  %>%  
+      rename( 
+        dataElement = name ,
+        dataElement.id = id 
+        ) %>%
       
       left_join( dsde , by = 'dataElement.id' ) %>%
       
-      rename(  
-              dataElement = name ,
-              dataSet.id = dataSet  ) %>%
+      # rename(  
+      #         dataElement = name ,
+      #         dataSet.id = dataSet  ) %>%
       
-      left_join( ds  , by = 'dataSet.id' ) %>%
+      left_join( ds.  , by = 'dataSet.id' ) %>%
       
       left_join( deg  , by = 'dataElement.id' , 
                  relationship = "many-to-many") %>%
