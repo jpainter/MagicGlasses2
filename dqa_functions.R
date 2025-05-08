@@ -66,7 +66,7 @@ dqa_reporting_plot = function( data ,  text_size = 18  ){
           geom_text( vjust = -1 , size = text_size / 3  ) +
           scale_y_continuous(labels = scales::percent, 
                              limits = c(0,1) ,
-                             expand = expand_scale(mult = c(0.0, 0.2)) 
+                             expand = expansion(mult = c(0.0, 0.2)) 
                              ) +
           labs( x = "Year" , 
                 y = "Percent" , 
