@@ -6,14 +6,13 @@ metadata_widget_ui <- function( id ) {
   fillCol( height = 600, flex = c(NA ) ,
            
   tagList(
-    
-      shinybusy::add_busy_spinner(
-            spin = "fading-circle" , # "self-building-square",
-            position = 'bottom-left',
-            timeout = 100 ,
-            onstart = FALSE 
-            # , margins = c(70, 1200)
-          ) ,
+             
+             shinybusy::add_busy_spinner(
+               spin = "fading-circle" , # "self-building-square",
+               position = 'bottom-right'
+               # , margins = c(70, 1200)
+             ) ,
+             
     
     tags$head(tags$style(".button{width: 50%;}" )) ,
     
@@ -253,9 +252,26 @@ metadata_widget_server <- function( id ,
         gather( Attribute, Value )  
       
       cat( '\n metadata widget system.info completed \n')
-      return( info )
-    }
       
+    } else {
+      
+      file = paste0( dir(), metadata.files()[1] )
+      cat('\n - looking for metadata file:' , file )
+      
+      if ( file.exists( file ) & !dir.exists( file )){
+        
+        cat(' - reading from metadata'  )
+        info = metadata()$systemInfo
+        if ( ! "data.frame" %in% class( info ) ) info = data.frame(info="unavailable. Please re-download metadata.")
+        cat('\n- systemInfo has' , nrow( info ) , "rows" ) 
+        
+      } else {
+        removeModal()
+        return()
+      }
+    }
+    
+    return( info ) 
 
   }) 
   
@@ -266,7 +282,7 @@ metadata_widget_server <- function( id ,
       options = DToptions_no_buttons()
   ) )
  
-# data Elements ####
+## data Elements ####
   dataElements = reactive({
     cat('\n* metadata_widget dataElements():')
     if (  login()  & loginFetch() ){ 
@@ -298,7 +314,8 @@ metadata_widget_server <- function( id ,
       de.categoryCombo = dataElements$categoryCombo
       dataElements = dataElements %>% select( -categoryCombo ) 
       dataElements$categoryCombo.id = de.categoryCombo$id 
-
+  
+      removeModal()
     } else {
             removeModal()
             return()
@@ -336,17 +353,23 @@ metadata_widget_server <- function( id ,
                             dataElementGroups$dataElements[[.x]] , all = T)
                     ) %>%
         rename( dataElement.id = id) 
-
+      
+      
+       removeModal()
     } else {
     
         file = paste0( dir(), metadata.files()[1] )
-        cat('\n - looking for DataElementGroups:' , file )
+        cat('\n - looking for metadata file:' , file )
       
         if ( file.exists( file ) & !dir.exists( file )){
           
+          # cat('\n- reading from'  )
+          # deg = read_excel( file , sheet = 'DataElementGroups' )
+          # cat('\n- dataElementGroups has' , nrow(deg) , "rows" ) 
+          
           cat(' - reading from metadata'  )
-          deg = metadata()$DataElementGroups
-          cat('\n- dataElementGroups has' , nrow(deg) , "rows" ) 
+          deg = metadata()$dataElementGroups
+          cat('\n- DataElementGroups has' , nrow( deg ) , "rows" ) 
           
         } else {
             removeModal()
@@ -360,7 +383,7 @@ metadata_widget_server <- function( id ,
     
   })
   
-## data sets ####
+# data sets ####
   dataSets = reactive({
     
     if (  login()  & loginFetch() ){ 
@@ -385,81 +408,65 @@ metadata_widget_server <- function( id ,
       
       if( !all( cols %in% colnames(x) ) ) return( data.frame() ) 
       
-      # Testing
-      # saveRDS( x, 'x.rds' )
-      
+
       dataSets =  x %>% select( !!cols ) %>%
         rename( dataSet.id = id, 
                 dataSet = name 
-                ) 
+                , dataSetElements.id = dataSetElements
+                )
+      
+      # Testing 
+      # saveRDS( x, "x.rds" )
+      # saveRDS( dataSets, "dataSets.rds" )
+      
+      
+      removeModal()
 
     } else {
     
         file = paste0( dir(), metadata.files()[1] )
-        cat('\n - looking for DataSets:' , file )
+        cat('\n - looking for metadata file:' , file )
       
         if ( file.exists( file ) & !dir.exists( file )){
           
-          cat(' - reading from'  )
-          dataSets = metadata()$dataSets
-          cat('\n- DataSets has' , nrow(dataSets) , "rows" ) 
+          # cat('\n- reading from'  )
+          # dataSets = read_excel( file , sheet = 'DataSets' )
+          # cat('\n- DataSets has' , nrow(dataSets) , "rows" ) 
+          
+          cat(' - reading from metadata'  )
+          if ( 'dataSets' %in% names( metadata() )){
+            dataSets = metadata()$dataSets
+          } else {
+            dataSets = metadata()$dataSets.
+          }
+          
+          cat('\n- dataSets has' , nrow( dataSets) , "rows" )
+          
+          removeModal()
+          
         } else {
-            removeModal()
+          removeModal()
             return()
         }
     }
     
       cat( '\n -finished metadata_widget datasets \n')
-      removeModal()
       return( dataSets )
     
   })
   
-# DataSetElements (moved to prepareDataset - data_1() )
-  # DataSetElements = reactive({
-  #         if ( 'dataSetElements.id' %in% names( dataSets() ) ){
-  #         
-  #             dataSetElements = dataSets %>% 
-  #               unnest( dataSetElements.id, names_sep = "_" ) %>% 
-  #               select( c(1:3,5) ) %>% 
-  #               rename( dataElement.id = dataSetElements.id_dataElement ) %>%
-  #               # ensure that dataSet and dataElements are atomic vectors
-  #               mutate(
-  #                 dataElement.id = as.character( dataElement.id$id )
-  #               ) %>%
-  #               group_by( dataElement.id ) %>%
-  #               summarise( 
-  #                     n_datasets = n() ,
-  #                     dataSet.ids = paste( dataSet.id ,  collapse = " ;\n"),
-  #                     dataSets = paste( dataSet ,  collapse = " ;\n")
-  #                   )  %>% arrange( - n_datasets  )
-  #             
-  #             return( DataSetElements )
-  #     }
-  # })
-  
-# DataSets.: remove dataSetElements...if it has it!
+# DataSets: remove dataSetElements...if it has it!
   dataSets. = reactive({
-          if ( 'dataSetElements.id' %in% names( dataSets() ) ){
-          dataSets() %>% select( - dataSetElements.id )
-      }  else {
-          dataSets()  
-      }
+    cat( "\n* DataSets.")
+    if ( 'dataSetElements.id' %in% names( dataSets() ) ){
+      cat( "\n- contains dataSetElements.id")
+      dataSets() %>% select( - dataSetElements.id )
+    }  else {
+      dataSets()  
+    }
   })
   
-  output$dataSets = 
-    DT::renderDT(DT::datatable(
-
-    if ( !is.null( dataSets.() ) ){ 
-      dataSets.()
-      },
-
-    rownames = FALSE,
-    filter = 'top' ,
-    options = DToptions_no_buttons()
-  ))
-  
-## category combos ####
+# category combos 
   categoryCombos = reactive({
 
     if (  login()  & loginFetch() ){ 
@@ -485,19 +492,22 @@ metadata_widget_server <- function( id ,
       if( !all( cols %in% colnames(x) ) ) return( data.frame() ) 
       
       categoryCombos =  x %>% select( !!cols ) 
-      
+
+       removeModal()
+       
     } else { 
+      
       removeModal()
       return() }
     
-    removeModal()
     cat( '\n -finished metadata_widget category combos \n')
+    removeModal()
     return( categoryCombos )
     
     
   })
   
-## category option combos ####
+  # category option combos
   categoryOptionCombos = reactive({
     
     
@@ -525,17 +535,18 @@ metadata_widget_server <- function( id ,
       
     categoryOptionCombos =  x %>% select( !!cols ) 
     
+    removeModal()
     } else { 
       removeModal()
       return() }
     
-    removeModal()
     cat( '\n -finished metadata_widget category option combos \n')
+    removeModal()
     return( categoryOptionCombos )
     
   })
   
-## Categories: full list of category option combos ####
+  # Categories: full list of category option combos
   categories = reactive({
     
     if (  login()  & loginFetch() ){ 
@@ -592,17 +603,25 @@ metadata_widget_server <- function( id ,
           Categories = paste( categoryOptionCombo , collapse = ' ;\n '  ) ,
           categoryOptionCombo.ids = paste( categoryOptionCombo.id , collapse = ' ;\n '  )
         )
+      removeModal()
       
     } else {
     
         file = paste0( dir(), metadata.files()[1] )
-        cat('\n - looking for Categories:' , file )
+        cat('\n - looking for metadata file:' , file )
       
         if ( file.exists( file ) & !dir.exists( file )){
           
-          cat(' - reading from'  )
+          # cat('\n- reading from'  )
+          # categories = read_excel( file , sheet = 'Categories' )
+          # cat('\n- Categories has' , nrow(categories) , "rows" ) 
+          
+          cat(' - reading from metadata'  )
           categories = metadata()$categories
-          cat('\n- Categories has' , nrow(categories) , "rows" ) 
+          cat('\n- DataElementGroups has' , nrow( categories ) , "rows" )
+          
+          removeModal()
+          
         } else {
             removeModal()
             return()
@@ -614,7 +633,7 @@ metadata_widget_server <- function( id ,
     return( categories )
   })
   
-## dataElementDictionary and dsde ####
+# dataElementDictionary and dsde
   dataElementDictionary = reactive({
 
     if (  login()  & loginFetch() ){ 
@@ -622,7 +641,6 @@ metadata_widget_server <- function( id ,
 
     de = dataElements()
     ds = dataSets()
-    # dse = dataSetElements() # deprecated
     cats = categories()
     deg = dataElementGroups()
     
@@ -645,60 +663,34 @@ metadata_widget_server <- function( id ,
     
       # DSDE : create matrix of data elements within each dataset
       if ( nrow(ds) > 0 && 'dataSetElements.id' %in% names( ds )){
-        
-        # extract dataset and dataElement from dataSetElements.id matrix then remove from ds
-        dsde = map_df( 1:length( ds$dataSet ),
+        dsde = map_df( 1:length( ds$dataSet),
                        ~map_df( ds$dataSetElements.id[[.x]],
                                 ~as.matrix(.x) )) %>%
           select( dataSet, dataElement ) %>%
-          rename( dataElement.id = dataElement ,
-                  dataSet.id = dataSet )
-        
-        ds. = ds %>% select( - dataSetElements.id )
-        
-      } else if ( nrow(ds) > 0 && 'dataSetElements' %in% names( ds ) ) {
-        
-        # extract dataset and dataElement from dataSetElements matrix then remove from ds
-        dsde <- ds %>%
-                # Step 1: Unnest the outer list-column
-                unnest(dataSetElements, names_sep = "_") %>%
-                
-                # Step 2: If any of the resulting columns are still list-columns (like from nested tibbles), flatten them
-                mutate(across(
-                  starts_with("dataSetElements_"),
-                  ~ if (is.list(.x)) unlist(.x) else .x
-                )) %>%
-          select( dataSet.id , dataSetElements_dataElement  ) %>%
-          rename( dataElement.id = dataSetElements_dataElement )
-        
-        ds. = ds %>% select( - dataSetElements )
-        
+          rename( dataElement.id = dataElement )
+      } else if ( nrow(ds) > 0) {
+        dsde = ds
       } else { 
         # empty data.frame for demo instances with missing ds
-        dsde = tibble( dataSet.id = NA , dataElement.id = NA )
+        dsde = data.frame( dataSet = NULL , dataElement = NULL )
       }
       
     cat( '\n - glimpse(dsde):\n') ; glimpse(dsde)
     
     # Base Dictionary Line List (with categories collapsed)
     cat( '\n -creating dictionary..' )
-    
     #Testing
     # save( de, ds, dsde , deg, cats , file = 'dataElementDictionary.rda')
    
-    dictionary = de  %>%  
-      rename( 
-        dataElement = name ,
-        dataElement.id = id 
-        ) %>%
+    dictionary = de  %>%  rename( dataElement.id = id ) %>%
       
       left_join( dsde , by = 'dataElement.id' ) %>%
       
-      # rename(  
-      #         dataElement = name ,
-      #         dataSet.id = dataSet  ) %>%
+      rename(  
+              dataElement = name ,
+              dataSet.id = dataSet  ) %>%
       
-      left_join( ds.  , by = 'dataSet.id' ) %>%
+      left_join( ds  , by = 'dataSet.id' ) %>%
       
       left_join( deg  , by = 'dataElement.id' , 
                  relationship = "many-to-many") %>%
@@ -724,18 +716,27 @@ metadata_widget_server <- function( id ,
         list( ~paste( unique(.) , collapse = ';\n' ) )
       )
 
+     removeModal()
+
     } else {
     
         file = paste0( dir(), metadata.files()[1] )
-        cat('\n - looking for DataElementDictionary:'  )
+        cat('\n - looking for metadata file:' , file )
       
         if ( file.exists( file ) & !dir.exists( file )){
           
+          # cat('\n- reading from'  )
+          # dictionary = read_excel( file , sheet = 'DataElements' )
+          # cat('\n- dataElements has' , nrow(dictionary) , "rows" )
+          
           cat(' - reading from metadata'  )
           dictionary = metadata()$dataElementDictionary
-          cat('\n- dataElements has' , nrow(dictionary) , "rows" ) 
+          cat('\n- dataElementDictionary has' , nrow(dictionary) , "rows" ) 
+          
+          removeModal()
           
         } else {
+            removeModal()
             return()
         }
     }
@@ -809,8 +810,23 @@ metadata_widget_server <- function( id ,
     fillContainer = TRUE
   ))
   
+
   
-# Indicators ####
+  output$dataSets = 
+    DT::renderDT(DT::datatable(
+
+    if ( !is.null( dataSets.() ) ){ 
+      dataSets.()
+      },
+
+    rownames = FALSE,
+    filter = 'top' ,
+    options = DToptions_no_buttons()
+  ))
+  
+  
+  
+## Indicators ####
   
   indicators = reactive({
     
@@ -841,10 +857,10 @@ metadata_widget_server <- function( id ,
       
       indicators =  get( source_url = url )$indicators  %>% select( !!cols ) 
     
+      removeModal()
     } else { 
       removeModal()
-      return() 
-      }
+      return() }
       
     cat( '\n -finished metadata_widget indicators \n')
     removeModal()
@@ -917,7 +933,7 @@ metadata_widget_server <- function( id ,
                      )
         )
     
-    indicatorDictionary =
+    translated =
 
       indicators %>%
 
@@ -931,17 +947,31 @@ metadata_widget_server <- function( id ,
         denominator = map_chr( denominator.ids , ~indicator_formula_translator( .x , id_names ) )
 
           ) 
-
+    # %>%
+    # 
+    #   select( name, 
+    #           # description,  # col not available in Guinea Fev 2022
+    #           numerator, denominator, annualized,
+    #           id, displayName, numerator.ids , denominator.ids )
+    
+      removeModal()
     } else {
     
         file = paste0( dir(), metadata.files()[1] )
-        cat('\n - looking for Indicators:' , file )
+        cat('\n - looking for metadata file:' , file )
       
         if ( file.exists( file ) & !dir.exists( file )){
           
+          # cat('\n- reading from'  )
+          # translated = read_excel( file , sheet = 'Indicators' )
+          # cat('\n- Indicators has' , nrow(translated) , "rows" ) 
+          
           cat(' - reading from metadata'  )
-          indicatorDictionary = metadata()$indicatorDictionary
-          cat('\n- Indicators has' , nrow(indicatorDictionary) , "rows" ) 
+          translated = metadata()$indicatorDictionary
+          cat('\n- Indicators has' , nrow( Indicators ) , "rows" )
+          
+          removeModal()
+          
         } else {
             removeModal()
             return()
@@ -950,7 +980,7 @@ metadata_widget_server <- function( id ,
     
     cat ('\n -end indicatorDictionary \n' )
     removeModal()
-    return( indicatorDictionary )
+    return( translated )
      
     })
   
@@ -1011,27 +1041,39 @@ metadata_widget_server <- function( id ,
       # saveRDS( get( url )[[1]] , "getOusLevels.rds")
       # saveRDS( cols , "cols.rds")
       
-      ousLevels =  get( source_url = url )[[1]]  %>% 
+      orgUnitLevels =  get( source_url = url )[[1]]  %>% 
         select( !!cols ) %>% 
         arrange( level ) %>%
         rename( levelName = name ) 
       
+      removeModal()
+      
     } else { 
       
         file = paste0( dir(), metadata.files()[1] )
-        cat('\n- looking for OrgUnitLevels:' , file )
+        cat('\n- looking for metadata file:' , file )
       
         if ( file.exists( file ) & !dir.exists( file )){ 
           
+          # cat('\n- orgUnitLevels reading from'  )
+          # ousLevels = read_excel( file  , 
+          #                         sheet = 'OrgUnitLevels' )
+          # cat('\n- orgUnitLevels has' , nrow(ousLevels) , "rows\n" )
+          
           cat(' - reading from metadata'  )
-          ousLevels = metadata()$orgUnitLevels
-          cat('\n- orgUnitLevels has' , nrow(ousLevels) , "rows\n" )
-        } else { ousLevels = NULL } 
+          orgUnitLevels = metadata()$orgUnitLevels
+          cat('\n- orgUnitLevels has' , nrow( orgUnitLevels ) , "rows" )
+          
+          removeModal()
+          
+        } else { 
+          removeModal()
+          orgUnitLevels = NULL } 
     }
    
     cat('\n- end orgUnitLevels():')
     removeModal()
-    return( ousLevels)
+    return( orgUnitLevels )
   }) 
   
   orgUnitLevels_with_counts = reactive({ 
@@ -1121,7 +1163,7 @@ metadata_widget_server <- function( id ,
       ouLevels = orgUnitLevels()
       
       
-      ous. = ous %>% 
+      orgUnits = ous %>% 
         # select( !!cols ) %>% # closedDate missing for guinea--results in error.  already in url, so why select here? 
         left_join( ouLevels %>% 
                      select( level, levelName ) , by = 'level' 
@@ -1142,14 +1184,23 @@ metadata_widget_server <- function( id ,
     } else { 
       
         file = paste0( dir(), metadata.files()[1] )
-        cat('\n - looking for orgUnits:' , file )
+        cat('\n - looking for metadata file:' , file )
       
         if ( file.exists( file ) & !dir.exists( file )){
           
-          cat( '- reading from metadata'  )
-          ous. = metadata()$orgUnits 
-          cat('\n- orgUnits has' , nrow(ous.) , "rows" ) 
+          # cat('\n- orgUnits reading from'  )
+          # ous. = read_excel( file , 
+          #                         sheet = 'OrgUnits' )
+          # cat('\n- orgUnits has' , nrow(ous.) , "rows" )
+          
+          cat(' - reading from metadata'  )
+          orgUnits = metadata()$orgUnits
+          cat('\n- orgUnits has' , nrow( orgUnits ) , "rows" )
+          
+          removeModal()
+          
         } else {
+          
             removeModal()
             return()
         }
@@ -1157,8 +1208,7 @@ metadata_widget_server <- function( id ,
     
     # glimpse( ous )
     cat( '\n- finished reactive orgUnits \n')
-    removeModal()
-    return( ous.)
+    return( orgUnits )
   })
   
   orgUnitDuplicates = reactive({
@@ -1266,53 +1316,53 @@ metadata_widget_server <- function( id ,
     } else {
     
         file = paste0( dir(), metadata.files()[1] )
-        cat('\n - looking for orgUnitHierarchy:' , file )
+        cat('\n - looking for metadata file:' , file )
       
         if ( file.exists( file ) & !dir.exists( file )){
           
+          # cat('\n- reading from'  )
+          # ous.tree = read_excel( file , sheet = 'orgUnitHierarchy', guess_max = 1e6 )
+          
           cat(' - reading from metadata'  )
           ous.tree = metadata()$ousTree
-          orgUnits = orgUnits()
+          cat('\n- ous.tree has' , nrow( ous.tree ) , "rows" )
+          
           
           # if leaf not in ous.tree, add it
           if ( ! 'leaf' %in% names( ous.tree ) ){
             cat('\n- adding leaf to ous.tree'  )
             # cat('\n- orgUnits() names:'  , names(orgUnits()  ))
             # cat('\n- ous.tree names:'  , names( ous.tree  ))
-            ous.tree = ous.tree %>% 
-              left_join( orgUnits  %>% 
-                           select( id, leaf ) , by = c('orgUnit' = 'id') )
+            ous.tree = ous.tree %>% left_join( orgUnits()  %>% select( id, leaf ) , by = c('orgUnit' = 'id') )
           }
           
           cat('\n- ous.tree has' , nrow(ous.tree) , "rows" ) 
+          removeModal()
         
-          } 
-        
-        # else {
-        #   cat( '\n *** creating ousTree \n' )
-        #     
-        #   ous = orgUnits()
-        #   ouLevels = orgUnitLevels()
-        # 
-        #   showModal(
-        #       modalDialog( title = "Compiling org unit tree",
-        #                    easyClose = TRUE ,
-        #                    size = 'm' ,
-        #                    footer=NULL
-        #                    )
-        #       )
-        # 
-        #   ous.tree = ous_tree( ous , ouLevels )
-        # 
-        #   removeModal()
-        # }
+          } else {
+          cat( '\n *** creating ousTree \n' )
+            
+          ous = orgUnits()
+          ouLevels = orgUnitLevels()
+
+          showModal(
+              modalDialog( title = "Compiling org unit tree",
+                           easyClose = TRUE ,
+                           size = 'm' ,
+                           footer=NULL
+                           )
+              )
+
+          ous.tree = ous_tree( ous , ouLevels )
+
+          removeModal()
+        }
     }
     
      cat( '\n - finished metadata_widget ous.tree \n')
      
      # testing
      # saveRDS( ous.tree , 'ousTree.rds' )
-     
      removeModal()
      return( ous.tree )
   
@@ -1393,92 +1443,95 @@ metadata_widget_server <- function( id ,
     req( orgUnits() , orgUnitLevels() )
     cat('\n * geoFeatures():'  )
     
-    if (  login() & loginFetch() ){
-
-      cat( '\n - geoFeatures...')
-
-      showModal(
-        modalDialog( title = "Downloading list of geoFeatures",
-                     easyClose = TRUE ,
-                     size = 'm' ,
-                     footer=NULL
-                     )
-        )
-
-      levels = orgUnitLevels()$level %>% unique
-      cat( '\n - geoFeatures has levels:' , length( levels ) , '\n')
-
-      geosf = list()
-
-        # login_status = try( loginDHIS2( baseurl() , username(), password() ) )
-        # print( paste( 'try loginDHIS2 is' , login_status ,
-        #               baseurl()
-        #               # , username(), password()
-        #               ))
-
-      # pb = progress_estimated( length( levels ) )
-
-      for ( l in levels ){
-
-        cat( '\n -geoFeatures download level-' , l , '\n' )
-
-        # xx= data.frame()
-        xx =  geoFeatures_download( level = l  )
-        # glimpse( x )
-        if ( "sf" %in% class(xx) ){
-          cat('\n - this level is SF \n')
-          geosf[[ l ]] = xx
-        } else { next }
-      }
-
-      # print( 'geosf[[ l ]]') ; print(  glimpse( geosf[[ l ]] ) )
-
-      # saveRDS( geosf, 'pre_bind_geosf.rds')
-
-      # before binding, find common col
-      geo_nonzero_rows = map_dbl( geosf, ~ifelse( !is_empty(.x) , nrow(.x), 0  )) > 0
-      geo_names_in_common = map(  geosf[geo_nonzero_rows], names ) %>% Reduce(intersect, .)
-      geosf. = lapply( geosf[geo_nonzero_rows] , "[", geo_names_in_common )
-
-      geosf. <- do.call( rbind , geosf.)
-
-      cat( '\n - names geosf: ' ,  names( geosf. ) )
-        #
-      # ous = ous %>% select( id, geometry )
-      # ous = orgUnits()
-      cat( '\n - geoFeatures:' , nrow( geosf. ) , 'rows \n' )
-
-      cat( '\n - join ous with orgUnits()')
-
-      geosf. = geosf. %>%
-        right_join( orgUnits() %>%
-                     # filter( ! is.na( code ) ) %>%
-                     select( id, name, levelName, leaf, parent ) %>%
-                      rename( parentName = parent ),
-                   by = c( 'id' ,  'name' )
-        )
-
-      cat( "\n - rows with ous linked to orgUnits" , nrow( geosf. ) , '\n')
-
-      # test
-      # saveRDS( geosf. , 'geosf.rds')
-
-      filename = paste0( dir() , "geoFeatures_", Sys.Date()  , ".rds"  )
-      
-      cat( "\n - saving", filename )
-      saveRDS( geosf. , filename )
-
-      # TODO: impute location of missing facilities/admin areas
-
-      # glimpse( ous )
-      cat( '\n - missing geometry for' , sum( is.na( geosf.$geometry )), '\n' )
-
-      removeModal()
-
-    } else {
+    # if (  login() & loginFetch() ){
+    #   
+    #   cat( '\n - geoFeatures...')
+    # 
+    #   showModal(
+    #     modalDialog( title = "Downloading list of geoFeatures", 
+    #                  easyClose = TRUE ,
+    #                  size = 'm' ,
+    #                  footer=NULL
+    #                  )
+    #     )
+    # 
+    #   levels = orgUnitLevels()$level %>% unique 
+    #   cat( '\n - geoFeatures has levels:' , length( levels ) , '\n')
+    # 
+    #   geosf = list()
+    #   
+    #     # login_status = try( loginDHIS2( baseurl() , username(), password() ) )
+    #     # print( paste( 'try loginDHIS2 is' , login_status , 
+    #     #               baseurl()  
+    #     #               # , username(), password()  
+    #     #               ))
+    #     
+    #   # pb = progress_estimated( length( levels ) )
+    #   
+    #   for ( l in levels ){
+    #     
+    #     cat( '\n -geoFeatures download level-' , l , '\n' )
+    #     
+    #     # xx= data.frame()
+    #     xx =  geoFeatures_download( level = l  )
+    #     # glimpse( x )
+    #     if ( "sf" %in% class(xx) ){  
+    #       cat('\n - this level is SF \n')
+    #       geosf[[ l ]] = xx  
+    #     } else { next }
+    #   }
+    #   
+    #   # print( 'geosf[[ l ]]') ; print(  glimpse( geosf[[ l ]] ) )
+    #   
+    # 
+    #   # saveRDS( geosf, 'pre_bind_geosf.rds')
+    #   
+    #   # before binding, find common col
+    #   geo_nonzero_rows = map_dbl( geosf, ~ifelse( !is_empty(.x) , nrow(.x), 0  )) > 0
+    #   geo_names_in_common = map(  geosf[geo_nonzero_rows], names ) %>% Reduce(intersect, .)
+    #   geosf. = lapply( geosf[geo_nonzero_rows] , "[", geo_names_in_common ) 
+    #   
+    #   geosf. <- do.call( rbind , geosf.)
+    # 
+    #   cat( '\n - names geosf: ' ,  names( geosf. ) )
+    #     # 
+    #   # ous = ous %>% select( id, geometry ) 
+    #   # ous = orgUnits()
+    #   cat( '\n - geoFeatures:' , nrow( geosf. ) , 'rows \n' )
+    #   
+    #   cat( '\n - join ous with orgUnits()')
+    # 
+    #   geosf. = geosf. %>%
+    #     right_join( orgUnits() %>%
+    #                  # filter( ! is.na( code ) ) %>%
+    #                  select( id, name, levelName, leaf, parent ) %>%
+    #                   rename( parentName = parent ),
+    #                by = c( 'id' ,  'name' )
+    #     )
+    #   
+    #   cat( "\n - rows with ous linked to orgUnits" , nrow( geosf. ) , '\n')
+    #   
+    #   # test
+    #   # saveRDS( geosf. , 'geosf.rds')
+    #   
+    #   filename = paste0( dir() , "geoFeatures_", Sys.Date()  , ".rds"  )
+    #   saveRDS( geosf. , filename )
+    #   
+    #   # TODO: impute location of missing facilities/admin areas 
+    #   
+    #   # glimpse( ous )
+    #   cat( '\n - missing geometry for' , sum( is.na( geosf.$geometry )), '\n' )
+    #   
+    #   # test
+    #   
+    #   # saveRDS( ous , 'geometry.rds')
+    #   
+    #   removeModal()
+    # 
+    # } else {
     
         file = paste0( dir(), geofeatures.files()[1] )
-        cat('\n - looking for geofeatures file:' , file )
+        cat('\n - looking for metadata file:' , file )
       
         if ( file.exists( file ) & !dir.exists( file )){
           
@@ -1488,10 +1541,10 @@ metadata_widget_server <- function( id ,
         } else {
             return()
         }
-    }
+    # }
     
     # Fill latitude and longitude only if geometry is POINT
-    cat( '\n - add lat and long when geometry is point')
+    cat( '\n add lat and long when geometry is point')
     geosf.$geom_type <- st_geometry_type( geosf. )
     is_point <- geosf.$geom_type == "POINT"
     geosf.$latitude[is_point] <- st_coordinates(geosf.[is_point, ])[, "Y"]
@@ -1798,6 +1851,11 @@ metadata_widget_server <- function( id ,
       sheet8  <- addWorksheet( wb, sheetName = "Categories")
       sheet9  <- addWorksheet( wb, sheetName = "DataElementGroups")
       sheet10 <- addWorksheet( wb, sheetName = "orgUnitHierarchy")
+      
+      # Testing
+      # saveRDS( dataSets.() , "dataSets..rds" ) 
+      # saveRDS( dataSets() , "datasets.rds" ) 
+      # saveRDS( systemInfo() , "systemInfo.rds" ) 
 
       writeDataTable( wb, sheet1, systemInfo() , rowNames = FALSE )
       writeDataTable( wb, sheet2, meta_variables() , rowNames = FALSE )
@@ -1805,28 +1863,12 @@ metadata_widget_server <- function( id ,
       writeDataTable( wb, sheet4, orgUnits() , rowNames = FALSE )
       writeDataTable( wb, sheet5, dataElementDictionary() , rowNames = FALSE )
       writeDataTable( wb, sheet6, indicatorDictionary() , rowNames = FALSE )
-      writeDataTable( wb, sheet7, dataSets.()  , rowNames = FALSE ) # %>% select( - dataSetElements )
+      writeDataTable( wb, sheet7, dataSets.()  , rowNames = FALSE )
       writeDataTable( wb, sheet8, categories() , rowNames = FALSE )
       writeDataTable( wb, sheet9, dataElementGroups() , rowNames = FALSE )
       writeDataTable( wb, sheet10, ousTree() , rowNames = FALSE )
 
       openxlsx::saveWorkbook( wb , file , overwrite = TRUE )
-      
-      # also save as RDS
-      meta = list( systemInfo = systemInfo ,
-                   meta_variables =meta_variables() ,
-                   orgUnitLevels = orgUnitLevels() ,
-                   orgUnits = orgUnits() ,
-                   dataElementDictionary = dataElementDictionary() ,
-                   indicatorDictionary = indicatorDictionary() ,
-                   dataSets. = dataSets.() ,
-                   categories = categories() ,
-                   dataElementGroups =  dataElementGroups() ,
-                   ousTree = ousTree() ,
-                   geoFeatures = geoFeatures() 
-      ) 
-      
-      saveRDS( meta , paste0( dir() , "metadata.RDS" ) )
       
     }
     
@@ -1904,24 +1946,24 @@ metadata_widget_server <- function( id ,
   
   })
   
-  uploaded_OrgUnitLevels = reactive({ read.xlsx( metadataFile() ,  "OrgUnitLevels" ) %>% as_tibble() })
-  uploaded_OrgUnits = reactive({ read.xlsx( metadataFile() ,  "OrgUnits" )  %>% as_tibble() })
-  uploaded_orgUnitHierarchy = reactive({ read.xlsx( metadataFile() ,  "orgUnitHierarchy" , guess_max = 1e6 )  %>% as_tibble() })
-  
-  uploaded_DataElements = reactive({ read.xlsx( metadataFile() ,  "DataElements" )  %>% as_tibble() })
-
-  uploaded_DataElementGroups = reactive({ read.xlsx( metadataFile() ,  "DataElementGroups" )  %>% as_tibble() })
-  uploaded_Categories = reactive({ read.xlsx( metadataFile() ,  "Categories" )  %>% as_tibble() })
-  uploaded_DataSets = reactive({ read.xlsx( metadataFile() ,  "DataSets" )  %>% as_tibble() })
-  uploaded_Indicators = reactive({ read.xlsx( metadataFile() ,  "Indicators" )  %>% as_tibble() })
-  
-  uploaded_dataDictionary = reactive({ read.xlsx( metadataFile() ,  "DataElements" )  %>% as_tibble() })
+  # uploaded_OrgUnitLevels = reactive({ read.xlsx( metadataFile() ,  "OrgUnitLevels" ) %>% as_tibble() })
+  # uploaded_OrgUnits = reactive({ read.xlsx( metadataFile() ,  "OrgUnits" )  %>% as_tibble() })
+  # uploaded_orgUnitHierarchy = reactive({ read.xlsx( metadataFile() ,  "orgUnitHierarchy" , guess_max = 1e6 )  %>% as_tibble() })
+  # 
+  # uploaded_DataElements = reactive({ read.xlsx( metadataFile() ,  "DataElements" )  %>% as_tibble() })
+  # 
+  # uploaded_DataElementGroups = reactive({ read.xlsx( metadataFile() ,  "DataElementGroups" )  %>% as_tibble() })
+  # uploaded_Categories = reactive({ read.xlsx( metadataFile() ,  "Categories" )  %>% as_tibble() })
+  # uploaded_DataSets = reactive({ read.xlsx( metadataFile() ,  "DataSets" )  %>% as_tibble() })
+  # uploaded_Indicators = reactive({ read.xlsx( metadataFile() ,  "Indicators" )  %>% as_tibble() })
+  # 
+  # uploaded_dataDictionary = reactive({ read.xlsx( metadataFile() ,  "DataElements" )  %>% as_tibble() })
   
   # Testing - not rqd 
-  observe({
-    print( paste('uploaded_DataElements' , is_tibble( uploaded_DataElements() ) ) )
-    print( paste('uploaded_DataSets' , is_tibble( uploaded_DataSets() ) ) )
-  })
+  # observe({
+  #   print( paste('uploaded_DataElements' , is_tibble( uploaded_DataElements() ) ) )
+  #   print( paste('uploaded_DataSets' , is_tibble( uploaded_DataSets() ) ) )
+  # })
    
 
 # Resources tab ####
@@ -1978,7 +2020,6 @@ metadata_widget_server <- function( id ,
                 dataElements = dataElementDictionary ,
                 dataElementGroups = dataElementGroups ,
                 dataSets = dataSets , 
-                # dataSetElements = dataSetElements , 
                 categories = categories , 
                 orgUnitLevels = orgUnitLevels_with_counts ,
                 orgUnits = orgUnits ,
