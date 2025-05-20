@@ -1440,111 +1440,34 @@ metadata_widget_server <- function( id ,
 
   geoFeatures = reactive({
     
-    req( orgUnits() , orgUnitLevels() )
+    req( metadata() )
     cat('\n * geoFeatures():'  )
     
-    # if (  login() & loginFetch() ){
-    #   
-    #   cat( '\n - geoFeatures...')
-    # 
-    #   showModal(
-    #     modalDialog( title = "Downloading list of geoFeatures", 
-    #                  easyClose = TRUE ,
-    #                  size = 'm' ,
-    #                  footer=NULL
-    #                  )
-    #     )
-    # 
-    #   levels = orgUnitLevels()$level %>% unique 
-    #   cat( '\n - geoFeatures has levels:' , length( levels ) , '\n')
-    # 
-    #   geosf = list()
-    #   
-    #     # login_status = try( loginDHIS2( baseurl() , username(), password() ) )
-    #     # print( paste( 'try loginDHIS2 is' , login_status , 
-    #     #               baseurl()  
-    #     #               # , username(), password()  
-    #     #               ))
-    #     
-    #   # pb = progress_estimated( length( levels ) )
-    #   
-    #   for ( l in levels ){
-    #     
-    #     cat( '\n -geoFeatures download level-' , l , '\n' )
-    #     
-    #     # xx= data.frame()
-    #     xx =  geoFeatures_download( level = l  )
-    #     # glimpse( x )
-    #     if ( "sf" %in% class(xx) ){  
-    #       cat('\n - this level is SF \n')
-    #       geosf[[ l ]] = xx  
-    #     } else { next }
-    #   }
-    #   
-    #   # print( 'geosf[[ l ]]') ; print(  glimpse( geosf[[ l ]] ) )
-    #   
-    # 
-    #   # saveRDS( geosf, 'pre_bind_geosf.rds')
-    #   
-    #   # before binding, find common col
-    #   geo_nonzero_rows = map_dbl( geosf, ~ifelse( !is_empty(.x) , nrow(.x), 0  )) > 0
-    #   geo_names_in_common = map(  geosf[geo_nonzero_rows], names ) %>% Reduce(intersect, .)
-    #   geosf. = lapply( geosf[geo_nonzero_rows] , "[", geo_names_in_common ) 
-    #   
-    #   geosf. <- do.call( rbind , geosf.)
-    # 
-    #   cat( '\n - names geosf: ' ,  names( geosf. ) )
-    #     # 
-    #   # ous = ous %>% select( id, geometry ) 
-    #   # ous = orgUnits()
-    #   cat( '\n - geoFeatures:' , nrow( geosf. ) , 'rows \n' )
-    #   
-    #   cat( '\n - join ous with orgUnits()')
-    # 
-    #   geosf. = geosf. %>%
-    #     right_join( orgUnits() %>%
-    #                  # filter( ! is.na( code ) ) %>%
-    #                  select( id, name, levelName, leaf, parent ) %>%
-    #                   rename( parentName = parent ),
-    #                by = c( 'id' ,  'name' )
-    #     )
-    #   
-    #   cat( "\n - rows with ous linked to orgUnits" , nrow( geosf. ) , '\n')
-    #   
-    #   # test
-    #   # saveRDS( geosf. , 'geosf.rds')
-    #   
-    #   filename = paste0( dir() , "geoFeatures_", Sys.Date()  , ".rds"  )
-    #   saveRDS( geosf. , filename )
-    #   
-    #   # TODO: impute location of missing facilities/admin areas 
-    #   
-    #   # glimpse( ous )
-    #   cat( '\n - missing geometry for' , sum( is.na( geosf.$geometry )), '\n' )
-    #   
-    #   # test
-    #   
-    #   # saveRDS( ous , 'geometry.rds')
-    #   
-    #   removeModal()
-    # 
-    # } else {
-    
-        file = paste0( dir(), geofeatures.files()[1] )
-        cat('\n - looking for metadata file:' , file )
+    if ( 'geoFeatures' %in% names( metadata() ) ){
       
-        if ( file.exists( file ) & !dir.exists( file )){
-          
-          cat('\n- reading from'  )
-          geosf. = readRDS( file )
-          cat('\n- geofeatures have' , nrow(geosf.) , "rows" ) 
-        } else {
-            return()
-        }
-    # }
-    
+      cat('\n- reading geofeatures from metadata file'  )
+      geosf. =  metadata()$geoFeatures 
+      cat('\n- geofeatures have' , nrow(geosf.) , "rows" ) 
+      
+    } else {
+      
+      file = paste0( dir(), geofeatures.files()[1] )
+      cat('\n - looking for geofeatures file:' , file )
+      
+      if ( file.exists( file ) & !dir.exists( file )){
+        
+        cat('\n- reading from geofeatures file'  )
+        geosf. = readRDS( file )
+        cat('\n- geofeatures have' , nrow(geosf.) , "rows" ) 
+      } else {
+        return()
+      }
+      
+    }
+
     # Fill latitude and longitude only if geometry is POINT
     cat( '\n add lat and long when geometry is point')
+    
     geosf.$geom_type <- st_geometry_type( geosf. )
     is_point <- geosf.$geom_type == "POINT"
     geosf.$latitude[is_point] <- st_coordinates(geosf.[is_point, ])[, "Y"]
@@ -1554,20 +1477,20 @@ metadata_widget_server <- function( id ,
     
   })
   
-  output$geoFeaturesTable = DT::renderDT( 
-    DT::datatable(
-
-    geoFeatures.ous() %>% 
-      st_drop_geometry() %>%
-      as_tibble() %>% 
-      select( name, level, levelName, parentName, id, leaf, latitude, longitude ) ,
-
-    rownames = FALSE,
-    filter = 'top' ,
-    options = list( DToptions_no_buttons(), scrollX = TRUE ) ,
-    selection = "single", # Allow single row selection
-
-    ))
+  # output$geoFeaturesTable = DT::renderDT( 
+  #   DT::datatable(
+  # 
+  #   geoFeatures.ous() %>% 
+  #     st_drop_geometry() %>%
+  #     as_tibble() %>% 
+  #     select( name, level, levelName, parentName, id, leaf, latitude, longitude ) ,
+  # 
+  #   rownames = FALSE,
+  #   filter = 'top' ,
+  #   options = list( DToptions_no_buttons(), scrollX = TRUE ) ,
+  #   selection = "single", # Allow single row selection
+  # 
+  #   ))
   
 # Save geoFeatures to an rds file ####
 
