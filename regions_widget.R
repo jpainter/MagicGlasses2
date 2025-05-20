@@ -385,20 +385,26 @@ getDescendantsRecursive <- function( node, df, visited = character() ) {
                      ) 
     }
     
-    gf.map = gf.map %>%
-      addCircleMarkers( data = gf %>%
-                          filter( st_geometry_type(.) == 'POINT') , group = "Facility" ,
-                        radius = 3 ,
-                        color = "blue" ,
-                        stroke = FALSE, fillOpacity = .9,
-                        label = ~name,
-                        layerId = ~name,
-                        labelOptions = labelOptions(
-                          noHide = FALSE,
-                          direction = "auto",
-                          opacity = 1
-                          )
-      ) 
+    # add points, if available
+    gf.points = gf %>% filter( st_geometry_type(.) == 'POINT')
+    
+    if ( nrow( gf.points) > 0 ){
+      
+      gf.map = gf.map %>%
+        addCircleMarkers( data = gf.points,
+                          group = "Facility" ,
+                          radius = 3 ,
+                          color = "blue" ,
+                          stroke = FALSE, fillOpacity = .9,
+                          label = ~name,
+                          layerId = ~name,
+                          labelOptions = labelOptions(
+                            noHide = FALSE,
+                            direction = "auto",
+                            opacity = 1
+                            )
+        )
+    }
     
   #   options = popupOptions(closeButton = FALSE)
     

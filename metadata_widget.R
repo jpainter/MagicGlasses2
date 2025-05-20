@@ -92,26 +92,26 @@ metadata_widget_ui <- function( id ) {
                          DTOutput( ns( 'OrgUnit_duplicates' )  ) 
                          ) ,
 
-                tabPanel(
-                  "Map",
-                  fluidRow(
-                    column(
-                      6, # Half-width column for the map
-                      leafletOutput(ns("geoFeatures_map"), height = "80vh") # Adjust height dynamically
-                    ),
-                    column(
-                      6, # Half-width column for the table
-                      div(
-                        downloadButton(ns('downloadGeoFeatures'), 'Save geo features (.rds file)'),
-                        br(), # Add some spacing between the button and the table
-                        div(
-                          style = "overflow-y: auto; height: 75vh;", # Adjust height to fit within the viewport
-                          DTOutput(ns("geoFeaturesTable"))
-                        )
-                      )
-                    )
-                  )
-                ) , 
+                # tabPanel(
+                #   "Map",
+                #   fluidRow(
+                #     column(
+                #       6, # Half-width column for the map
+                #       leafletOutput(ns("geoFeatures_map"), height = "80vh") # Adjust height dynamically
+                #     ),
+                #     column(
+                #       6, # Half-width column for the table
+                #       div(
+                #         downloadButton(ns('downloadGeoFeatures'), 'Save geo features (.rds file)'),
+                #         br(), # Add some spacing between the button and the table
+                #         div(
+                #           style = "overflow-y: auto; height: 75vh;", # Adjust height to fit within the viewport
+                #           DTOutput(ns("geoFeaturesTable"))
+                #         )
+                #       )
+                #     )
+                #   )
+                # ) , 
 
                 
                 tabPanel("API Resources", 
@@ -1569,252 +1569,6 @@ metadata_widget_server <- function( id ,
 
     ))
   
-
-## Map ####
-  
-  geoFeatures.ous = reactive( {
-    req( geoFeatures() )
-    req( ousTree() )
-    
-    cat( '\n * geoFeatures.ous()' )
-    
-    gf.ous = geoFeatures() %>% 
-      semi_join( ousTree() , by = c('id' = 'orgUnit') )
-    
-    # Remove slashes from levelNames
-    cat( '\n - remove slashes from levelName')
-    gf.ous$levelName = str_replace_all( gf.ous$levelName , fixed("/") , ";")
-    
-    return( gf.ous )
-  })
-  
-  # * CROSSTALK
-  # shared_geofeatures <- SharedData$new(  geoFeatures.ous )
-  
-  gf.map = reactive({
-    req( geoFeatures.ous() )
-
-    # req( orgUnitLevels() )
-    cat( '\n * gf.map():')
-
-    
-    gf = geoFeatures.ous()
-    # gf. = shared_geofeatures
-    
-    
-    cat( '\n - split geofeatures')
-    split_geofeatures = split( gf , f = gf[['levelName']]  )
-
-        
-    # levels = names( split_geofeatures )
-    levels = bind_rows(gf %>% st_drop_geometry()) %>% filter( !is.na( level)) %>% distinct( level, levelName ) 
-
-    cat( '\n geoFeatures map for:' , levels$levelName  , '\n')
-    
-    # reorder levels
-    split_geofeatures = split_geofeatures[ levels$levelName ]
-
-    # test for empty geometry
-    not_all_empty_geo = map_lgl( split_geofeatures , ~!all(is.na(st_dimension(.x))) )
-    # print( paste( 'not_all_empty_geo: ', not_all_empty_geo ) )
-
-    n_levels = sum( not_all_empty_geo ) # length(split_geofeatures) # 
-
-    cat( paste('geoFeatures split into' , n_levels , 'levels' ,
-                 paste( names( split_geofeatures ), collapse = ',' ), sep = " " ) , '\n')
-
-    level.colors = RColorBrewer::brewer.pal(n_levels, 'Set2')
-    names( level.colors ) = levels[ not_all_empty_geo, 'levelName' ]
-
-
-    split_gf = split_geofeatures[ not_all_empty_geo ]
-    
-    admins = gf %>% filter( st_geometry_type(.) != 'POINT') %>% filter( !st_is_empty(.) )
-    
-    gf.map =
-      leaflet( options = leafletOptions( preferCanvas = TRUE ,  updateWhen = FALSE ) ) %>%
-      addTiles(group = "OSM (default)") %>%
-      
-      addMeasure(
-        position = "bottomleft",
-        primaryLengthUnit = "meters",
-        primaryAreaUnit = "sqmeters"
-      ) %>%
-      
-      addProviderTiles(providers$Stadia.StamenToner, group = "Toner") %>%
-      # addProviderTiles( providers$Stamen.TonerLite , group = "Toner Lite") %>%
-      # addProviderTiles( "Stadia.Stamen.Terrain" , group = "Stamen.Terrain" ) %>%
-      addProviderTiles( "Esri.WorldStreetMap", group = "Esri.WorldStreetMap" )  %>%
-      addProviderTiles( "Esri.WorldImagery", group = "Esri.WorldImagery" ) %>%
-      addTiles( group = "No Background" , options = providerTileOptions( opacity = 0 ) ) 
-
-    admin.levels = admins$levelName %>% unique 
-    
-    for ( i in rev( seq_along( admin.levels ) ) ){
-      gf.map = gf.map %>%
-              addPolygons( data = admins %>% filter( levelName == admin.levels[ i ] ) ,
-                     group = admin.levels[ i ] ,
-                     label = ~paste( name ,   
-                                     ifelse( level < 3 , '' , 
-                                             paste( 'in' ,  parentName ) )
-                                            ) ,
-                     layerId = ~name,
-                     color = "black", 
-                     weight = 1, smoothFactor = 0.5,
-                     opacity = 1.0, fillOpacity = 0 , fillColor = "lightblue" ,
-                     highlightOptions = highlightOptions( color = "white", weight = 2,
-                                                         bringToFront = TRUE) ,
-                     labelOptions = labelOptions(
-                       noHide = FALSE,
-                       direction = "auto",
-                       opacity = 0.5
-                     )
-                     ) 
-    }
-    
-    gf.map = gf.map %>%
-      addCircleMarkers( data = gf %>%
-                          filter( st_geometry_type(.) == 'POINT') , group = "Facility" ,
-                        radius = 3 ,
-                        color = "blue" ,
-                        stroke = FALSE, fillOpacity = .9,
-                        label = ~name,
-                        layerId = ~name,
-                        labelOptions = labelOptions(
-                          noHide = FALSE,
-                          direction = "auto",
-                          opacity = 1
-                          )
-      ) %>%
-    
-      # Layers control
-      addLayersControl(
-        baseGroups = c("OSM (default)", "Toner", "Toner Lite", "Stamen.Terrain", 
-                       "Esri.WorldStreetMap" , "Esri.WorldImagery" ),
-        overlayGroups = c( "Facility" , rev( admin.levels )   ),
-        options = layersControlOptions( collapsed = FALSE )
-      )
-    
-  #   options = popupOptions(closeButton = FALSE)
-    
-    return( gf.map )
-
-  })
-  
-  output$geoFeatures_map <- renderLeaflet({
-    gf.map()
-    }) 
-  
-# Observe map marker click and highlight corresponding row in table
-  observeEvent(input$geoFeatures_map_shape_click, {
-    click <- input$geoFeatures_map_shape_click
-    
-    if (!is.null(click)) {
-
-      selected_name <- click$id
-      cat( paste('\n - clicked on:', selected_name ) )
-      proxy <- dataTableProxy("geoFeaturesTable")
-      
-      # Apply the selected name to the filter box
-      updateSearch(proxy, keywords = list(global = NULL, 
-                                          columns = list( selected_name, NULL, NULL, NULL , NULL, NULL  ) ) )
-  
-    } else {
-      updateSearch(proxy, keywords = list(global = NULL, 
-                                          columns = list(NULL, NULL, NULL, NULL, NULL , NULL  ) ) )
-    }
-  })
-  
-  observeEvent(input$geoFeatures_map_marker_click, {
-    click <- input$geoFeatures_map_marker_click
-    
-    if (!is.null(click)) {
-
-      selected_name <- click$id
-      cat( paste('\n - clicked on:', selected_name ) )
-      proxy <- dataTableProxy("geoFeaturesTable")
-      
-      # Apply the selected name to the filter box
-      updateSearch(proxy, keywords = list(global = NULL, 
-                                          columns = list( selected_name, NULL, NULL, NULL , NULL, NULL  ) ) )
-  
-    } else {
-      updateSearch(proxy, keywords = list(global = NULL, 
-                                          columns = list(NULL, NULL, NULL, NULL, NULL , NULL  ) ) )
-    }
-  })
-  
-    
-# Observe table row selection and highlight corresponding marker on map
-    # Create a reactive value to monitor selection
-    selected_row <- reactive({
-      input$geoFeaturesTable_rows_selected
-    }) 
-    
-  observe({
-    
-    gf = geoFeatures.ous()
-    
-    # revert to all points when input deselected
-    if ( is.null( selected_row() ) ){
-      cat('\n - no row selected')
-      
-      leafletProxy("geoFeatures_map") %>%
-        clearMarkers() %>%
-        addCircleMarkers( data = gf %>%
-                            filter( st_geometry_type(.) == 'POINT') , group = "Facility" ,
-                          radius = 3 ,
-                          color = "blue" ,
-                          layerId = ~name,
-                          stroke = FALSE, fillOpacity = .9,
-                          label = ~name
-        )
-      return()
-    }
-    
-    selected_row <- selected_row()
-    
-    cat( paste('\n - selected geofeatures row:', selected_row ) )
-    
-    selected_location <- gf[selected_row, ]
-    
-    # If row is selected and is a point
-    if ( length(selected_row) > 0 && st_geometry_type( selected_location ) %in% "POINT" ) {
-
-      leafletProxy("geoFeatures_map") %>%
-        clearMarkers() %>%
-         addCircleMarkers( data = gf %>%
-                            filter( st_geometry_type(.) == 'POINT') , group = "Facility" ,
-          radius = 3 ,
-          color = "blue" ,
-          layerId = ~name,
-          stroke = FALSE, fillOpacity = .9,
-          label = ~name
-      ) %>%
-        addCircleMarkers(
-          data = selected_location ,
-          radius = 3,
-          color = "red",
-          layerId = ~name,
-          fill = TRUE,
-          fillOpacity = 1,
-          label = ~name
-        )
-    } else {
-      
-      leafletProxy("geoFeatures_map") %>%
-        clearMarkers() %>%
-        addCircleMarkers( data = gf %>%
-                            filter( st_geometry_type(.) == 'POINT') , group = "Facility" ,
-                          radius = 3 ,
-                          color = "blue" ,
-                          layerId = ~name,
-                          stroke = FALSE, fillOpacity = .9,
-                          label = ~name
-        )
-    }
-  })
-
 # Save geoFeatures to an rds file ####
 
   output$downloadGeoFeatures <- downloadHandler(
