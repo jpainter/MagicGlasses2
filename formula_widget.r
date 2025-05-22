@@ -12,11 +12,11 @@ formula_widget_ui <- function( id ) {
     
     fluidPage(
 
-    div(
-            # Header text for the top of the page
-            p( "Data elements (or indicators) associated with formula (left panel)"), 
-            style = "font-weight: bold; text-align: left; margin-bottom: 10px;" # Center alignment and spacing 
-          ),
+    # div(
+    #         # Header text for the top of the page
+    #         p( "Data elements (or indicators) associated with formula (left panel)"), 
+    #         style = "font-weight: bold; text-align: left; margin-bottom: 10px;" # Center alignment and spacing 
+    #       ),
     # div(
     #         # Header text for the top of the page
     #         p( "Use the 'Select' and 'Review' tabs here:"), 

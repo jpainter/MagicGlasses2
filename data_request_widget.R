@@ -13,9 +13,18 @@ data_request_widget_ui = function ( id ) {
   fluidPage(
 
         div(
-        h5( "Request Data (download) from DHIS2"), # Header text for the top of the page
+        h5( "Request data from DHIS2 instance"), # Header text for the top of the page
         style = "font-weight: bold; text-align: center; text-decoration: underline;" # Center alignment and spacing
       ),
+      
+      fluidRow( 
+        
+        column( 2,  h2("Formula: ") ) ,
+        column( 10, h2( textOutput( ns("formulaName")  ) ) )
+      
+        ) ,
+      
+      p("\n") ,
       
       fluidRow( 
        
@@ -62,7 +71,7 @@ data_request_widget_ui = function ( id ) {
               ) ,
        column( 10, 
                div( 
-                 p("**After download complete, use refresh button (above) and then \nre-select the formula to see the download file." ),
+                 p("**After download complete, use refresh button (Formula tab) and then \nre-select the formula to see the download file." ),
                  style = "font-weight: bold; text-align: center;" )
                ) 
       )
@@ -91,6 +100,7 @@ data_request_widget_server <- function( id ,
       data.folder = reactive({ dataDirectory$directory() })
       indicator = reactive({ data_widget_output$indicator() })
       formulas = reactive({ data_widget_output$formulas() })
+      formulaName = reactive({ data_widget_output$formulaName() })
       formula_elements = reactive({ data_widget_output$formula_elements() })
       dataset.file = reactive({ data_widget_output$dataset.file() })
       dataset = reactive({ data_widget_output$dataset() })
@@ -99,12 +109,12 @@ data_request_widget_server <- function( id ,
       selected_regions =  reactive({ regions_widget_output$selected_regions() })
   
   
-      formula.names = reactive({ 
-          req( formulas() ) 
-          cat( '\n formula columns:', names(formulas()) ,'\n')
-      
-          formulas()$formulaName 
-          })
+      # updata formula
+      observeEvent( !is.null( formulaName() ) , {
+        cat( "\n* data_request_widget sees formula: ", formulaName() )
+        
+        output$formulaName <- renderText({ formulaName()  })
+      } )
       
       # Update level names
       observeEvent( !is.null( orgUnitLevels() ) , {

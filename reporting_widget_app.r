@@ -24,75 +24,10 @@ reporting_widget_ui = function ( id ){
           sidebarPanel( width = 3 ,           
 
             tabsetPanel( type = "tabs",
-            tabPanel( "Org Levels",  
-                    
-
-            h5( 'Filter Org Units (press update button to change display') ,
- 
-            inputPanel(
-            
-             
-              selectInput( ns("level2"), label = "OrgUnit Level2" , 
-                            choices = NULL, 
-                            selected = NULL ,
-                            multiple = TRUE ) ,
-              
-              selectInput( ns("level3"), label = "OrgUnit Level3" ,
-                            choices = NULL,
-                            selected = NULL ,
-                            multiple = TRUE ) ,
-              
-              selectInput( ns("level4"), label = "OrgUnit Level4" ,
-                            choices = NULL,
-                            selected = NULL  ,
-                            multiple = TRUE  ) ,
-              
-              selectInput( ns("level5"), label = "OrgUnit Level5" ,
-                            choices = NULL,
-                            selected = NULL  ,
-                            multiple = TRUE  ) ,
-            
-              selectInput( ns("source") , label = "Original/Cleaned" , 
-                          choices = c( 'Original', 'Cleaned' ) , 
-                          selected = 'Original' ) ,
-              
-              selectInput( ns("split") , label = "Split Data By:" , 
-                          choices = "None" , 
-                          selected = "None" )
-              
-      
-        ) , 
-        
-        actionButton( ns('update_reporting_org_levels') , label = "Update orgUnits ") ,
-        
-        
-        
-        h5( 'Filter display dates') ,
-        
-        inputPanel( 
-          
-          selectizeInput( ns("startDisplayMonth") , label = "begining", 
-                          choices = NULL ,
-                          selected = NULL ) ,
-          
-          selectizeInput( ns("endDisplayMonth"), label = "ending", 
-                          choices = NULL , 
-                          selected = NULL )
-          
-        ) ,
-        
-        
-        h5( 'Aggregate Level' ) ,
-        
-        selectInput( ns("level") , label = 'Select data only at specific level ("leaf" is all facilities that enter data):' ,
-                     choices = c( 'leaf'  ) ,
-                     selected = NULL ) 
-        
-        )  ,
         
         tabPanel( "Reporting Consistency" , 
 
-                  h5( 'Find *Champion* facilities  -- the ones that reported the most each year' ) ,
+                  p( 'Find *Champion* facilities  -- the ones that reported the most each year during the selected period', style = "font-size: 16px"  ) ,
                   
                   br() , 
                   
@@ -111,24 +46,65 @@ reporting_widget_ui = function ( id ){
                                     selected = NULL ) ,
                   
                   
-                  checkboxInput( ns("exclude_recent_month") , label ='Exclude most recent period? (e.g. current month if data expected to be incomplete)',
+                  checkboxInput( ns("exclude_recent_month") , 
+                                 label ='Exclude most recent period? (e.g. current month if data expected to be incomplete)',
                                  value = TRUE  ) ,
                   
-                  selectizeInput( ns("missing_reports") , label = "Number of missing reports allowed/yr" , 
+                  selectizeInput( ns("missing_reports") , 
+                                  label = "Number of missing reports allowed/yr" ,
                                   choices = 0:2 , 
-                                  selected = 0 ) ,
-                  
-                          
-                  checkboxInput( ns("count.any") , label ='Categorize facility as reporting if any data submitted, even when data not selected above', value = FALSE )
+                                  selected = 0 ) 
 
-                  ) 
-                  
-              ) , 
+                  ) ,
+ 
+                  ) , 
+        
+       tabPanel("dataElements" , 
+                
+                
+                # checkboxInput( ns("all_categories") , 
+                #                        label = 'Select all dataElements/Categories',
+                #                        value = TRUE )  ,
+                
+                
+                tags$style(HTML("
+              .scroll-checkbox-group {
+                overflow-y: auto;
+                max-height: 250px; /* Adjust this height */
+                border: 1px solid #ccc;
+                padding: 5px;
+              }
+            ")) ,
+                
+                div(
+                  class = "scroll-checkbox-group",
+                  checkboxGroupInput( ns("data_categories") ,
+                                      label = "DataElement/Category" ,
+                                      choices = NULL  ,
+                                      selected = 1 ,
+                                      width = "100%" ) 
+                ) , 
+                
+                actionButton( ns('update_data_categories') , label = "Update") ,
+                
+                p( "" , style = "font-size: 12px" ) ,
+                
+                p( "By default, facilities are counted as reporting if any of the selected data were reported." , style = "font-size: 16px" ) ,
+                
+            p("For data elements that have low values and are often be zero, the zero value may not be recorded.  In those cases it is helpful to use other data elements as a marker to indicate that the facility likely reported.  For example, the number of deaths due to a specific disease may be missing, but if other deaths were reported, it may be reasonable to assume that the facility should be counted as having reported." , style = "font-size: 12px" ) ,
+                
+                
+                checkboxInput( ns("count.any") , 
+                               label ='Categorize facility as reporting if any data submitted, even when data not selected above', 
+                               value = FALSE ) 
+                
+                ) ,
       
-       tabPanel( "dataElements and dataSets",  
+       tabPanel( "dataSets",  
         # inputPanel(
         
-        h5( "Datasets (forms used to enter data)" ) , 
+        p( "Datasets are the forms used to enter data",  
+           style = "font-size: 14px" ) , 
         
               checkboxInput( ns("dataset_merge"), 
                              label ='Merge data from all datasets (or choose datasets below)', value = FALSE ) ,
@@ -142,42 +118,81 @@ reporting_widget_ui = function ( id ){
                            selected = 1 ,
                            width = "100%" ,
                            multiple = TRUE ,
-                           selectize = TRUE ) ,
-        
-        h5( "Data elements" ) , 
-              
-               # checkboxInput( ns("all_categories") , 
-               #                        label = 'Select all dataElements/Categories',
-               #                        value = TRUE )  ,
-        
-        
-                actionButton( ns('update_data_categories') , label = "Update") ,
-        
-
-              tags$style(HTML("
-              .scroll-checkbox-group {
-                overflow-y: auto;
-                max-height: 200px; /* Adjust this height */
-                border: 1px solid #ccc;
-                padding: 5px;
-              }
-            ")) ,
-                
-                  div(
-                    class = "scroll-checkbox-group",
-                    checkboxGroupInput( ns("data_categories") ,
-                                        label = "DataElement/Category" ,
-                                        choices = NULL  ,
-                                        selected = 1 ,
-                                        width = "100%" ) 
-                  ) , 
-
-        
-          p( "By default, facility counted as reporting if any of the selected data were reported.\n
-            See option in 'Reporting Consistency' to count as reporting if any of these - including non selected data - were reported)." , style = "font-size: 16px" ) 
+                           selectize = TRUE ) 
 
                # ) # end inputPanel 
-        ) # end tabPanel
+        ) ,
+       
+       tabPanel( "Display",
+                 
+                 inputPanel(
+                   
+                   
+                   selectInput( ns("source") , label = "Original/Cleaned" , 
+                                choices = c( 'Original', 'Cleaned' ) , 
+                                selected = 'Original' ) ,
+                   
+                   selectInput( ns("split") , label = "Split Data By:" , 
+                                choices = "None" , 
+                                selected = "None" )
+                 ) ,
+                 
+                 h5( 'Filter display dates') ,
+                 
+                 inputPanel( 
+                   
+                   selectizeInput( ns("startDisplayMonth") , label = "begining", 
+                                   choices = NULL ,
+                                   selected = NULL ) ,
+                   
+                   selectizeInput( ns("endDisplayMonth"), label = "ending", 
+                                   choices = NULL , 
+                                   selected = NULL )
+                   
+                 )
+       ) ,
+       
+       
+       tabPanel( "Org Levels",  
+                 
+                 
+                 p( 'Filter Org Units (press update button to change display',
+                    style = "font-size: 14px" ) ,
+                 
+                 inputPanel(
+                   
+                   
+                   selectInput( ns("level2"), label = "OrgUnit Level2" , 
+                                choices = NULL, 
+                                selected = NULL ,
+                                multiple = TRUE ) ,
+                   
+                   selectInput( ns("level3"), label = "OrgUnit Level3" ,
+                                choices = NULL,
+                                selected = NULL ,
+                                multiple = TRUE ) ,
+                   
+                   selectInput( ns("level4"), label = "OrgUnit Level4" ,
+                                choices = NULL,
+                                selected = NULL  ,
+                                multiple = TRUE  ) ,
+                   
+                   selectInput( ns("level5"), label = "OrgUnit Level5" ,
+                                choices = NULL,
+                                selected = NULL  ,
+                                multiple = TRUE  ) 
+                 ) , 
+                 
+                 actionButton( ns('update_reporting_org_levels') , 
+                               label = "Update orgUnits ")   ,
+                 
+                 
+                 selectInput( ns("level") , 
+                              label = 'Select data only at specific level ("leaf" is all facilities that enter data):' ,
+                              choices = c( 'leaf'  ) ,
+                              selected = NULL ) 
+                 
+      )  # end tabPanel
       ) # end tabset panel
       )  , # end sidebar panel 
       
@@ -186,9 +201,6 @@ reporting_widget_ui = function ( id ){
         tabsetPanel( type = "tabs", id = ns("reportingTab") ,
         tabPanel( "Summary", value = 'summary' ,  style = "height:90vh;" ,
       
-                  # fluidPage(
-                    
-                    
                     fluidRow( style = "height:40vh;",
                               
                             column(6, 

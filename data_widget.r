@@ -30,7 +30,7 @@ data_widget_ui = function ( id )
                       size = 4  ##needed for `selected = FALSE` to work ) 
                      ) ,
           
-         selectizeInput( ns("indicator") , 
+         selectizeInput( ns("formula") , 
                       label = "Select Formula:" , 
                       width = '95%',
                       choices = "" ,
@@ -130,7 +130,7 @@ data_widget_server <- function( id ,
         
          b =  formula.names()
          cat( '\n - Update data formula.names')
-         updateSelectInput( session, 'indicator' , 
+         updateSelectInput( session, 'formula' , 
                             choices =  ""  ,
                             selected = NULL )  
          
@@ -215,12 +215,12 @@ data_widget_server <- function( id ,
         formula_elements =  reactive({
           req( all_formula_elements() )
           req( input$formula.file )
-          req( input$indicator )
+          req( input$formula )
           cat( '\n* formula_elements:')
 
-          cat( '\n - selecting indicator formula' )
+          cat( '\n - selecting formula' )
           all_formula_elements()  %>%
-            filter( Formula.Name %in% input$indicator ) 
+            filter( Formula.Name %in% input$formula ) 
         })
         
         data.dir_files = reactive({ 
@@ -238,12 +238,12 @@ data_widget_server <- function( id ,
         rds_data_file = reactive({
           req( data.dir_files() )
           req( data.folder() )
-          req( input$indicator )
+          req( input$formula )
             
           dir.files = data.dir_files()
         
-          indicator = input$indicator # paste0( input$indicator , "_" )
-          cat( '\n* rds_data_file indicator: ' , input$indicator , '\n' )
+          formula = input$formula # paste0( input$formula , "_" )
+          cat( '\n* rds_data_file formula: ' , input$formula , '\n' )
           
           file.type = 'rds' # input$file.type 
           # file.other = ifelse( input$cleaned %in% "Cleaned" , '_Seasonal' , "" )  # input$file.other
@@ -260,12 +260,12 @@ data_widget_server <- function( id ,
         
           cat('\n- all levels data files:' , length( data.files ) )
           
-          f.indicator = grepl( indicator , data.files , fixed = TRUE )
+          f.formula = grepl( formula , data.files , fixed = TRUE )
           
-          cat("\n- f.indicator:" , sum( f.indicator , na.rm = TRUE ) ) 
+          cat("\n- f.formula:" , sum( f.formula , na.rm = TRUE ) ) 
           
-          if ( sum( f.indicator ) == 0 ){
-            cat( '\n - no data files for this indicator' )
+          if ( sum( f.formula ) == 0 ){
+            cat( '\n - no data files for this formula' )
             return( "" )
           } 
           
@@ -274,7 +274,7 @@ data_widget_server <- function( id ,
             return( "" )
           } 
           
-          data_files = data.files[f.indicator] # %>% most_recent_file()
+          data_files = data.files[f.formula] # %>% most_recent_file()
           
           # cat( '\n data_files are:\n' , data_files )
           
@@ -288,10 +288,10 @@ data_widget_server <- function( id ,
 })
 
 
-        # update indicators 
+        # update formulas 
         observeEvent(  input$formula.file , {  
-            cat( '\n* updating indicator list' )
-            updateSelectInput( session, 'indicator' , 
+            cat( '\n* updating formula list' )
+            updateSelectInput( session, 'formula' , 
                                       choices =  formula.names() ,
                                       selected = 1 )  
             
@@ -495,9 +495,9 @@ data_widget_server <- function( id ,
 
 # Return ####
         return( list( 
-          indicator = reactive({ input$indicator }) ,
+          indicator = reactive({ input$formula }) ,
           formulas = formulas ,
-          formulaName =  reactive({ input$indicator }) ,
+          formulaName =  reactive({ input$formula }) ,
           all_formula_elements = all_formula_elements ,
           formula_elements = formula_elements ,
           dataset.file = reactive({ input$dataset }) ,

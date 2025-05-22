@@ -233,14 +233,24 @@ ui <- fluidPage(
 
                 tabPanel("Data",
 
-                         fluidPage(
-                           fluidRow(
-                             column( 6 , 
-                                     fluidRow( column( 11 , data_widget_ui( "data1" ) ) ),
-                                     fluidRow( column( 11 , data_request_widget_ui( "data_request1" ) ))  
-                                     )  ,
-                             column( 6,  formula_widget_ui( "formula1" ) ) 
-                             )
+                         # fluidPage(
+                           tabsetPanel( type = "tabs", 
+                                        
+                                        tabPanel( "Formula", 
+                                                  fluidRow(
+                                                      column( 5 ,
+                                                              data_widget_ui( "data1" ) )  ,
+                                                      column( 7,  formula_widget_ui( "formula1" ) ) 
+                                                      ) 
+                                                  ),
+                                        tabPanel( "Download", data_request_widget_ui( "data_request1" ) )               
+                           # fluidRow(
+                           #   column( 6 , 
+                           #           fluidRow( column( 11 , data_widget_ui( "data1" ) ) ),
+                           #           fluidRow( column( 11 , data_request_widget_ui( "data_request1" ) ))  
+                           #           )  ,
+                           #   column( 6,  formula_widget_ui( "formula1" ) ) 
+                           #   )
                            )
                          ),
                 tabPanel("DQA", dqa_widget_ui( "dqa1" )) ,
