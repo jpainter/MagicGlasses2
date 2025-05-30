@@ -48,6 +48,7 @@ evaluation_widget_ui = function ( id ){
                           choices = c( 
                                        'TSLM (trend)' , 'TSLM (trend+season)' , 
                                        'ETS' , 'ARIMA'
+
                                        # 'SNAIVE' 
                                        # , 'NNETAR' , 'Prophet'
             
