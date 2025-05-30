@@ -462,6 +462,185 @@ groupByCols = function(
 
 
 # selectedData equivalent to MG2 reactive function plotData()
+# selectedData = function( data1 ,  
+#                          levelNames = NULL ,
+#                          # all_categories = TRUE , 
+#                          data_categories = NULL ,
+#                          alwaysReporting = TRUE , 
+#                          missing_reports = 0 ,
+#                          reportingSelectedOUs = NULL ,
+#                          startingMonth = NULL , 
+#                          endingMonth = NULL ,
+#                          period = NULL ,
+#                          # source = 'Original' ,
+#                          level = 'leaf' , 
+#                          level2 = NULL ,
+#                          level3 = NULL ,
+#                          level4 = NULL , 
+#                          level5 = NULL , 
+#                          .cat = FALSE ,
+#                          ... ){
+# 
+#    if ( .cat ) cat( "\n* data Functions.R selectedData:" )
+#   
+#    if ( nrow( data1 ) == 0 ){
+#         cat('\n - data1() has zero rows')
+#         return()
+#    }
+#   
+#   if ( .cat ) cat( '\n - nrow( d ):' , nrow( data1 ))
+# 
+#   if ( is.null( period ) ) period = dataPeriod( data1 )
+#   if ( .cat ) cat( '\n - period is:', period )
+#   
+#    # if ( is_null( startingMonth )) startingMonth = yearmonth( min( data1$period   , na.rm = T ) , format = "%B%Y" )
+#    if ( is.null( startingMonth ) ) startingMonth = min( data1$period , na.rm = TRUE )
+#    # if ( is_null( endingMonth )) endingMonth = yearmonth( max( data1$period   , na.rm = T ) , format = "%B%Y" )
+#    if ( is.null( endingMonth ) ) endingMonth = max( data1$period , na.rm = TRUE )
+#    if ( is_null( data_categories ) ) data_categories = unique( data1$data )
+#    if ( is_null( levelNames ) ) levelNames = unique( data1$data )
+# 
+#       # NB: setting data = setDT( data1()) has side effect of changing data1() to data.table. 
+#       data = as.data.table( data1  )
+#       
+#       if ( .cat ) cat( '\n - data (d) converted to data.table' )
+#       
+#       # period = dataPeriod( data1 )
+#       # if (.cat ) cat('\n - period is', period )
+#       # 
+#       # data = data[ , period := base::get( period )  , ]
+# 
+#       if ( !is_empty( level2 ) & !is_empty( levelNames ) ){ data = data[ base::get( levelNames[2] )  %in%  level2 ,, ] }
+#   
+#       if ( !is_empty( level3 ) & !is_empty( levelNames ) ){ data = data[ base::get( levelNames[3] )  %in%   level3 ,, ] }
+#   
+#       if ( !is_empty( level4 ) & !is_empty( levelNames ) ){ data = data[ base::get( levelNames[4] )  %in%   level4 ,, ] }
+#         
+#       if ( !is_empty( level5 ) & !is_empty( levelNames ) ){ data = data[ base::get( levelNames[5] )  %in%   level5  ,, ]  }
+#     
+#       if ( level %in% 'leaf' ){  
+#         
+#         if ( .cat ) cat( '\n - leaf level data only' )
+#         data = data[ effectiveLeaf == TRUE , , ]
+#         
+#       } else {
+#         
+#         if ( .cat ) cat( '\n - levelname', levelName )
+#         level. = count( orgUnits %>% as_tibble, level, levelName ) %>% 
+#           filter(levelName  %in% input$level  ) %>% pull( level )
+#         
+#         data = data[ level  %in% level. , , ] 
+#       }
+#       
+#     if ( .cat ) cat( '\n - nrow( d ):' , nrow( data ))
+#   
+#     # if ( source %in% 'Original' ){
+#     #   if ( .cat ) cat('\n - d() source is original')
+#     #   
+#     #   data = data[ , dataCol := as.numeric( original ) , ] 
+#     # }  
+#     #   
+#     # if ( .cat ) cat( '\n - nrow( d ):' , nrow( data ))
+#     # 
+#     # if ( source %in% 'Cleaned' & 'seasonal3' %in% names(data) ){
+#     #   if ( .cat ) cat( '\n -' , paste('cleaning removes', sum( data$value , na.rm = T ) - sum( data$seasonal3 , na.rm = T )  , 'data points' ) )
+#     #   
+#     #   data = setDT( data )[ , dataCol := fifelse( seasonal3, original, NA_real_  ) , ]
+#     #   
+#     #   # Modify variables used for cleaning data so that FALSE when NA -- meaning it failed prior cleaning step, and TRUE means data is ok
+#     #   if ('mad15' %in% names( data )){
+#     #     # data = data %>% mutate( mad15 = ifelse( value & is.na( mad15)|!mad15, FALSE, TRUE ) )
+#     #     data = setDT( data )[, mad15 := fifelse( value & is.na( mad15)|!mad15, FALSE, TRUE ) , ] 
+#     #     
+#     #   }
+#     #   
+#     #   if ('mad10' %in% names( data )){ 
+#     #     # data = data %>% mutate( mad10 = ifelse( value & is.na( mad10)|!mad10, FALSE, TRUE ) )
+#     #     data = setDT( data )[, mad10 := fifelse( value & is.na( mad10)|!mad10, FALSE, TRUE ) , ] 
+#     #     
+#     #   }
+#     #   
+#     #   if ('mad5' %in% names( data )){ 
+#     #     # data = data %>% mutate( mad5 = ifelse( value & is.na( mad5)|!mad5, FALSE, TRUE ) )
+#     #     data = setDT( data )[, mad5 := fifelse( value & is.na( mad5)|!mad5, FALSE, TRUE ) , ] 
+#     #     
+#     #   }
+#     #   
+#     #   if ('seasonal5' %in% names( data )){ 
+#     #     # data = data %>% mutate( seasonal5 = ifelse( value & is.na( seasonal5)|!seasonal5, FALSE, TRUE ) )
+#     #     data = setDT( data )[, seasonal5 := fifelse( value & is.na( seasonal5)|!seasonal5, FALSE, TRUE ) , ] 
+#     #   }
+#     #   
+#     #   if ('seasonal3' %in% names( data )){ 
+#     #     # data = data %>% mutate( seasonal3 = ifelse( value & is.na( seasonal3)|!seasonal3, FALSE, TRUE ) )
+#     #     data = setDT( data )[, seasonal3 := fifelse( value & is.na( seasonal3)|!seasonal3, FALSE, TRUE ) , ] 
+#     #     
+#     #   }
+#     #   
+#     #   if ( .cat ) cat( '\n -' , paste('cleaning changes total by', sum( data$original , na.rm = T ) - sum( data$dataCol , na.rm = T )) )
+#     # }  
+#     # 
+#     # if ( .cat ) cat( '\n - nrow( d ):' , nrow( data ))
+#       
+#     # filter to selected category
+#     
+# 
+#     if ( any( !is.null( data_categories ) ) ){
+#       if ( .cat ) cat( '\n - selectedData filtered by' , paste( data_categories , collapse = "\n - ") )
+#       data = data %>% filter( data %in% data_categories )
+#       if ( .cat ) cat( '\n - nrow( d ):' , nrow( data ))
+#     }
+#    
+#     # Consistent reporting
+#     if ( alwaysReporting ){
+#      
+#      if ( .cat ) cat( '\n - alwaysReporting' )
+#      
+#      # reportingSelectedOUs = NULL 
+#      if ( is_empty( reportingSelectedOUs ) & nrow( data ) > 0 ){
+#        
+#         if ( .cat ) cat( "\n - finding most frequently reporting OUs")
+#          
+#         reportingSelectedOUs  = mostFrequentReportingOUs( data ,
+#                                              # all_categories = all_categories , 
+#                                              data_categories = data_categories ,
+#                                              startingMonth = startingMonth , 
+#                                              endingMonth = endingMonth ,
+#                                              missing_reports = missing_reports 
+#                                              
+#                                              )
+#      }  
+#    
+#         # Add var for selected ous
+#         if ( .cat ){
+#           cat( '\n - selectedData length( reportingSelectedOUs()): ' , length( reportingSelectedOUs ) )
+#           cat( '\n - starting - ending: ' , startingMonth,  endingMonth ) 
+#         
+#         } 
+#         data = setDT(data)[ , Selected := fifelse( orgUnit %in% reportingSelectedOUs, 
+#                                                           'Reporting Each Period',
+#                                                           'Inconsistent Reporting') ] %>%
+#           as_tibble(.) 
+#         
+#         if ( period %in% "Month" ) data = data %>%
+#           filter( Month  >= as.yearmonth( startingMonth ) )
+#       
+#         if ( period %in% "Week" ) data = data %>%
+#           filter( Week  >= yearweek( startingMonth ) )
+#       
+#     # data = data %>% filter( Selected %in% 'Reporting Each Period' )
+#     } else {
+#          data = setDT(data)[ , Selected := "All", ] %>% as_tibble(.)
+#    }
+#    
+#     if ( .cat ) cat( '\n - end  selectedData()' )  ; # #print( names( data )) 
+#     # TESTING
+#     # saveRDS( data , "plotData.rds" )
+#     
+#   return( data )
+# }
+#  
+
 selectedData = function( data1 ,  
                          levelNames = NULL ,
                          # all_categories = TRUE , 
@@ -471,7 +650,6 @@ selectedData = function( data1 ,
                          reportingSelectedOUs = NULL ,
                          startingMonth = NULL , 
                          endingMonth = NULL ,
-                         period = NULL ,
                          # source = 'Original' ,
                          level = 'leaf' , 
                          level2 = NULL ,
@@ -490,8 +668,6 @@ selectedData = function( data1 ,
   
   if ( .cat ) cat( '\n - nrow( d ):' , nrow( data1 ))
 
-  if ( is.null( period ) ) period = dataPeriod( data1 )
-  if ( .cat ) cat( '\n - period is:', period )
   
    # if ( is_null( startingMonth )) startingMonth = yearmonth( min( data1$period   , na.rm = T ) , format = "%B%Y" )
    if ( is.null( startingMonth ) ) startingMonth = min( data1$period , na.rm = TRUE )
@@ -534,59 +710,11 @@ selectedData = function( data1 ,
       
     if ( .cat ) cat( '\n - nrow( d ):' , nrow( data ))
   
-    # if ( source %in% 'Original' ){
-    #   if ( .cat ) cat('\n - d() source is original')
-    #   
-    #   data = data[ , dataCol := as.numeric( original ) , ] 
-    # }  
-    #   
-    # if ( .cat ) cat( '\n - nrow( d ):' , nrow( data ))
-    # 
-    # if ( source %in% 'Cleaned' & 'seasonal3' %in% names(data) ){
-    #   if ( .cat ) cat( '\n -' , paste('cleaning removes', sum( data$value , na.rm = T ) - sum( data$seasonal3 , na.rm = T )  , 'data points' ) )
-    #   
-    #   data = setDT( data )[ , dataCol := fifelse( seasonal3, original, NA_real_  ) , ]
-    #   
-    #   # Modify variables used for cleaning data so that FALSE when NA -- meaning it failed prior cleaning step, and TRUE means data is ok
-    #   if ('mad15' %in% names( data )){
-    #     # data = data %>% mutate( mad15 = ifelse( value & is.na( mad15)|!mad15, FALSE, TRUE ) )
-    #     data = setDT( data )[, mad15 := fifelse( value & is.na( mad15)|!mad15, FALSE, TRUE ) , ] 
-    #     
-    #   }
-    #   
-    #   if ('mad10' %in% names( data )){ 
-    #     # data = data %>% mutate( mad10 = ifelse( value & is.na( mad10)|!mad10, FALSE, TRUE ) )
-    #     data = setDT( data )[, mad10 := fifelse( value & is.na( mad10)|!mad10, FALSE, TRUE ) , ] 
-    #     
-    #   }
-    #   
-    #   if ('mad5' %in% names( data )){ 
-    #     # data = data %>% mutate( mad5 = ifelse( value & is.na( mad5)|!mad5, FALSE, TRUE ) )
-    #     data = setDT( data )[, mad5 := fifelse( value & is.na( mad5)|!mad5, FALSE, TRUE ) , ] 
-    #     
-    #   }
-    #   
-    #   if ('seasonal5' %in% names( data )){ 
-    #     # data = data %>% mutate( seasonal5 = ifelse( value & is.na( seasonal5)|!seasonal5, FALSE, TRUE ) )
-    #     data = setDT( data )[, seasonal5 := fifelse( value & is.na( seasonal5)|!seasonal5, FALSE, TRUE ) , ] 
-    #   }
-    #   
-    #   if ('seasonal3' %in% names( data )){ 
-    #     # data = data %>% mutate( seasonal3 = ifelse( value & is.na( seasonal3)|!seasonal3, FALSE, TRUE ) )
-    #     data = setDT( data )[, seasonal3 := fifelse( value & is.na( seasonal3)|!seasonal3, FALSE, TRUE ) , ] 
-    #     
-    #   }
-    #   
-    #   if ( .cat ) cat( '\n -' , paste('cleaning changes total by', sum( data$original , na.rm = T ) - sum( data$dataCol , na.rm = T )) )
-    # }  
-    # 
-    # if ( .cat ) cat( '\n - nrow( d ):' , nrow( data ))
       
     # filter to selected category
-    
 
     if ( any( !is.null( data_categories ) ) ){
-      if ( .cat ) cat( '\n - selectedData filtered by' , paste( data_categories , collapse = "\n - ") )
+      if ( .cat ) cat( '\n - selectedData filtered by' , data_categories )
       data = data %>% filter( data %in% data_categories )
       if ( .cat ) cat( '\n - nrow( d ):' , nrow( data ))
     }
@@ -594,52 +722,54 @@ selectedData = function( data1 ,
     # Consistent reporting
     if ( alwaysReporting ){
      
-     if ( .cat ) cat( '\n - alwaysReporting' )
+     if ( .cat ) cat( '\n - add Selected as Champion or Non-Champion' )
      
-     # reportingSelectedOUs = NULL 
-     if ( is_empty( reportingSelectedOUs ) & nrow( data ) > 0 ){
-       
-        if ( .cat ) cat( "\n - finding most frequently reporting OUs")
-         
-        reportingSelectedOUs  = mostFrequentReportingOUs( data ,
-                                             # all_categories = all_categories , 
-                                             data_categories = data_categories ,
-                                             startingMonth = startingMonth , 
-                                             endingMonth = endingMonth ,
-                                             missing_reports = missing_reports 
-                                             
-                                             )
-     }  
+      # TESTING
+      # cat("\ - saving selectedData data ")
+      # save( data , reportingSelectedOUs , data_categories , 
+      #          startingMonth , endingMonth, missing_reports,
+      #          file = "selectedData.rda" )
+      
+        # reportingSelectedOUs = NULL 
+        if ( is_empty( reportingSelectedOUs ) & nrow( data ) > 0 ){
+           
+            if ( .cat ) cat( "\n - finding most frequently reporting OUs")
+             
+            reportingSelectedOUs  = mostFrequentReportingOUs( data ,
+                                                 # all_categories = all_categories , 
+                                                 data_categories = data_categories ,
+                                                 startingMonth = startingMonth , 
+                                                 endingMonth = endingMonth ,
+                                                 missing_reports = missing_reports 
+                                                 
+                                                 )
+         }  
    
         # Add var for selected ous
-        if ( .cat ){
-          cat( '\n - selectedData length( reportingSelectedOUs()): ' , length( reportingSelectedOUs ) )
-          cat( '\n - starting - ending: ' , startingMonth,  endingMonth ) 
+        if ( .cat ) cat( '\n - selectedData length( reportingSelectedOUs()): ' , length( reportingSelectedOUs ) )
         
-        } 
+        if ( .cat ) cat("\n - Adding variable Selected: Champion or Non-Champion" )
         data = setDT(data)[ , Selected := fifelse( orgUnit %in% reportingSelectedOUs, 
-                                                          'Reporting Each Period',
-                                                          'Inconsistent Reporting') ] %>%
-          as_tibble(.) 
-        
-        if ( period %in% "Month" ) data = data %>%
-          filter( Month  >= as.yearmonth( startingMonth ) )
-      
-        if ( period %in% "Week" ) data = data %>%
-          filter( Week  >= yearweek( startingMonth ) )
+                                                          'Champion',
+                                                          'Non-Champion') ] %>%
+          as_tibble(.) %>%
+          filter( Month >= yearmonth( startingMonth ) )
       
     # data = data %>% filter( Selected %in% 'Reporting Each Period' )
     } else {
+      
+         if ( .cat ) cat( "\n - adding Selected = All to data" )
          data = setDT(data)[ , Selected := "All", ] %>% as_tibble(.)
    }
    
     if ( .cat ) cat( '\n - end  selectedData()' )  ; # #print( names( data )) 
+    
     # TESTING
-    # saveRDS( data , "plotData.rds" )
+    # if ( .cat ) cat( '\n - if Testing, saving  selectedData() as data.rds' )
+    # saveRDS( data , "data.rds" )
     
   return( data )
 }
- 
 
 # merge datasets 
 dataTotal = function(
@@ -664,6 +794,8 @@ dataTotal = function(
       
       mergeDatasets = dataSets %>% str_replace_all( fixed("\n"), "") 
       
+      if ( .cat ) cat( "\n - mergeDatasets ")
+      
       if ( any(!is.na( mergeDatasets )) & any(nchar( mergeDatasets ) > 0 )  ){
         
                data = 
@@ -675,7 +807,12 @@ dataTotal = function(
       
     }
     
-    if ( is.null( group_by_cols )) group_by_cols = groupByCols( period = period  )
+    if ( .cat ) cat( "\n - grouping ")
+    
+    # if ( is.null( group_by_cols ) ){
+    #   if ( .cat ) cat( "\n - group_by_cols ")
+    #   group_by_cols = groupByCols( period = period  )
+    # } 
   
     # if ( any( grepl( "avg_mm" , names( data ) ) ) ){
     #       

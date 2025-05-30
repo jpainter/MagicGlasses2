@@ -21,21 +21,47 @@ evaluation_widget_ui = function ( id ){
               # width = "25%" ,
               
               tabsetPanel(
+                tabPanel( "Data" ,
+                          
+                          selectInput( ns( "reporting") , 
+                                       label = "Select facilities based on reporting" , 
+                                       choices = c( "All", "Champion", "Non-Champion") , 
+                                       selected = 1  ) ,
+                          
+                          selectInput( ns( "outliers") , 
+                                       # label = "Filter out data flagged by outlier algorithm" ,
+                                       label = "Keep original data or remove data with following error flags:" ,
+                                       choices = c( "Original", "mad15", "mad10" , "seasonal5" , "seasonal3" ) , 
+                                       selected = 1  ) ,
+                          
+                          selectInput( ns( "split_data") ,
+                                       label = "Split data by:" ,
+                                       choices = 'None' ,
+                                       selected = 1 )
+
+                          ) ,
+                
                 tabPanel( "Models" , 
                           inputPanel(
         
                   selectInput( ns( "model" ), label = "Time-series model:" , 
                           choices = c( 
-                                      # 'TSLM',
                                        'TSLM (trend)' , 'TSLM (trend+season)' , 
-                                       'ETS' , 'ARIMA', 'SNAIVE' , 'NNETAR' ,
-                                       # 'BSTS' , 
-                                      'Prophet'
-                                      
-                                      # , 'TSLM (trend)'
-                                      # , 'TSLM (trend+season)'
+                                       'ETS' , 'ARIMA'
+                                       # 'SNAIVE' 
+                                       # , 'NNETAR' , 'Prophet'
+            
                                       ) , 
+                          
                           selected = 'ETS'  ) ,
+                  
+                checkboxInput( ns( "pre_evaluation") , label ='Pre-intervention model fit',
+                                 value = FALSE  ) ,
+                  
+                  
+                checkboxInput( ns( "evaluation" ), label ='Post-intervention evaluation',
+                                 value = FALSE  ) ,
+                  
                   
                 textInput( ns( 'model.formula' ) , 'Model Formula' ,
                   value =  "total ~ error() + trend() + season()" ) ,
@@ -60,19 +86,23 @@ evaluation_widget_ui = function ( id ){
                   checkboxInput( ns( "forecast_ci" ) , label ='Prediction interval',
                                  value = FALSE  ) ,
                   
-                  checkboxInput( ns( "bootstrap" ) , label ='Bootstrap estimate',
-                                 value = FALSE  ) ,
+                  # checkboxInput( ns( "bootstrap" ) , label ='Bootstrap estimate',
+                  #                value = FALSE  ) ,
                   
-                  checkboxInput( ns( "autoModel" ) , label ='Automatic nmodel selection',
-                                 value = FALSE  ) ,
+                  # checkboxInput( ns( "autoModel" ) , label ='Automatic nmodel selection',
+                  #                value = FALSE  ) ,
                 
                  checkboxInput( ns( "ensemble" ) , label ='Use ensemble models',
-                                 value = FALSE  ) 
+                                 value = FALSE  ) ,
+                
+                 selectInput( ns( "replicates") , label = "Forecasting replicates:" , 
+                  choices = c( 20, 40, 60, 100 ) , 
+                  selected = 1  )
                   ) ) ,
                 
                 tabPanel( "Stratifications" ,
-                checkboxInput( ns('hts'), label = "hts across full admin hierarchy", 
-                       value = FALSE ) ,
+                # checkboxInput( ns('hts'), label = "hts across full admin hierarchy", 
+                #        value = FALSE ) ,
          
                 # selectInput( ns("hts_level") , label = "Aggregate only from level:" ,
                 #       choices = 1:6 ,
@@ -82,9 +112,9 @@ evaluation_widget_ui = function ( id ){
                   choices = NULL , 
                   selected = 1  ) ,
               
-              selectInput( ns( "agg_method") , label = "Aggregate (regression) method:" , 
-                  choices = c( "None", "Bottum up", "MINT(ols)" , "MINT(cov)") , 
-                  selected = 1  ) ,
+              # selectInput( ns( "agg_method") , label = "Aggregate (regression) method:" , 
+              #     choices = c( "None", "Bottum up", "MINT(ols)" , "MINT(cov)") , 
+              #     selected = 1  ) ,
   
                 checkboxInput( ns( "facet_admin" ) , label ="Facet by admin",
                                value = TRUE  ) ,
@@ -100,30 +130,8 @@ evaluation_widget_ui = function ( id ){
               
                 checkboxInput( ns( "legend" ) , label ='Show legend',
                                value = FALSE  )
-              ) ,
+              ) 
                
-              tabPanel( "Reporting" , 
-                h5("Choose whether or not to limit analysis to consistently reporting facilities.  
-                   This will be based on the current choices in the Reporting page.  
-                   The default is to filter to the consistently reporting facilities.") ,
-                
-                checkboxInput( ns( "selected" ) , label ='Selected facilities only',
-                               value = TRUE  ) 
-                ) ,
-              
-              tabPanel( "Outliers" ,
-                        
-               h5("Choose whether or not to remove potential outliers, as flagged in the Outliers page.  
-                   The default is to omit values that were greater than the medican absolute deviation times 10 (MAD10)"
-                  ) ,
-               
-               selectInput( ns( "error") , label = "Keep original data or remove data with following error flags:" , 
-                  choices = c( "Original", "mad15", "mad10" , "seasonal5" , "seasonal3" ) , 
-                  selected = "mad10"  ) 
-                
-                # checkboxInput( ns( "plotly" ) , label ='Plotly Chart',
-                #                value = FALSE  ) 
-                )
             ) ) ,
             
             mainPanel( width = 9 , 
@@ -138,50 +146,45 @@ evaluation_widget_ui = function ( id ){
                   #  )
               inputPanel(  
                 
-                selectizeInput( ns("evaluation_month") , label = "Intervention Start", 
+                selectizeInput( ns("evaluation_month") , label = "Evaluation Start", 
                       choices = NULL ,
                       selected = NULL ) ,
               
               # div(id = "expr-container",
-                selectInput( ns("horizon") , label = "Number periods after intervention:" , 
+                selectInput( ns("horizon") , label = "Months of Evaluation:" , 
                               choices = c(3,6,12,18,24,36) , 
                               selected = 12  ) ,
               
-                actionButton( ns( "forecast" ) , "Forecast" ) ,
-              
-                checkboxInput( ns( "pre_evaluation") , label ='Pre-intervention model fit',
-                                 value = FALSE  ) ,
-                  
-                  
-                checkboxInput( ns( "evaluation" ), label ='Post-intervention evaluation',
-                                 value = FALSE  ) 
-                  
+                actionButton( ns( "forecast" ) , "Calculate Percent Change" ) 
               ) ,
               
               tabsetPanel(
                    
                 
               
-                tabPanel( "ggPlot" ,
+                tabPanel( "Time-Series" ,
                           
                           fluidPage(
                             fluidRow( style = "height:60vh;",
-                                      plotOutput( ns("plotOutput") ) ) ,
+                                      
+                                      # plotOutput( ns("plotOutput") ) 
+                                      chartModuleUI( ns('plotOutput') , "Trend Analysis" )
+                                      ) ,
                           
                             fluidRow( tableOutput( ns( "forecastResult" ) ) )
                             )  
                           ) ,
-                tabPanel("Plotly", plotlyOutput(  ns("plotlyOutput") ) ),
-                tabPanel("Table", plotlyOutput( ns("tableOutput" )  ) ) 
+                
+                # tabPanel("Evaluation Table1", tableOutput(  ns("forecastResult") ) ),
+                
+                tabPanel( "Actual - Predicted" , 
+                          chartModuleUI( ns("wpeHistogram" ) , "Actual - Predicted" ) 
               ) 
-  ) 
-                   
-               # plotOutput( ns( "plotOutput" ) , hover = "plot_hover"  )
-            )
-          )    
+              ) 
+              )    
   
 
-)))
+)))))
 
 }
         
@@ -222,7 +225,7 @@ evaluation_widget_server <- function( id ,
     orgUnits = reactive({ metadata_widget_output$orgUnits() })  
     orgUnitLevels = reactive({ metadata_widget_output$orgUnitLevels() })
     
-    dates = reactive({ reporting_widget_output$dates() })
+    # dates = reactive({ reporting_widget_output$dates() })
     # dataset = reactive({ reporting_widget_output$data1() })
     # data.hts = reactive({ reporting_widget_output$data.hts() })
     levelNames = reactive({ reporting_widget_output$levelNames() })
@@ -254,7 +257,7 @@ evaluation_widget_server <- function( id ,
     # Dates
 
     dates = reactive({
-      req( data1() )
+      req( selected_data() )
 
       cat('\n* evaluation_widget dates():');
       .period = period()
@@ -279,7 +282,8 @@ evaluation_widget_server <- function( id ,
       cat('\n* evaluation_widget update evaluation_month:');
       updateSelectInput( session, 'evaluation_month' ,
                          choices =  dates()  ,
-                         selected = dates()[ round(length(dates())/2) ]
+                         # selected = dates()[ round(length(dates())/2) ]
+                         selected = max( dates() ) - 12
                          # ifelse( period() %in% 'Month' ,
                          #                  dates()[12],
                          #                  dates()[52] )
@@ -318,7 +322,8 @@ evaluation_widget_server <- function( id ,
         cat('\n* evaluation_widget update evaluation_month:');
         updateSelectInput( session, 'evaluation_month' ,
                 choices =  dates()  ,
-                selected = dates()[ round(length(dates())/2) ]
+                # selected = dates()[ round(length(dates())/2) ]
+                selected = max( dates() ) - 11 
                   # ifelse( period() %in% 'Month' ,
                   #                  dates()[12],
                   #                  dates()[52] )
@@ -343,14 +348,14 @@ evaluation_widget_server <- function( id ,
 
           print( paste( 'splits: ', splits  ) )
 
-          updateSelectInput( session, 'filter_data' , choices =  c( 'All', splits ) )
+          updateSelectInput( session, 'split_data' , choices =  c( 'None', splits ) )
 
-          updateSelectInput( session, 'filter_display' , choices =  c( 'All', splits ) )
+          updateSelectInput( session, 'filter_display' , choices =  c( 'None', splits ) )
 
         } else {
 
-          updateSelectInput( session, 'filter_data' , choices =  c( 'All' ) )
-          updateSelectInput( session, 'filter_display' , choices =  c( 'All' ) )
+          updateSelectInput( session, 'split_data' , choices =  c( 'None' ) )
+          updateSelectInput( session, 'filter_display' , choices =  c( 'None' ) )
         }
       } )
 
@@ -396,7 +401,7 @@ evaluation_widget_server <- function( id ,
         cat('\n* evaluation_widget MAPE()')
 
         predicted = tsPreForecast() %>% as_tibble() %>% select(-total)
-        actual =  trend_Data()
+        actual =  mable_data()
         d = predicted %>%
            inner_join( actual , by = period() )
 
@@ -416,14 +421,14 @@ evaluation_widget_server <- function( id ,
 
       key.mape = reactive({
         req( tsPreForecast() )
-        req( trend_Data() )
+        req( mable_data() )
 
         cat('\n* evaluation_widget key.mape()')
 
         predicted = tsPreForecast() %>%
           rename( pred = .mean )
 
-        actual =  trend_Data() %>%
+        actual =  mable_data() %>%
           rename( actual = total )
 
         keyvars = key_vars( actual )
@@ -477,7 +482,7 @@ evaluation_widget_server <- function( id ,
         cat('\n* evaluation_widget MPE()')
 
         predicted = tsForecast() %>% as_tibble() %>% select(-total)
-        actual =  trend_Data()
+        actual =  mable_data()
 
         d = predicted %>%
            inner_join( actual , by = period() )
@@ -498,14 +503,14 @@ evaluation_widget_server <- function( id ,
 
       key.mpe = reactive({
         req( tsForecast() )
-        req( trend_Data() )
+        req( mable_data() )
 
         cat('\n* evaluation_widget key.mpe()')
 
         predicted = tsForecast() %>%
           rename( pred = .mean )
 
-        actual =  trend_Data() %>%
+        actual =  mable_data() %>%
           rename( actual = total )
 
         keyvars = key_vars( actual )
@@ -712,29 +717,33 @@ evaluation_widget_server <- function( id ,
     })
     
     # observeEvent( input$forecast , { cat("\n * observed button push") })
-    
-    forecast = eventReactive( input$forecast , {
+
+# Auto Forecast ####   
+    auto_model_available = reactiveValues( done = FALSE )
+    auto_model = eventReactive( input$forecast , {
       
-                     req( trend_Data() )
-                     req( input$evaluation_month )
+              req( mable_Data() )
+              req( input$evaluation_month )
               
-              cat("\n * modelingDataset")
+              cat("\n* evaluationWidget auto forecast")
+              
               shinyalert( "Starting forecast", "fitting multiple models..." , type = 'info', timer = 2000)
                     
-              trend_Data = trend_Data()
+              mable_Data = mable_Data()
               evaluation_month  = yearmonth( input$evaluation_month )
-              startMonth = min( trend_Data$Month , na.rm = T )
-              endEvalMonth = max( trend_Data$Month, na.rm = T )
-              numberTestMonths = 12 
+              startMonth = min( mable_Data$Month , na.rm = T )
+              numberTestMonths = as.integer( input$horizon )
+              endEvalMonth = evaluation_month + numberTestMonths # max( mable_data$Month, na.rm = T )
+              
               ensemble = input$ensemble 
               
                # # Testing
-              cat( '\n - saving parameters')
-              save(trend_Data, evaluation_month, startMonth, endEvalMonth, numberTestMonths, ensemble , 
-                   file = 'model_output.rda' )
+              # cat( '\n - saving parameters')
+              # save(mable_data, evaluation_month, startMonth, endEvalMonth, numberTestMonths, ensemble ,
+              #      file = 'model_output.rda' )
      
            
-              modelingData = dataset( data = trend_Data ,
+              modelingData = dataset( data = mable_Data ,
                                  startMonth = startMonth ,
                                  startEvalMonth = yearmonth( evaluation_month ) ,
                                  numberTestMonths = numberTestMonths ,
@@ -743,7 +752,8 @@ evaluation_widget_server <- function( id ,
                                  grouping = FALSE
                                  )
 
-
+              # Testing
+              # saveRDS( modelingData , "modelingData.rds")
 
               train_data = modelingData$pre.intervention.train
               test_data = modelingData$pre.intervention.test
@@ -752,8 +762,15 @@ evaluation_widget_server <- function( id ,
               shinyalert( "Validating models", 
                           "generating forecasts for 12-months before intervention to compare with actual" , 
                           type = 'info', timer = 2000)
+              
+              cat( "\n- calling tsmodels with" , input$replicates ,'replicates')
+              
+              train_data = modelingData$pre.intervention.train
+              test_data = modelingData$pre.intervention.test
 
-              test.forecasts = tsmodels(  train_data , test_data, n_forecasts = 20 ,
+              test.forecasts = tsmodels(  train_data , 
+                                          test_data, 
+                                          n_forecasts = as.integer( input$replicates ),
                                  .var = 'total' ,
                                  numberForecastMonths = numberTestMonths ,
                                  type = NA , # c('transform and covariate' ,'transform', 'covariate' )
@@ -771,8 +788,12 @@ evaluation_widget_server <- function( id ,
               cat("\n * evaluating forecasts")
               shinyalert( "Creating counterfactual", "from best fitting model", type = 'info', timer = 2000)
 
-              evaluation.forecasts = tsmodels(  train_data , test_data,
-                                              n_forecasts = 20 ,
+              train_data = modelingData$pre.intervention
+              test_data = modelingData$post.intervention
+              
+              evaluation.forecasts = tsmodels(  train_data , 
+                                                test_data,
+                                              n_forecasts = as.integer( input$replicates )  ,
                                         .var = 'total' ,
                                         numberForecastMonths = numberTestMonths ,
                                         type = NA , # c('transform and covariate' ,'transform', 'covariate' )
@@ -783,42 +804,247 @@ evaluation_widget_server <- function( id ,
 
 
               model_output = list( actual = modelingData$fable.data ,
+                                   train_data = modelingData$pre.intervention.train ,
+                                   test_data = modelingData$pre.intervention.test ,
                                    test.forecasts = test.forecasts ,
                                    validations = validations ,
                                    model_selection = model_selection , 
                                    predicted = evaluation.forecasts  )
               
-              cat("\n * impactSummary")
-              
-              impactSummary = impactTable( actual = modelingData$fable.data , predicted = evaluation.forecasts , 
-                           grouping = FALSE, .var = 'total' )
               
               # impactSummary[ 1 ,]
 
-    
-      return( impactSummary[ 1 ,] )
+      auto_model_available$done = TRUE 
+      
+      return( model_output )
       # return( paste0('test forecast has ', nrow(test.forecasts ), 'models') )
 
      })
 
     # Use the output of eventReactive in the UI
    output$forecastResult <- renderTable({
-    forecast()
+     
+             req( auto_model() )
+             auto_model = auto_model()
+             # Testing
+             # saveRDS( auto_model ,  "auto_model.rds")
+             
+              cat("\n* impactSummary")
+              
+              diff.summary( actual = auto_model$actual , 
+                                           predicted = auto_model$predicted , 
+                                           .var = 'total' )
   })
-    
-    # impact.tableaux( modelingData$fable.data , evaluation.forecasts )
+   
+   wpeHistogram <- reactive({
+     req( auto_model() )
+     cat("\n* wpeHistogram")
+     
+     auto_model = auto_model()
+     
+     wpeHistogram = 
+       diffHistogram( actual = auto_model$actual %>% mutate( Intervention = input$reporting ), 
+                           predicted = auto_model$predicted %>% mutate( Intervention = input$reporting ),
+                           .var = 'total' ) 
+     
+     # Testing 
+     saveRDS( wpeHistogram , "wpeHistogram.rds")
+     
+     return( wpeHistogram )
+   })
     
     
 ############### deprecated?
+    tsModel = reactive({
+      
+          req( mable_data() )
+          req( model_formula() )
+          req( input$evaluation_month )
+          
+          mable_data =  mable_data()
+          model_formula = model_formula()
+          evaluation_month  = input$evaluation_month 
+          period = period()
+          model = input$model
+          transform  = input$transform 
+          
+          #Testing
+          # save( mable_data ,  model_formula , evaluation_month ,  period ,
+          #       file = 'tsModelTesting.rda' )
     
+          if ( !input$evaluation ) return( NULL )
+          
+          cat( '\n* evaluation_widget tsModel():' )
+          cat( '\n - ' , paste('available vars:',
+                       paste( names( mable_data ), collapse = ',')
+                       )
+          )
+          
+          if (!exists( "model.formula") ) model.formula = model_formula
+          cat( '\n* evaluation_widget tsModel():' , as.character( model.formula ) )
+    
+          # Dickey-Fuller test for stationary series
+          # Null hypothese is non-stationary.
+          # Evidence that series is stationary when p-v < .05
+          # dickeyFuller = tseries::adf.test( mable_data()$total )
+          # print( dickeyFuller )
+    
+          # Filter data to period just before evaluation start
+          cat( "\n -evaluation_month:" , evaluation_month )
+          eval_month = evaluation_month
+          if ( period %in% "Month" ) time_period = yearmonth( eval_month  ) # - month(1)
+          if ( period %in% "Week" ) time_period = yearweek( eval_month  )
+    
+          # index( mable_data )
+          # fit model with pre-intervention data
+          fit.data  = mable_data %>%
+            filter( Month < time_period )
+          
+          if ( grepl( "~" ,  model.formula , fixed = TRUE ) ) model.formula = as.formula ( model.formula )
+    
+    
+          if ( model %in% 'TSLM (trend)' ){
+            fit = fit.data %>% model( l = TSLM( model.formula  ) )
+    
+            cat( '\n - end tsModel():' )
+            return( fit )
+          }
+    
+          if ( model %in% 'TSLM (trend+season)' ){
+            fit = fit.data %>% model( l = TSLM( model.formula ) )
+    
+            cat( '\n - end tsModel():' )
+            return( fit )
+          }
+    
+          if ( model %in% 'ARIMA' ){
+            fit = fit.data %>% model(
+              arima = ARIMA(  model.formula )
+              )
+          # if ( input$reconcile ) fit = fit %>%
+          #       reconcile(
+          #         mint = min_trace(a, method = "mint_shrink")
+          #         )
+    
+            cat( '\n - end tsModel(): arima fit' )
+            # glimpse( fit )
+            # testing model fit for forecasts
+    
+            # if ( input$covariates %in% c('ipti', 'doses') ) saveRDS( fit , 'arima.rds' )
+    
+            return( fit )
+          }
+          
+          if ( model %in% 'NNETAR' ){
+            fit = fit.data %>%
+              model(
+                    nnetar = NNETAR( !! rlang::sym( model.formula  ) )
+                    , times = 10 
+              )
+          
+            
+            
+            cat( '\n - end tsModel():' )
+            return( fit )
+          }
+    
+          if ( model %in% 'BSTS' ){
+            fit = fit.data %>%
+              model(
+                # b = BSTS( model_formula() )
+                bsts = BSTS( model.formula )
+                )
+    
+            cat( '\n - end tsModel():' )
+            return( fit )
+          }
+    
+          if ( model %in% 'ETS' ){
+    
+            # if ( input$transform ){
+            #   fit = fit.data %>% model( a = ETS( fabletools::box_cox( total , lambda = .5  ) )  )
+            # } else {
+            
+              # fit = fit.data %>% model( a = ETS( total )  )
+              # 
+              # if ( input$transform ) fit = fit.data %>% model( a = ETS( fabletools::box_cox( total , lambda = .5  )  ) )
+    
+    
+            # }
+              
+              fit = fit.data %>% model( ets = ETS( !! model.formula ))
+    
+    
+            cat( '\n - end ETS tsModel():' )
+    
+          # if ( input$reconcile ) fit = fit %>%
+          #       reconcile(
+          #         mint = min_trace(a, method = "mint_shrink")
+          #         )
+            cat( '\n - end tsModel():' )
+            return( fit )
+          }
+          
+          if ( model %in% 'SNAIVE' ){
+            
+            fit = fit.data %>% model( snaive = SNAIVE( model.formula ) )
+            
+            cat( '\n - end tsModel():' )
+            return( fit )
+          }
+    
+          if ( model %in% 'Prophet' ){
+            
+            
+            if ( transform ){
+              
+              fit =  fit.data %>% model(
+                prophet = prophet( fabletools::box_cox( total , lambda = .5  )  ~
+                                     
+                                     growth( type = 'linear',
+                                             changepoint_range = 1 ,
+                                             changepoint_prior_scale = 1 ,
+                                             # capacity = 1e5 ,
+                                             # floor = 0
+                                     ) +
+                                     season(period = 12,
+                                            order = 4 ,
+                                            type='multiplicative'),
+                                   seed = TRUE )
+              ) 
+            } else {
+              
+              fit =  fit.data %>% model(
+                prophet = prophet( total ~
+                                     
+                                     growth( type = 'linear',
+                                             changepoint_range = 1 ,
+                                             changepoint_prior_scale = 1 ,
+                                             # capacity = 1e5 ,
+                                             # floor = 0
+                                     ) +
+                                     season(period = 12,
+                                            order = 4 ,
+                                            type='multiplicative'),
+                                   seed = TRUE )
+              )
+              
+              
+            }
+            
+            cat( '\n - end tsPreModel() Prophet:' )
+            return( fit )
+          }
+
+    })
     
     tsPreModel = reactive({
 
-      req( trend_Data() )
+      req( mable_data() )
       req( input$evaluation_month )
       req( model_formula() )
       
-      trend_Data =  trend_Data()
+      mable_data =  mable_data()
       model_formula = model_formula()
       evaluation_month  = input$evaluation_month 
       period = period()
@@ -835,13 +1061,13 @@ evaluation_widget_server <- function( id ,
 
       cat("\n - time_period:" , time_period )
 
-      fit.data  = trend_Data %>% filter( Month < time_period )
+      fit.data  = mable_data %>% filter( Month < time_period )
 
-      cat("\n - nrow(trend_Data()):" , nrow( trend_Data() )  )
+      cat("\n - nrow(mable_data()):" , nrow( mable_data() )  )
       cat("\n - nrow(fit.data:" , nrow( fit.data )  )
       
       # Testing:
-      # saveRDS( trend_Data() , 'trend_Data.rds' )
+      # saveRDS( mable_data() , 'mable_data.rds' )
       # saveRDS( fit.data , 'fit.data.rds' )
 
       model.formula = model_formula
@@ -976,14 +1202,14 @@ evaluation_widget_server <- function( id ,
       req( input$horizon )
       cat( '\n* evaluation_widget tsForecast()' )
       
-      trend_Data =  trend_Data()
+      mable_data =  mable_data()
       model_formula = model_formula()
       evaluation_month  = input$evaluation_month 
       period = period()
       model = input$model
       transform  = input$transform 
       horizon = input$horizon
-      bootstrap = input$bootstrap 
+      bootstrap = FALSE # input$bootstrap
       Reps = input$Reps
       covariates = input$covariates
       tsModel = tsModel()
@@ -994,7 +1220,7 @@ evaluation_widget_server <- function( id ,
       if ( period() %in% "Month" ) time_period = yearmonth( evaluation_month  ) # - month(1)
       if ( period() %in% "Week" ) time_period = yearweek( evaluation_month  )
       
-      forecast.fit.data  = trend_Data %>%
+      forecast.fit.data  = mable_data %>%
         select( - total ) %>%
         # filter_index( as.character( time_period ) ~ . ,
         #             .preserve = TRUE ) %>%
@@ -1089,12 +1315,12 @@ evaluation_widget_server <- function( id ,
       
       cat( '\n - evaluation_widget test.data' )
       # testing
-      # saveRDS( trend_Data() , 'trend_Data.rds')
+      # saveRDS( mable_data() , 'mable_data.rds')
       # saveRDS( time_period , 'time_period.rds')
       # saveRDS( input$horizon , 'horizon.rds')
       
   
-      test.data  = trend_Data() %>%
+      test.data  = mable_data() %>%
         select( - total ) %>%
         filter( Month %in% time_period )
       
@@ -1159,47 +1385,71 @@ evaluation_widget_server <- function( id ,
       return( fcast )
       })
 
-# Trend data ####
+# Mable data ####
     
-    trend_Data = reactive({
+    mable_Data = reactive({
+      req( selected_data() )
+      req( input$outliers )
+      req( input$reporting )
       
-      cat( "\n * evaluation_widget trend_Data")
+      cat( "\n* evaluation_widget mable_Data")
       
       cat( "\n missing_reports: " , missing_reports() )
       cat( "\n covariates: " , input$covariates )
       cat( "\n split: " , split()  )
       cat( "\n agg_level: " , input$agg_level  )
       
+      selected_data = selected_data()
+      
+      # Testing
+      # saveRDS( selected_data , "selected_data.rds")
+      
+      # Reporting
+      reporting = input$reporting
+      cat( "\n Reporting: " , reporting  ) 
+      if ( ! reporting == "All" ){
+        selected_data = selected_data %>%
+          filter( Selected %in% reporting )
+      
+        if ( nrow( selected_data ) == 0 ){
+          cat( "\n - no data for this level of reporting!"  )
+          return()
+        }
+      }
+      
+      # Outliers
       error = NULL
-      if ( ! input$error == "Original" ) error = input$error 
-      cat( "\n error: " , error  )
+      if ( ! input$outliers == "Original" ) error = input$outliers 
+      cat( "\n outlier filter: " , error  )
+      
       
       levelNames = orgUnitLevels()$levelName
       cat( "\n - levelNames" , levelNames )
       
       cat( "\n - mable.data" )
       
-      selected_data = selected_data()
       startingMonth = startingMonth()
       endingMonth = endingMonth()
-      split = split()
       agg_level = input$agg_level
-      missing_reports = missing_reports()
-  
+      # missing_reports = missing_reports()
       
-      if ( testing ) save(selected_data, startingMonth, endingMonth, error , missing_reports ,
-                          split , agg_level , levelNames, file = "trend_Data_inputs.rda")
+      split = NULL
+      selected_split = split()
+      if ( ! input$split_data == 'None') split = input$split
+      
+      if ( testing ) save(selected_data, selected_split , startingMonth, endingMonth, error , missing_reports ,
+                          split , agg_level , levelNames, file = "mable_Data_inputs.rda")
       
       mable.data = mable_data(      
-                                    ml.rtss.data = selected_data ,
+                                    tibble.data = selected_data ,
                                     .orgUnit = FALSE , # group by orgunit
                                     .startingMonth = startingMonth ,
                                     .endingMonth = endingMonth ,
-                                    .missing_reports = missing_reports ,
-                                    selected.only = input$selected ,
+                                    # .missing_reports = missing_reports ,
+                                    selected.only = TRUE , #reporting already in selected_data
                                     # alwaysReporting = input$selected , 
                                     # reportingSelectedOUs = reportingSelectedOUs() ,
-                                    covariates =  input$covariates , 
+                                    covariates =  input$covariates ,
                                     .split = split , 
                                     .error = error ,
                                     agg_level = agg_level ,
@@ -1221,9 +1471,16 @@ evaluation_widget_server <- function( id ,
 # Plot ####
   plotTrends = reactive({
 
-          req( trend_Data() )
+          req( mable_Data() )
 
           cat( '\n* evaluation_widget plotTrends():' )
+          
+          # Eval Date
+          cat( '\n - evaluation date' , input$evaluation_month )
+          .period = period()
+          if ( .period %in% 'Month' ) eval_date =   yearmonth( input$evaluation_month  )
+          if ( .period %in% 'Week' ) eval_date =   yearweek( input$evaluation_month  )
+          cat( '\n - eval_date:' , eval_date )
 
           .limits =
           if ( input$scale ){
@@ -1231,28 +1488,22 @@ evaluation_widget_server <- function( id ,
               c( 0 , NA )
           }
 
-          data.text = paste( unique( selected_data()$data ), collapse = " + " )
+          # Testing
+          saveRDS( mable_Data(), 'mable_Data.rds')
           
-          cat( '\n - ploTrends trend_Data():');
-          trend_Data = trend_Data()
+          data.text = paste( unique( mable_Data()$data ), collapse = " + " )
+          
+          cat( '\n - ploTrends mable_data():');
+          mable_Data = mable_Data()
           cat( '\n - ploTrends .d:'); #glimpse(.d)
 
-          # if ( !input$filter_display %in% 'All' ) .d = .d %>%
-          #         filter( .data[[ split() ]] %in%
-          #                   input$filter_display )
-          
-          # Testing
-          if (testing )  saveRDS( trend_Data , "trend_Data.rds")
-          
           tic()
-
-          .period = period()
-
+          
       ## Main plot ####
           cat( "\n - main plot")
           
           
-          g = trend_Data %>%
+          g = mable_Data %>%
               filter( !is.na( total ) ) %>%
               autoplot( total ) +
               # ggplot( aes( x = !! rlang::sym( .period ), y = total
@@ -1262,10 +1513,11 @@ evaluation_widget_server <- function( id ,
               #            , color =  as.character( !! rlang::sym( input$agg_level  ) )
               #           ) )  +
               # geom_line() +
-              theme_minimal()
-
-          # Testing
-          # save(.d, file = 'plot-trend-test-data.rda')
+              theme_minimal() +
+            
+            geom_vline( xintercept = as.Date( eval_date ) ,
+                        color = 'brown' ,
+                        alpha = .25 )
 
 
           cat( '\n - basic plot done' ); toc()
@@ -1275,9 +1527,9 @@ evaluation_widget_server <- function( id ,
 
           if ( input$label ){
             g = g + geom_label_repel(
-                       data = trend_Data %>%
+                       data = mable_Data %>%
                          filter(
-                           !! rlang::sym( .period ) == max( trend_Data %>% pull( .period ) ,
+                           !! rlang::sym( .period ) == max( mable_Data %>% pull( .period ) ,
                                                             na.rm = T )
                            ) ,
                        aes( label = grouping_var ,
@@ -1288,7 +1540,7 @@ evaluation_widget_server <- function( id ,
           # Determine number of agg levels available
           # If only one, do not facet (causes error, perhaps because of autoplot?)
 
-          num_agg_levels = count( trend_Data %>% as_tibble ,
+          num_agg_levels = count( mable_Data %>% as_tibble ,
                                   !! rlang::sym( input$agg_level ) ) %>%
             nrow()
 
@@ -1332,17 +1584,12 @@ evaluation_widget_server <- function( id ,
                   subtitle = str_wrap( data.text , 200 )
                   , caption =  str_wrap( caption.text() , 200 )
                   )
+          
           cat( '\n - axis scales and labs done' )
 
-          # Eval Date
-          cat( '\n - evaluation date' , input$evaluation_month )
-          if ( .period %in% 'Month' ) eval_date =   yearmonth( input$evaluation_month  )
-          if ( .period %in% 'Week' ) eval_date =   yearweek( input$evaluation_month  )
-          cat( '\n - eval_date:' , eval_date )
-
-      ## Pre-Evaluation trend line #####
-          if ( input$pre_evaluation ){
-          cat( '\n - pre-evaluation line.  ' )
+      ## Pre-Evaluation Trend #####
+        if ( input$pre_evaluation ){
+          cat( '\n - evaluation line.  ' )
           cat( '\n - pi_levels:' , pi_levels() )
 
           cat( '\n - pre-evaluation date'  )
@@ -1375,15 +1622,12 @@ evaluation_widget_server <- function( id ,
                        # force_pull = 0 ,
                        segment.colour = NA
                        )
-
+            cat( '\n - evaluation line done' )
           }
 
-          cat( '\n - pre-evaluation line done' )
-
-
-      ## Evaluation Trend Line ####
+      ## Evaluation Trend  ####
           if ( input$evaluation ){
-            cat( '\n - evaluation line.  ')
+            cat( '\n - predicted trend  ')
             cat( '\n - evaluation line.  ' , 'pi_levels:' , pi_levels() )
 
            g = g +
@@ -1414,6 +1658,34 @@ evaluation_widget_server <- function( id ,
                        segment.colour = NA
                        )
           }
+      
+      ## Auto Model Prediction  ####
+         if ( auto_model_available$done ){
+
+            auto_model = auto_model()
+
+            cat( '\n - auto predicted trend  ')
+            cat( '\n - pi_levels:' , pi_levels() )
+
+           g = g +
+            fabletools::autolayer( auto_model$predicted ,
+                                   series = ".mean" ,
+                       # , level = 80  # pi_levels()
+                       , color = 'blue'
+                       , level = ifelse( input$forecast_ci , 89 , FALSE )
+                       , linetype = 'dashed', linewidth = 1
+                       ,  alpha = .5 )
+
+            # if (input$pe) g = g +
+            #   geom_label_repel( data =  key.mpe() ,
+            #            aes(  x = !! rlang::sym( period() ) , y = actual ,
+            #            label = paste( "MPE:" , percent( mpe, accuracy = 1.0 ) ) ,
+            #            hjust = just
+            #            ) ,
+            #            # force_pull = 0 ,
+            #            segment.colour = NA
+            #            )
+          }
           
       ## prediction Interval
           # if ( ){
@@ -1425,9 +1697,6 @@ evaluation_widget_server <- function( id ,
           #              , linetype = 'dotted'  , size = 2
           #   ) +
           # }
-
-          cat( '\n - evaluation line done' )
-
 
       ## Smooth line #####
           if (input$smooth){
@@ -1447,7 +1716,9 @@ evaluation_widget_server <- function( id ,
       ## End ####
           cat( '\n - end plotTrends():' )
 
+          # Testing
           # saveRDS( g, 'plotTrends.rds')
+          
           return( g )
         })
 
@@ -1466,7 +1737,7 @@ evaluation_widget_server <- function( id ,
 
   plotOutput = reactive({
         # req( input$components )
-        cat('\n*  evaluation_widget plotTrendOutput')
+        cat('\n*  evaluation_widget plotOutput')
         cat('\n - input$components:' , input$components)
 
       if ( input$components ){
@@ -1479,23 +1750,27 @@ evaluation_widget_server <- function( id ,
       return( g )
 })
 
-  output$plotlyOutput <- renderPlotly({
-      plotly::ggplotly( plotOutput() )  })
+  # output$plotlyOutput <- renderPlotly({
+      # plotly::ggplotly( plotOutput() )  })
 
-  output$plotOutput <-  renderPlot({ plotOutput()  })
-
-  output$dynamic <- renderUI({
-      req(input$plot_hover)
-      verbatimTextOutput("vals")
-  })
-
-  output$vals <- renderPrint({
-        hover <- input$plot_hover
-        # print(str(hover)) # list
-        y <- nearPoints( trend_Data() , input$plot_hover)[input$var_y]
-        req(nrow(y) != 0)
-        y
-  })
+  # output$plotOutput <-  renderPlot({ plotOutput()  })
+  
+  chartModuleServer( "plotOutput" , reactive({ plotOutput() }) )
+  
+  chartModuleServer( "wpeHistogram" , reactive({ wpeHistogram() }) )
+  
+  # output$dynamic <- renderUI({
+  #     req(input$plot_hover)
+  #     verbatimTextOutput("vals")
+  # })
+  # 
+  # output$vals <- renderPrint({
+  #       hover <- input$plot_hover
+  #       # print(str(hover)) # list
+  #       y <- nearPoints( mable_data() , input$plot_hover)[input$var_y]
+  #       req(nrow(y) != 0)
+  #       y
+  # })
 
 
     # Return ####

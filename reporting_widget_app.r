@@ -35,6 +35,10 @@ reporting_widget_ui = function ( id ){
                   
                   inputPanel( 
                     
+                    selectizeInput( ns("missing_reports") , 
+                                  label = "Number of missing reports allowed/yr" ,
+                                  choices = 0:2 , 
+                                  selected = 0 ) ,
 
                     
                     selectizeInput( ns("startingMonth") , label = "Begining with", 
@@ -48,12 +52,7 @@ reporting_widget_ui = function ( id ){
                   
                   checkboxInput( ns("exclude_recent_month") , 
                                  label ='Exclude most recent period? (e.g. current month if data expected to be incomplete)',
-                                 value = TRUE  ) ,
-                  
-                  selectizeInput( ns("missing_reports") , 
-                                  label = "Number of missing reports allowed/yr" ,
-                                  choices = 0:2 , 
-                                  selected = 0 ) 
+                                 value = TRUE  ) 
 
                   ) ,
  
@@ -128,9 +127,9 @@ reporting_widget_ui = function ( id ){
                  inputPanel(
                    
                    
-                   selectInput( ns("source") , label = "Original/Cleaned" , 
-                                choices = c( 'Original', 'Cleaned' ) , 
-                                selected = 'Original' ) ,
+                   # selectInput( ns("source") , label = "Original/Cleaned" , 
+                   #              choices = c( 'Original', 'Cleaned' ) , 
+                   #              selected = 'Original' ) ,
                    
                    selectInput( ns("split") , label = "Split Data By:" , 
                                 choices = "None" , 
@@ -208,60 +207,36 @@ reporting_widget_ui = function ( id ){
                               # h5( 'Number of Facilties Reporting Each Period') ,
                               
                               ### Number of Facilties Reporting each Period (plot_reporting_by_month)
-                              plotOutput( ns('plot_reporting_by_month') 
-                                  #         , 
-                                  # click = "plot2_click" ,
-                                  # dblclick = "plot2_dblclick" ,
-                                  # hover = "plot2_hover" ,
-                                  # brush = "plot2_brush", 
-                                  # height = "80%" )
-                              ) ) ,
+                              # plotOutput( ns('plot_reporting_by_month') )
+                                          
+                                          
+                              chartModuleUI( ns('plot_reporting_by_month') , "Number of Reports"
+                                             # p( "Number of Reports" , style = "font-size: 16px" )
+                              )
+                             ) ,
                               
                              column(6,  
-                              # htmlOutput("x_value") ,
-                              
-                              # h5( 'Histogram of Periods Reported Each Year') ,
-        
-                              ### Histogram of Annual Number of Months Reported (plot_reports_in_a_year)
-                                  # miniContentPanel(
-         
-                                            plotOutput( ns('plot_reports_in_a_year') 
-                                                        ,
-                                              # click = "plot1_click" ,
-                                              # dblclick = "plot1_dblclick" ,
-                                              # hover = "plot1_hover" ,
-                                              # brush = "plot1_brush" , 
-                                              # height = "80%") 
                                             
-                                            # , scrollable = TRUE
-                                            )
+                                  chartModuleUI( ns('plot_reports_in_a_year') , "Reports per Year" 
+                                                 # p( "Reports per Year" , style = "font-size: 16px" )
+                                                 )  
+                                           
                             )
-                            
-                          # , h6( 'Red indicates the facilities that reported each month (*Champions*)' ) 
+                          
                     ) ,
                     
-                  # h5( "Data Values: On Right, from facilities that reported each month (*Champions*); on left, from all others")  ,
-                  
-                  # fluidRow( style = "height:10vh;",
-                  #           
-                  #           column(6, h5( "Data Values from Inconsistenly Reporting Facilities" ) ) ,
-                  #           
-                  #           column(6, h5( "Data Values from *Champion* Facilities" ) ) 
-                  #           
-                  # ) , 
-
-                  fluidRow( style = "height:40vh;"  ,
+                  fluidRow( style = "height:50vh;"  ,
                           
                           column(12, 
-                            plotOutput( ns('plot_values') 
-                                #         ,
-                                # hover = "plotreportingSelectedOUsValues_hover" ,
-                                # brush = "plotreportingSelectedOUsValues_brush" , 
-                                # height = "80%"
-                                )
+                                 
+                            # plotOutput( ns('plot_values') )
+                            
+                            chartModuleUI( ns('plot_values') , "Value Totals"
+                                           # p( "Value Totals" , style = "font-size: 16px" )
+                                           )            
+                                
                           )
                           )
-                  # )
         ) ,
         
         tabPanel( "Facilities", value = 'facilities' , 
@@ -679,53 +654,7 @@ reporting_widget_server <- function( id ,
   # if ( input$exclude_recent_month ) data = data %>% 
   #   filter( !! rlang::sym( period() ) <= most_recent_period() )
   
-    if ( input$source %in% 'Original' ){
-      cat('\n - d() source is original')
-      
-      # data = data %>% mutate( dataCol = original )
       data = setDT( data )[ , dataCol := as.numeric( original ) , ] 
-    }  
-    
-    if ( input$source %in% 'Cleaned' & 'seasonal3' %in% names(data) ){
-      cat( '\n -' , paste('Cleaning removes', sum( data$value , na.rm = T ) - sum( data$seasonal3 , na.rm = T )  , 'data points' ) )
-      
-      # data = data %>% 
-      #   mutate( dataCol = ifelse( seasonal3, original, NA  ) )
-      
-      data = setDT( data )[ , dataCol := fifelse( seasonal3, original, NA_real_  ) , ]
-      
-      # Modify variables used for cleaning data so that FALSE when NA -- meaning it failed prior cleaning step, and TRUE means data is ok
-      if ('mad15' %in% names( data )){
-        # data = data %>% mutate( mad15 = ifelse( value & is.na( mad15)|!mad15, FALSE, TRUE ) )
-        data = setDT( data )[, mad15 := fifelse( value & is.na( mad15)|!mad15, FALSE, TRUE ) , ] 
-        
-      }
-      
-      if ('mad10' %in% names( data )){ 
-        # data = data %>% mutate( mad10 = ifelse( value & is.na( mad10)|!mad10, FALSE, TRUE ) )
-        data = setDT( data )[, mad10 := fifelse( value & is.na( mad10)|!mad10, FALSE, TRUE ) , ] 
-        
-      }
-      
-      if ('mad5' %in% names( data )){ 
-        # data = data %>% mutate( mad5 = ifelse( value & is.na( mad5)|!mad5, FALSE, TRUE ) )
-        data = setDT( data )[, mad5 := fifelse( value & is.na( mad5)|!mad5, FALSE, TRUE ) , ] 
-        
-      }
-      
-      if ('seasonal5' %in% names( data )){ 
-        # data = data %>% mutate( seasonal5 = ifelse( value & is.na( seasonal5)|!seasonal5, FALSE, TRUE ) )
-        data = setDT( data )[, seasonal5 := fifelse( value & is.na( seasonal5)|!seasonal5, FALSE, TRUE ) , ] 
-      }
-      
-      if ('seasonal3' %in% names( data )){ 
-        # data = data %>% mutate( seasonal3 = ifelse( value & is.na( seasonal3)|!seasonal3, FALSE, TRUE ) )
-        data = setDT( data )[, seasonal3 := fifelse( value & is.na( seasonal3)|!seasonal3, FALSE, TRUE ) , ] 
-        
-      }
-      
-      cat( '\n -' , paste('cleaning changes total by', sum( data$original , na.rm = T ) - sum( data$dataCol , na.rm = T )) )
-    }  
     
     # #print( 'd: max period ' ); #print( max( d$period ))
     
@@ -1239,7 +1168,9 @@ reporting_widget_server <- function( id ,
     return( g )
   })
   
-  output$plot_reporting_by_month <- renderPlot({  plot2()  } )
+  # output$plot_reporting_by_month <- renderPlot({  plot2()  } )
+  
+  chartModuleServer( "plot_reporting_by_month" , reactive({ plot2() }) )
   
   verbatimTextOutput("info")
 
@@ -1335,7 +1266,9 @@ reporting_widget_server <- function( id ,
       }
 })
 
-  output$plot_reports_in_a_year <- renderPlot({  plot1()  } )
+  # output$plot_reports_in_a_year <- renderPlot({  plot1()  } )
+  
+  chartModuleServer( "plot_reports_in_a_year" , reactive({ plot1() }) )
   
   # selected_data. select ous and data element categories ####
   
@@ -1364,32 +1297,8 @@ reporting_widget_server <- function( id ,
    cat("\n - reporting_widget selected_data_categories(): " , 
        paste( selected_data_categories$elements , collapse = ", " )   )
     
-   .cleanedData = cleanedData( 
-                        data1() ,
-                        .effectiveLeaf = TRUE ,
-                        source = input$source ,
-                        error =  NULL ,
-                        algorithm = 'seasonal3' ,
-                        .cat = TRUE )
-   
-   # testing
-   
-   # When there are no leaf orgUnits (e.g. National or District data only)
-   if ( nrow( .cleanedData ) == 0 ){
-     
-     .cleanedData = cleanedData( 
-                        data1() ,
-                        .effectiveLeaf = FALSE ,
-                        source = input$source ,
-                        error =  NULL ,
-                        algorithm = 'seasonal3' ,
-                        .cat = TRUE )
-     
-     cat( "\n - .cleanedData with .effectiveLeaf FALSE, nrow = ", nrow( .cleanedData ))
-   }
-     
    selected_data =  selectedData( 
-                        data = .cleanedData , # data1() ,
+                        data = data1() ,
                         levelNames = levelNames() ,
                         data_categories = selected_data_categories$elements ,
                         # all_categories = input$all_categories ,
@@ -1405,53 +1314,7 @@ reporting_widget_server <- function( id ,
                         level5 = selected_org_levels$level5 ,
                         .cat = TRUE  )
    
-   
-      # data = data1() ,
-      # levelNames = levelNames() ,
-      # data_categories = selected_data_categories$elements ,
-      # # all_categories = input$all_categories ,
-      # alwaysReporting = input$mostReports ,
-      # reportingSelectedOUs = reportingSelectedOUs() ,
-      # source = input$source ,
-      # level2 = input$level2 ,
-      # level3 = input$level3 ,
-      # level4 = input$level4 ,
-      # level5 = input$level5 ,
-      # .cat = TRUE )
-  
-   #  data = setDT( d() )[ , Selected := 'All', ]
-   #  # data = d() %>% mutate( Selected = 'All' ) 
-   #  
-   #  
-   #  # filter to selected category
-   #  cat( '\n - selected_data filtered by' # , input$data_categories 
-   #       )
-   # 
-   #  if ( !input$all_categories )  
-   #    
-   #    # data = data %>% filter( data %in% input$data_categories )
-   #    
-   #    data = setDT( data )[ data %in% input$data_categories ,, ]
-   #  
-   #  # Add var for selected ous
-   #  cat( '\n - selected_data length( reportingSelectedOUs()): ' , length( reportingSelectedOUs())  )
-   #  
-   # if ( length( reportingSelectedOUs()) > 0 ){
-   #   
-   #   data = setDT( data )[ , Selected := fifelse( orgUnit %in% reportingSelectedOUs() , 
-   #                                                    'Reporting Each Period',
-   #                                                    'Inconsistent Reporting') ]
-   #   # data  = data %>%
-   #   #   mutate( Selected = ifelse( 
-   #   #     orgUnit %in% reportingSelectedOUs() , 
-   #   #     'Reporting Each Period', 
-   #   #     'Inconsistent Reporting' )
-   #   #   )
-   # } 
-   #  
-   #  cat( '\n - end  selected_data()')  
-   
-   cat("\n - end selected_data()")
+   cat("\n - end reporting_widget selected_data()")
    
    # Testing 
    if ( testing ) saveRDS( selected_data , 'selected_data.rds')
@@ -1495,8 +1358,13 @@ reporting_widget_server <- function( id ,
     if ( testing )  saveRDS( selected_data()  , 'selected.data.rds')
     if ( testing )  saveRDS( group_by_cols()  , 'group_by_cols.rds')
     
+    # dataCol required for dataTotal function (previously generated in cleaningData() )
+    # reporting widget now using original data only May 2025
+    selected_data = selected_data() %>% 
+      mutate( dataCol = original )
+    
     data.total = dataTotal(
-        data = selected_data()   , 
+        data = selected_data   , 
         period = period() ,
         group_by_cols = group_by_cols() ,
         startMonth = input$startDisplayMonth ,
@@ -1802,8 +1670,11 @@ reporting_widget_server <- function( id ,
     return( g )
   })
   
-  output$plot_values <- renderPlot({  plotAgregateValue()  })
-  outputOptions( output, "plot_values", suspendWhenHidden = TRUE )
+  # output$plot_values <- renderPlot({  plotAgregateValue()  })
+  
+  chartModuleServer( "plot_values" , reactive({ plotAgregateValue() }) )
+  
+  # outputOptions( output, "plot_values", suspendWhenHidden = TRUE )
   
 # Champions Map and Table####
   

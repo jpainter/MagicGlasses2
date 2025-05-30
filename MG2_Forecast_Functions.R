@@ -131,7 +131,7 @@ best_fables_accuracy = function( fables_accuracy , metric = "MAPE" , top = 1000 
   
   best_fables_accuracy = fables_accuracy %>%
     { if (!is.null(groupByVars)) group_by(., !!sym(groupByVars)) else . } %>%
-    arrange( all_of( groupByVars ) , {{ .metric }} ) %>%
+    arrange( groupByVars  , {{ .metric }} ) %>%
     mutate( 
       across( where(is.numeric), \(x) round(x, digits = 3) ),
       `Intervention Rank` = row_number() ,
@@ -520,7 +520,9 @@ dataset = function( data = mcc5, startMonth = yearmonth( "Jan 2015" ) ,
 
 ## Function to create models ( OOS Training and Testing ) ####
 
-tsmodels = function( train_data , test_data, n_forecasts = 2000 , 
+tsmodels = function( train_data , 
+                     test_data, 
+                     n_forecasts = 2000 , 
                      .var = 'younger',
                      numberForecastMonths = 12 , 
                      type = NA , # c('transform and covariate' ,'transform', 'covariate' ) 
@@ -732,7 +734,7 @@ model_metrics = function( test.forecasts , test.data , msg = TRUE,
 
 modelSelection = function( modelMetrics , 
                            type = c('synchronize', 'optimize' ) ,
-                           table = TRUE ,
+                           table = FALSE ,
                            grouping = FALSE ,
                            groups = "agegrp" ){
   
@@ -818,7 +820,7 @@ diff = function( actual ,  predicted , .var = 'younger' , grouping = TRUE  , ...
   var = rlang::sym( .var )
   
   if ( grouping ){ 
-      groups = c( Intervention , .model )
+      groups = c( "Intervention" , ".model" )
       selectVars = c( "Intervention", "Month", .var  )
   } else {
     groups = '.model'
@@ -882,7 +884,7 @@ diffHistogram = function( actual , predicted, xlimits = c(NA, NA) ,
   
   d = diffPredictedActual %>%
     inner_join( diffPredictedActual.summary , 
-                by = join_by( Intervention, .model  ) ) %>%
+                by = join_by(  .model  ) ) %>%
     mutate( .model = paste0('tsmodel = ', .model )) 
   
   ggplot( ) +
@@ -899,7 +901,7 @@ diffHistogram = function( actual , predicted, xlimits = c(NA, NA) ,
         'Each observation represents estimated difference from an individual forecast (n=',
         n_forecasts, ')' ) ,
       caption = 'Blue bar represents median value' ,
-      x = "Weighted Percent Error (WPE)")
+      x = "Weighted Percent Change")
 }
 
 
@@ -985,12 +987,13 @@ impactTable = function( actual, predicted , condense = FALSE,
 
 impact.tableaux = function( actual, predicted , xlimits = c(NA, NA) , ...){
   
+  n_interventions = length( unique( actual$Intervention ))
   
   plotActualPredicted( actual , predicted , ... ) %>% print 
   
   diffHistogram( actual , predicted , ... ) %>% print
   
-  impactHistogram( actual , predicted , ... ) %>% print
+  if ( n_interventions >= 2) impactHistogram( actual , predicted , ... ) %>% print
   
   impactTable( actual , predicted , ...) %>%
     
