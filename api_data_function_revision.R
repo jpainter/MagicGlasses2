@@ -104,8 +104,10 @@ api_data = function(      periods = NA ,
     cat('\n - date range:' , first.period , last.period )
     
     #NB: use *.id if downloaded data was prepared and saved 
-    cat('\n - extracting previously downloaded elements'  )
+    cat('\n - reorganizing previous data'  )
+    
     if ( 'dataElement.id' %in% names( prev.data ) ){
+      
       prev.data = prev.data %>% as_tibble %>% 
         ungroup() %>%
         select(  orgUnit, period , 
@@ -115,7 +117,9 @@ api_data = function(      periods = NA ,
                 categoryOptionCombo = categoryOptionCombo.ids ) %>%
         filter( ! is.na( COUNT ) & COUNT != 0 )  %>%
         distinct 
+      
     } else {
+      
       prev.data = prev.data %>% as_tibble %>%
         ungroup() %>%
         select( orgUnit, period , 
@@ -124,30 +128,14 @@ api_data = function(      periods = NA ,
         filter( !is.na( COUNT )  ) %>%
         distinct 
     }
-    
-    # Confirm there is previous data for level1
-    prev = prev.data %>%
-      filter( orgUnit == level1.id  
-              # , period %in% period_vectors 
-      ) 
-    
-    # Stop if no national data 
-    if ( nrow( prev ) == 0 ){
-      cat( '\n - previous data is missing national data' ) 
-      return()
-    } else {
-      cat( '\n - previous data has:' ,  nrow( prev ), 'rows' ) 
-    }
+
+    cat('\n - extracting previously downloaded elements'  )   
     
     des = prev.data %>% 
       select(  dataElement,   categoryOptionCombo ) %>%
       distinct 
     
-    # excel version
-    # elements = paste( des$dataElement.id , des$categoryOptionCombo.ids , sep = ".") %>%
-    #   paste( collapse = ";")
-    
-    # rds version 
+    # string of data elements  
     prev.elements = paste( des$dataElement , des$categoryOptionCombo , sep = ".") %>%
       paste( collapse = ";") 
     
@@ -278,20 +266,34 @@ api_data = function(      periods = NA ,
     
     # Compare with previous data just for level-1
     ## for excel
-    # prev = prev.data %>% filter( level == 1 , period %in% period_vectors ) 
+    
     
     ## for rds, need orgunit for level 1 
-    if ( is_empty( level1.id ) ){
-      message('\n api_data function: need level1.id')
-      return()
+    if ( is_empty( level1.id ) | ! 'level' %in% names( prev.data ) ){
+      message('\n aggregating data by month ')
+      
+      prev = prev.data %>% 
+        as_tibble() %>%
+        ungroup() %>%
+        group_by( period , dataElement ) %>%
+        summarise( COUNT = n(), 
+                   SUM = sum( SUM , na.rm = TRUE )
+                   )
+
+    } else {
+      prev = prev.data %>% filter( level == 1 , period %in% period_vectors ) 
     }
+    
     
     # If request does not include categoryOptionCombo, do not use in joins
     if ( 'categoryOptionCombo' %in% names( current.values ) ){
-      by_cols = c("dataElement", "period", "orgUnit", "categoryOptionCombo")
+      by_cols = c("dataElement", "period", "categoryOptionCombo")
     } else {
-      by_cols = c("dataElement", "period", "orgUnit")
+      by_cols = c("dataElement", "period" )
     }
+    
+    # Testing
+    # save( prev, current.values, current.counts, file =  'apiTesting.rda')
     
     update_compare = inner_join( current.counts, current.values , 
                                  by = by_cols
@@ -301,12 +303,7 @@ api_data = function(      periods = NA ,
                    mutate( prev.count = as.integer( COUNT ) ,
                            prev.value = as.numeric( SUM ) ) %>%
                    select( - COUNT, -SUM ), 
-                 # Excel version  
-                 # by = c( 'dataElement' = 'dataElement.id' , 
-                 #         'categoryOptionCombo' = 'categoryOptionCombo.ids' ,
-                 #         'period' = 'period' , 
-                 #         'orgUnit' = 'orgUnit' )
-                 # rds version  
+                 
                  by = by_cols
                  
       ) %>%

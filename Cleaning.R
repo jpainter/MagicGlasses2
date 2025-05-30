@@ -308,8 +308,8 @@ d.mase = function( d , selectedOUs ){
                expected = sum( expected, na.rm = TRUE ) ,
                actual = sum( original, na.rm = TRUE ) ,
                Selected = fifelse( orgUnit %in% selectedOUs , 
-                                                      'Reporting Consistently',
-                                                      'Inconsistent Reporting')
+                                                      'Champion',
+                                                      'Non-Champion')
           ) ,
           by = c(  'orgUnit', 'orgUnitName' , 'data.id' , 'data' ) ] %>%
           

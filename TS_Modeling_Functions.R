@@ -223,7 +223,7 @@ with.without_outliers = function( ts, out){
 }
 
 mable_data = function(         
-    ml.rtss.data = ml.rtss ,
+    tibble.data = NULL ,
     .orgUnit = TRUE , # group by orgunit
     .startingMonth = NULL ,
     .endingMonth = NULL , 
@@ -246,30 +246,50 @@ mable_data = function(
   
   
   if ( testing ){
-    saveRDS( ml.rtss.data , "ml.rtss.data.rds")
-    save(.orgUnit, hts, remove.aggregate, .error, .startingMonth , .endingMonth, .missing_reports, agg_level, levelNames, .split , covariates ,
+    saveRDS( tibble.data , "tibble.data.rds")
+    save(.orgUnit, hts, remove.aggregate, .error, .startingMonth , .endingMonth, 
+         .missing_reports, agg_level, levelNames, .split , covariates ,
           file = "mable_data_parameters.rda" )
-  } 
+  }
   
-  d = ml.rtss.data %>% 
-    error_factor %>% 
-    # filter( Month >= ( yearmonth( startingMonth )   ) )  %>%
-    cleanedData( . , 
-                 error =  .error , .cat = .cat ) %>%
-    
-    selectedData(  startingMonth = .startingMonth ,
-                   # data_categories = "agegrp" , 
-                   endingMonth = .endingMonth ,
-                   missing_reports = .missing_reports ,
-                   .cat = .cat ) %>% as_tibble() 
+  d = tibble.data %>% 
+    error_factor 
+  
+  if ( is_null( .error ) || .error == "Original" ){
+      if ( .cat ) cat('\n- source is original')
+      d = d %>% mutate( dataCol = original )
+      }  
+  
+  if ( !is_null( .error )  & 'error' %in% names( d ) ){
+      if ( .cat ) cat("\n - error level:" , .error )
+      error.levels = levels( d$error ) 
+      error.factor.value = which( .error == error.levels )
+      d = d %>% 
+        mutate( dataCol = ifelse( as.numeric( error ) >  error.factor.value , 
+                                  original, NA ) )
+    }
+      
+  # %>% 
+  #   # filter( Month >= ( yearmonth( startingMonth )   ) )  %>%
+  #   cleanedData( . , 
+  #                error =  .error , .cat = .cat ) %>%
+  #   
+  #   selectedData(  startingMonth = .startingMonth ,
+  #                  # data_categories = "agegrp" , 
+  #                  endingMonth = .endingMonth ,
+  #                  missing_reports = .missing_reports ,
+  #                  .cat = .cat ) %>% as_tibble() 
   
   
     group_by_cols = groupByCols( period = dataPeriod( d ) , 
+                               selected = FALSE , 
+                               dataset = FALSE ,
                                orgUnit = .orgUnit ,
                                hts = hts , 
                                agg_level = agg_level ,
                                levelNames = levelNames, 
-                               split = .split , .cat = .cat )
+                               split = .split , 
+                               .cat = .cat )
   
    if (.cat) cat("\n - group_by_cols " , group_by_cols )
     
@@ -310,6 +330,7 @@ mable_data = function(
                            covariates = covariates , 
                            group_by_cols = group_by_cols , .cat = .cat )
   } else {
+    
     if (.cat) cat("\n - aggData " )
     data.agg.ts = aggData( data.total = data.total ,  
                            covariates = covariates , 
@@ -319,27 +340,27 @@ mable_data = function(
     #Testing
     if (testing ) saveRDS( data.agg.ts , 'data.agg.ts.rds')
   
-  if (.cat) cat("\n - trend.data " )
-
-  if (.cat) cat("\n - remove.aggregate: " , remove.aggregate )
-        
-  if ( .cat ) cat( '\n - mable_data num_facilities: ' , num_facilities )
-  if ( .cat ) cat( '\n - mable_data selected.only: ' , selected.only )
+    # if (.cat) cat("\n - trend.data " )
+    # 
+    # if (.cat) cat("\n - remove.aggregate: " , remove.aggregate )
+    #       
+    # if ( .cat ) cat( '\n - mable_data num_facilities: ' , num_facilities )
+    # if ( .cat ) cat( '\n - mable_data selected.only: ' , selected.only )
+    #   
+    # trend.data = trendData( .d = data.agg.ts , 
+    #                         levelNames = levelNames , 
+    #                         startingMonth = .startingMonth , 
+    #                         endingMonth = .endingMonth ,
+    #                         selected.only = selected.only  , 
+    #                         num_facilities =  num_facilities ,
+    #                         num_datasets = num_datasets , 
+    #                         split = .split ,
+    #                         agg_level = agg_level  , 
+    #                         remove.aggregate = remove.aggregate , 
+    #                         .cat = .cat  )
     
-  trend.data = trendData( .d = data.agg.ts , 
-                          levelNames = levelNames , 
-                          startingMonth = .startingMonth , 
-                          endingMonth = .endingMonth ,
-                          selected.only = selected.only  ,
-                          num_facilities =  num_facilities ,
-                          num_datasets = num_datasets , 
-                          split = .split ,
-                          agg_level = agg_level  , 
-                          remove.aggregate = remove.aggregate , 
-                          .cat = .cat  )
-  
-
-  return( trend.data )
+    cat( "\n -- end TS_Modeling_Functions.R mable_data")
+    return( data.agg.ts )
   
 }
 

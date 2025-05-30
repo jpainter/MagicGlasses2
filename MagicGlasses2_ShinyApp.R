@@ -25,7 +25,7 @@ packages = c(
  'shinyFiles' , 'shinyalert' , 
  'slider' , 'sugrrants' , 
  'leaflet' ,  'leaflegend' , 'ggrepel' ,
- 'tibbletime' , 'tictoc' , 'tsbox' , 
+ 'tibbletime' , 'tictoc' , 'tsbox' , 'flextable', 
  'zoo', 'conflicted', 'assertthat' , 'stringi' , 
  'digest'
 )
@@ -79,8 +79,8 @@ conflicts_prefer(tsibble::index)
 # conflicts_prefer(tidytable::ungroup)
 conflicts_prefer( purrr::flatten )
 # conflicts_prefer(testthat::is_null)
-conflicts_prefer(purrr::compose)
-
+# conflicts_prefer(purrr::compose)
+conflicts_prefer(flextable::compose)
 
 
 # Options ####
@@ -91,6 +91,7 @@ options(future.globals.maxSize = 6 * 1024^3)
 options(shiny.trace=FALSE)
 options(shiny.reactlog=FALSE)
 knitr::opts_chunk$set(echo = FALSE)
+
 
 # Functions  ####
 source( paste0( mg2 , "ingest_formula_data.R") ) 
@@ -111,6 +112,8 @@ source( paste0( mg2 , 'cleaning_functions.R' ) )
 source( paste0( mg2 , "data Functions.R" ) )
 source( paste0( mg2 , "dqa_functions.R" ) )
 source( paste0( mg2 , "MG2_Forecast_Functions.R" ) )
+
+source( paste0( mg2 , "chart_module.R" ) )
 
 
 as.yearmonth = function( date.string , fmt = "%B%Y" ) zoo::as.yearmon( date.string , fmt) %>% yearmonth
@@ -133,9 +136,6 @@ as.yearmonth = function( date.string , fmt = "%B%Y" ) zoo::as.yearmon( date.stri
 
 knitr::opts_chunk$set(echo = FALSE , warning = FALSE )
 
-if ( ! 'flextable' %in% installed ) install.packages( 'flextable' )
-library( flextable ) 
-         
 # Flextable
 set_flextable_defaults(font.size = 11)
 
