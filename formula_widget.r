@@ -349,8 +349,8 @@ formula_widget_server <- function( id ,
       title = "Saving Data",
       "Click below to download:",
       tags$div(
-        downloadButton( ns("downloadFormula"), "Download Excel") ,
-        downloadButton( ns("downloadRDS"), "Download RDS")
+        downloadButton( ns("downloadFormula"), "Download Excel") 
+        # downloadButton( ns("downloadRDS"), "Download RDS")
       ),
       easyClose = TRUE
     ))
