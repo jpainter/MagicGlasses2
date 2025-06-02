@@ -526,7 +526,9 @@ tsmodels = function( train_data ,
                      .var = 'younger',
                      numberForecastMonths = 12 , 
                      type = NA , # c('transform and covariate' ,'transform', 'covariate' ) 
-                     covariate = NULL , ensemble = TRUE , msg = TRUE ,
+                     covariate = NULL , 
+                     ensemble = TRUE , 
+                     msg = TRUE ,
                      .set.seed = TRUE ){
   
   if ( !is.na( type ) && !type %in% c('transform and covariate' , 'transform', 'covariate' ) ){
@@ -542,12 +544,19 @@ tsmodels = function( train_data ,
   
   if (! is.null( covariate) ) covariate = rlang::sym( covariate )
   
-  tic()
   if (msg) cat('\n - tsmodels: Preparing primary models' )
   
   tic()
+  tic()
+  
+  # Prevent parallel processin
+  future::plan( future::sequential() )
+  oopts <- options(future.globals.maxSize = 40.0 * 1e9)  ## 1.0 GB
+  # on.exit(options(oopts))
   
   if ( is.na( type ) ){
+    
+    progressr::with_progress(
     pre.intervention.train.primary.models <- train_data %>%
       model(
         a = ARIMA( var )
@@ -555,10 +564,11 @@ tsmodels = function( train_data ,
         , n = NNETAR( var )
         , t = TSLM( var )
 
-        , p1 = prophet( var ~ season("year", order = 1, type = "multiplicative")
-                       )
+        , p1 = prophet( var ~ season("year", order = 1, type = "multiplicative") )
         , p4 = prophet(  var ~ season("year", 4, type = "multiplicative")  )
-        , p8 = prophet(  var ~ season("year", 8, type = "multiplicative")  )
+        , p8 = prophet(  var ~ season("year", 8, type = "multiplicative")  ) ,
+        .safely = TRUE 
+      ) 
       )
   }
   
@@ -569,11 +579,11 @@ tsmodels = function( train_data ,
         , e = ETS(  log( var ) )
         , n = NNETAR(  log( var ) ~ {{covariate}}   ) 
         , t = TSLM( log( var )  ~ trend() + season() + {{covariate}}  ) 
-        , p1 = prophet( log( var ) ~ {{covariate}} + 
+        , p1 = prophet( log( var ) ~ {{covariate}} +
                           season("year", 1, type = "multiplicative")  )
-        , p4 = prophet(  log( var )  ~ {{covariate}} + 
+        , p4 = prophet(  log( var )  ~ {{covariate}} +
                            season("year", 4, type = "multiplicative")  )
-        , p8 = prophet(  log( var )  ~ {{covariate}} + 
+        , p8 = prophet(  log( var )  ~ {{covariate}} +
                            season("year", 8, type = "multiplicative")  )
       )
   }
@@ -630,11 +640,11 @@ tsmodels = function( train_data ,
   t = toc(quiet = TRUE)   
   
   
-  if (msg) cat('\n - tsmodels:Primary forecasts finished', t$callback_msg, 
-               '\n - tsmodels: Preparing ensemble forecasts...' )
+  if (msg) cat('\n - tsmodels:Primary forecasts finished', t$callback_msg )
   
   # Ensemble forecasts
   if ( ensemble ){
+    '\n - tsmodels: Preparing ensemble forecasts...'
     tic() 
     if (.set.seed) set.seed( 1432 )
     pre.intervention.train.combo.forecasts = combination_forecasts(

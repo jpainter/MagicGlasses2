@@ -15,7 +15,9 @@ packages = c(
  'tsibble' , 'feasts' , 'forecast' , 'fpp3' , 'tibbletime' ,
  'fable' , 'fabletools' , 'fable.prophet' , 'prophet' ,  "distributional" ,
  'table.express' , 'data.table' , 
- 'furrr' , 'future' , 'GGally' , 'ggExtra' , 'gtable' , 'HDInterval' , 'hrbrthemes' , 
+ 'furrr' , 
+ # 'future' , 
+ 'GGally' , 'ggExtra' , 'gtable' , 'HDInterval' , 'hrbrthemes' , 
  'htmltools' , 'httr' , 'igraph' , 'jsonlite' , 'lubridate' , 'magrittr' , 'mapview' , 
  'officer' , 'openxlsx' , 'pacman' , 'patchwork' , 'plotly' , 'progress' , 'progressr' , 
  'prophet' , 'purrr' , 'RColorBrewer' , 'readxl' , 'renv' , 'rlang' , 'rmarkdown' , 
@@ -113,9 +115,6 @@ source( paste0( mg2 , "data Functions.R" ) )
 source( paste0( mg2 , "dqa_functions.R" ) )
 source( paste0( mg2 , "MG2_Forecast_Functions.R" ) )
 
-source( paste0( mg2 , "chart_module.R" ) )
-
-
 as.yearmonth = function( date.string , fmt = "%B%Y" ) zoo::as.yearmon( date.string , fmt) %>% yearmonth
 
 knitr::opts_chunk$set(echo = FALSE , warning = FALSE )
@@ -175,6 +174,8 @@ source(  paste0( mg2, 'reporting_widget_app.r' ) )
 source(  paste0( mg2, 'cleaning_widget.r' ) )
 source(  paste0( mg2, 'evaluation_widget_2.R' ) )
 source(  paste0( mg2, 'regions_widget.R' ) )
+source( paste0( mg2 , "chart_module.R" ) )
+
 
 options(shiny.trace=FALSE)
 options(shiny.reactlog=FALSE)

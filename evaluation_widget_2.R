@@ -97,7 +97,7 @@ evaluation_widget_ui = function ( id ){
                                  value = FALSE  ) ,
                 
                  selectInput( ns( "replicates") , label = "Forecasting replicates:" , 
-                  choices = c( 20, 40, 60, 100 ) , 
+                  choices = c( 100, 500, 1000, 5000 ) , 
                   selected = 1  )
                   ) ) ,
                 
@@ -163,12 +163,11 @@ evaluation_widget_ui = function ( id ){
                    
                 
               
-                tabPanel( "Time-Series" ,
+                tabPanel( "Time-Series Chart" ,
                           
                           fluidPage(
                             fluidRow( style = "height:60vh;",
                                       
-                                      # plotOutput( ns("plotOutput") ) 
                                       chartModuleUI( ns('plotOutput') , "Trend Analysis" )
                                       ) ,
                           
@@ -178,8 +177,21 @@ evaluation_widget_ui = function ( id ){
                 
                 # tabPanel("Evaluation Table1", tableOutput(  ns("forecastResult") ) ),
                 
-                tabPanel( "Actual - Predicted" , 
-                          chartModuleUI( ns("wpeHistogram" ) , "Actual - Predicted" ) 
+                tabPanel( "Validation table" , 
+                          h5( "Symmetric Weighted Absolute Percent Error (SWAPE) of difference between the test forecasts and the actual values") ,
+                          
+                          fluidRow( style = "height:60vh;",
+                           column( 12, 
+                                   div( DT::dataTableOutput( ns('wpeValidationTable') ), 
+                                       style = "font-size: 60%; width: 100%" )
+                                   )
+              ) ) ,
+              tabPanel( "Symmetric Weighted Percent Error (SWPE)" , 
+                         h5( "Weighted Absolute Percent Error (WAPE) of predicted values and the actual values") ,
+                        
+                        fluidRow( style = "height:60vh;",
+                            column(12,  chartModuleUI( ns("wpeHistogram" ) , "WPE Histogram" ) )
+                        )
               ) 
               ) 
               )    
@@ -402,7 +414,7 @@ evaluation_widget_server <- function( id ,
         cat('\n* evaluation_widget MAPE()')
 
         predicted = tsPreForecast() %>% as_tibble() %>% select(-total)
-        actual =  mable_data()
+        actual =  mable_Data()
         d = predicted %>%
            inner_join( actual , by = period() )
 
@@ -422,14 +434,14 @@ evaluation_widget_server <- function( id ,
 
       key.mape = reactive({
         req( tsPreForecast() )
-        req( mable_data() )
+        req( mable_Data() )
 
         cat('\n* evaluation_widget key.mape()')
 
         predicted = tsPreForecast() %>%
           rename( pred = .mean )
 
-        actual =  mable_data() %>%
+        actual =  mable_Data() %>%
           rename( actual = total )
 
         keyvars = key_vars( actual )
@@ -483,7 +495,7 @@ evaluation_widget_server <- function( id ,
         cat('\n* evaluation_widget MPE()')
 
         predicted = tsForecast() %>% as_tibble() %>% select(-total)
-        actual =  mable_data()
+        actual =  mable_Data()
 
         d = predicted %>%
            inner_join( actual , by = period() )
@@ -504,14 +516,14 @@ evaluation_widget_server <- function( id ,
 
       key.mpe = reactive({
         req( tsForecast() )
-        req( mable_data() )
+        req( mable_Data() )
 
         cat('\n* evaluation_widget key.mpe()')
 
         predicted = tsForecast() %>%
           rename( pred = .mean )
 
-        actual =  mable_data() %>%
+        actual =  mable_Data() %>%
           rename( actual = total )
 
         keyvars = key_vars( actual )
@@ -719,7 +731,7 @@ evaluation_widget_server <- function( id ,
     
     # observeEvent( input$forecast , { cat("\n * observed button push") })
 
-# Auto Forecast ####   
+# Auto Model ####   
     auto_model_available = reactiveValues( done = FALSE )
     auto_model = eventReactive( input$forecast , {
       
@@ -729,24 +741,26 @@ evaluation_widget_server <- function( id ,
               cat("\n* evaluationWidget auto forecast")
               
               shinyalert( "Starting forecast", "fitting multiple models..." , type = 'info', timer = 2000)
-                    
-              mable_Data = mable_Data()
-              evaluation_month  = yearmonth( input$evaluation_month )
-              startMonth = min( mable_Data$Month , na.rm = T )
-              numberTestMonths = as.integer( input$horizon )
+              
+
+              mable.data = isolate( mable_Data() )
+              startMonth = min( mable.data$Month , na.rm = T )
+              evaluation_month  = yearmonth( isolate( input$evaluation_month ) )
+              numberTestMonths =  as.integer( isolate( input$horizon ) )
               endEvalMonth = evaluation_month + numberTestMonths # max( mable_data$Month, na.rm = T )
               
-              ensemble = input$ensemble 
+              n_forecasts = as.integer( isolate( input$replicates ) )
+              ensemble = isolate( input$ensemble )
               
                # # Testing
               # cat( '\n - saving parameters')
-              # save(mable_data, evaluation_month, startMonth, endEvalMonth, numberTestMonths, ensemble ,
+              # save(mable_data, evaluation_month, startMonth, endEvalMonth, numberTestMonths, ensemble ,n_forecasts ,
               #      file = 'model_output.rda' )
      
            
-              modelingData = dataset( data = mable_Data ,
+              modelingData = dataset( data = mable.data ,
                                  startMonth = startMonth ,
-                                 startEvalMonth = yearmonth( evaluation_month ) ,
+                                 startEvalMonth = evaluation_month  ,
                                  numberTestMonths = numberTestMonths ,
                                  endEvalMonth = endEvalMonth ,
                                  unadjusted = TRUE ,
@@ -756,9 +770,6 @@ evaluation_widget_server <- function( id ,
               # Testing
               # saveRDS( modelingData , "modelingData.rds")
 
-              train_data = modelingData$pre.intervention.train
-              test_data = modelingData$pre.intervention.test
-
               cat("\n * test.forecasts")
               shinyalert( "Validating models", 
                           "generating forecasts for 12-months before intervention to compare with actual" , 
@@ -766,18 +777,25 @@ evaluation_widget_server <- function( id ,
               
               cat( "\n- calling tsmodels with" , input$replicates ,'replicates')
               
-              train_data = modelingData$pre.intervention.train
+              train_data = modelingData$pre.intervention.train  
               test_data = modelingData$pre.intervention.test
-
-              test.forecasts = tsmodels(  train_data , 
-                                          test_data, 
-                                          n_forecasts = as.integer( input$replicates ),
-                                 .var = 'total' ,
-                                 numberForecastMonths = numberTestMonths ,
-                                 type = NA , # c('transform and covariate' ,'transform', 'covariate' )
-                                 covariate = NULL ,
-                                 ensemble = ensemble , msg = TRUE ,
-                                 .set.seed = TRUE )
+              
+              # cat( "\n - object.size:" , object.size( train_data ) )
+              # cat( "\n - object.size:" , object.size( test_data ) )
+              # cat( "\n - object.size:" , object.size( n_forecasts ) )
+              # cat( "\n - object.size:" , object.size( numberTestMonths ) )
+              # cat( "\n - object.size:" , object.size( ensemble ) )
+  
+              test.forecasts = tsmodels(  train_data  , 
+                                          test_data , 
+                                          n_forecasts = n_forecasts ,
+                                          .var = 'total' ,
+                                          numberForecastMonths = numberTestMonths ,
+                                          type = NA , # c('transform and covariate' ,'transform', 'covariate' )
+                                          covariate = NULL ,
+                                          ensemble = ensemble , 
+                                          msg = TRUE ,
+                                          .set.seed = TRUE )
 
               cat("\n * validate.forecasts")
               shinyalert( "Validating models", "determining best fitting model", type = 'info', timer = 2000)
@@ -785,22 +803,20 @@ evaluation_widget_server <- function( id ,
               validations = model_metrics( test.forecasts , test_data, .var = 'total' )
 
               model_selection = modelSelection( validations , type = 'synchronize'  )
-
-              cat("\n * evaluating forecasts")
-              shinyalert( "Creating counterfactual", "from best fitting model", type = 'info', timer = 2000)
-
-              train_data = modelingData$pre.intervention
-              test_data = modelingData$post.intervention
+              cat("\n * model_selection:",  model_selection$.model )
               
-              evaluation.forecasts = tsmodels(  train_data , 
-                                                test_data,
-                                              n_forecasts = as.integer( input$replicates )  ,
-                                        .var = 'total' ,
-                                        numberForecastMonths = numberTestMonths ,
-                                        type = NA , # c('transform and covariate' ,'transform', 'covariate' )
-                                        covariate = NULL ,
-                                        ensemble = ensemble , msg = TRUE ,
-                                        .set.seed = TRUE ) %>%
+              cat("\n * preparing evaluation period forecasts")
+              shinyalert( "Creating counterfactual", "from best fitting model", type = 'info', timer = 2000)
+              
+              evaluation.forecasts = tsmodels(  train_data = modelingData$pre.intervention , 
+                                                test_data = modelingData$post.intervention ,
+                                              n_forecasts = n_forecasts  ,.var = 'total' ,
+                                              numberForecastMonths = numberTestMonths ,
+                                              type = NA , # c('transform and covariate' ,'transform', 'covariate' )
+                                              covariate = NULL ,
+                                              ensemble = ensemble , 
+                                              msg = TRUE ,
+                                              .set.seed = TRUE ) %>%
               semi_join( model_selection ,  by = c(  '.model' ))
 
 
@@ -849,20 +865,58 @@ evaluation_widget_server <- function( id ,
                            .var = 'total' ) 
      
      # Testing 
-     saveRDS( wpeHistogram , "wpeHistogram.rds")
+     # saveRDS( wpeHistogram , "wpeHistogram.rds")
      
      return( wpeHistogram )
    })
+   
+   
+     wpeValidationTable = reactive({
+         req( auto_model() )
+         
+         auto_model = auto_model()
+         
+         wpeValidationTable = auto_model$validations %>% 
+           arrange( swape ) %>%
+           rename( SWAPE = swape )
+         
+     })
     
+     output$wpeValidationTable = 
     
-############### deprecated?
+          DT::renderDT( DT::datatable(
+            
+             wpeValidationTable() ,
+            
+            rownames = FALSE, 
+            filter = 'top' ,
+            options = list(
+              autoWidth = TRUE ,
+              scrollY = "55vh"  ,
+              scrollX = TRUE ,
+              scrollCollapse = TRUE ,
+              paging = TRUE ,
+              searching = TRUE , 
+              info = TRUE ,
+              lengthMenu = list( c(  5, 10, 25, -1 ) , 
+                                 list( '5', '10', '25', 'All' ) ) ,
+              pageLength = -1 ,
+              server = TRUE ,
+              dom = 'tirp' ),
+            fillContainer = TRUE
+            
+      )
+            # options = DToptions_no_buttons()
+          ) 
+          
+############### tsModel and tsPre-Model ##### 
     tsModel = reactive({
       
-          req( mable_data() )
+          req( mable_Data() )
           req( model_formula() )
           req( input$evaluation_month )
           
-          mable_data =  mable_data()
+          mable_data =  mable_Data()
           model_formula = model_formula()
           evaluation_month  = input$evaluation_month 
           period = period()
@@ -1041,11 +1095,11 @@ evaluation_widget_server <- function( id ,
     
     tsPreModel = reactive({
 
-      req( mable_data() )
+      req( mable_Data() )
       req( input$evaluation_month )
       req( model_formula() )
       
-      mable_data =  mable_data()
+      mable_data =  mable_Data()
       model_formula = model_formula()
       evaluation_month  = input$evaluation_month 
       period = period()
@@ -1064,7 +1118,7 @@ evaluation_widget_server <- function( id ,
 
       fit.data  = mable_data %>% filter( Month < time_period )
 
-      cat("\n - nrow(mable_data()):" , nrow( mable_data() )  )
+      cat("\n - nrow(mable_data):" , nrow( mable_data )  )
       cat("\n - nrow(fit.data:" , nrow( fit.data )  )
       
       # Testing:
@@ -1203,7 +1257,7 @@ evaluation_widget_server <- function( id ,
       req( input$horizon )
       cat( '\n* evaluation_widget tsForecast()' )
       
-      mable_data =  mable_data()
+      mable_data =  mable_Data()
       model_formula = model_formula()
       evaluation_month  = input$evaluation_month 
       period = period()
@@ -1228,26 +1282,26 @@ evaluation_widget_server <- function( id ,
         filter( Month %in% time_period )
       
       
-      if ( input$bootstrap ){
-
-        fcast = model %>%
-          fabletools::forecast( h = as.integer( horizon ) ,
-                    bootstrap = TRUE,
-                    times = as.integer( Reps )
-          )
-      } else {
-
-        # if ( nchar( covariates ) > 0 ){
-        #   cat( '\n - covariates')
-        #   
-        #   fcast = tsModel %>% fabletools::forecast( new_data = forecast.fit.data )
-        #   
-        # } else {
-        #   
-        #   fcast = tsModel %>% fabletools::forecast(  h = as.integer( horizon ) )
-        # }
-        #   fcast = tsModel %>% fabletools::forecast(  h = as.integer( horizon ) )
-      }
+      # if ( input$bootstrap ){
+      # 
+      #   fcast = model %>%
+      #     fabletools::forecast( h = as.integer( horizon ) ,
+      #               bootstrap = TRUE,
+      #               times = as.integer( Reps )
+      #     )
+      # } else {
+      # 
+      #   # if ( nchar( covariates ) > 0 ){
+      #   #   cat( '\n - covariates')
+      #   #   
+      #   #   fcast = tsModel %>% fabletools::forecast( new_data = forecast.fit.data )
+      #   #   
+      #   # } else {
+      #   #   
+      #   #   fcast = tsModel %>% fabletools::forecast(  h = as.integer( horizon ) )
+      #   # }
+      #   #   fcast = tsModel %>% fabletools::forecast(  h = as.integer( horizon ) )
+      # }
 
         # fcast = tsModel %>% fabletools::forecast( h=14 )
         fcast = tsModel %>% fabletools::forecast(  h = as.integer( horizon ) )
@@ -1280,20 +1334,20 @@ evaluation_widget_server <- function( id ,
       #        fill_gaps( .full = TRUE  )
 
       # Reconcile
-      if ( input$agg_method %in% "None" ){
-        if ( input$agg_method %in% 'Bottom up' ){
-            fcast = fcast %>%
-              reconcile( bu = bottom_up(base) )
-        }
-        if ( input$agg_method %in% 'MINT(ols)' ){
-          fcast = fcast %>%
-              reconcile( ols = min_trace(base, method = "ols") )
-        }
-        if ( input$agg_method %in% 'MINT(cov)' ){
-          fcast = fcast %>%
-              reconcile( mint = min_trace(base, method = "mint_cov") )
-        }
-      }
+      # if ( input$agg_method %in% "None" ){
+      #   if ( input$agg_method %in% 'Bottom up' ){
+      #       fcast = fcast %>%
+      #         reconcile( bu = bottom_up(base) )
+      #   }
+      #   if ( input$agg_method %in% 'MINT(ols)' ){
+      #     fcast = fcast %>%
+      #         reconcile( ols = min_trace(base, method = "ols") )
+      #   }
+      #   if ( input$agg_method %in% 'MINT(cov)' ){
+      #     fcast = fcast %>%
+      #         reconcile( mint = min_trace(base, method = "mint_cov") )
+      #   }
+      # }
 
       # saveRDS( fcast , 'tsForecast.rds')
       cat( '\n - fcast end:' );  #glimpse( fcast )
@@ -1321,7 +1375,7 @@ evaluation_widget_server <- function( id ,
       # saveRDS( input$horizon , 'horizon.rds')
       
   
-      test.data  = mable_data() %>%
+      test.data  = mable_Data() %>%
         select( - total ) %>%
         filter( Month %in% time_period )
       
@@ -1490,13 +1544,13 @@ evaluation_widget_server <- function( id ,
           }
 
           # Testing
-          saveRDS( mable_Data(), 'mable_Data.rds')
+          # saveRDS( mable_Data(), 'mable_Data.rds')
           
-          data.text = paste( unique( mable_Data()$data ), collapse = " + " )
-          
-          cat( '\n - ploTrends mable_data():');
+          cat( '\n - ploTrends mable_Data():');
           mable_Data = mable_Data()
           cat( '\n - ploTrends .d:'); #glimpse(.d)
+          
+          data.text = paste( unique( mable_Data$data ), collapse = " + " )
 
           tic()
           
@@ -1664,17 +1718,29 @@ evaluation_widget_server <- function( id ,
          if ( auto_model_available$done ){
 
             auto_model = auto_model()
+            
+            # Testing
+            # save( g , auto_model , file = "auto_model_chart.rda")
 
             cat( '\n - auto predicted trend  ')
             cat( '\n - pi_levels:' , pi_levels() )
 
            g = g +
             fabletools::autolayer( auto_model$predicted ,
-                                   series = ".mean" ,
+                                   # series = ".mean" ,
                        # , level = 80  # pi_levels()
                        , color = 'blue'
-                       , level = ifelse( input$forecast_ci , 89 , FALSE )
+                       , level = ifelse( input$forecast_ci , 80 , FALSE )
                        , linetype = 'dashed', linewidth = 1
+                       ,  alpha = .75 ) +
+          
+            fabletools::autolayer( auto_model$test.forecasts %>%
+                                     filter( .model %in% auto_model$model_selection ),
+                                   # series = ".mean" ,
+                       # , level = 80  # pi_levels()
+                       , color = 'blue'
+                       , level = ifelse( input$forecast_ci , 80 , FALSE )
+                       , linetype = 'dotted', linewidth = 1
                        ,  alpha = .5 )
 
             # if (input$pe) g = g +
