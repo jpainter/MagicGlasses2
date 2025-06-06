@@ -464,7 +464,7 @@ cleaning_widget_server <- function( id ,
             # remove duplicate rows because downloads may create duplicates
             u = d %>% as.data.table() %>% unique 
             nrow2 = nrow( u )
-            cat('\n - There were', nrow1-nrow2, 'duplicates' )
+            cat('\n - There are', nrow1-nrow2, 'duplicates' )
           
           #### section on repetitive key erros moved to mad_outliers function in Cleaning.R
           #  cat( '\n - Scanning for repetive key entry errors')
@@ -511,6 +511,7 @@ cleaning_widget_server <- function( id ,
                 data1.seasonal = seasonal_outliers( data.mad , .total = .total , .threshold = 50)
           })  
           
+          removeModal()
           showModal(
                 modalDialog( title = "Finished scanning for seasonal values; saving data", 
                              easyClose = TRUE ,
@@ -530,83 +531,83 @@ cleaning_widget_server <- function( id ,
       return( data1.seasonal  ) 
     })
 
-    data1.mad = reactive({
-        req( outlierData$df_data )
-        cat('\n* data1.mad' )
-        cat('\n - scanForMAD:' , scanForMAD() )
-
-        if ( scanForMAD() ){
-          cat('\n - data1.mad search')
-
-          d = outlierData$df_data
-          cat( '\n - class(d)' , class(d) )
-
-          nrow1 = nrow( d )
-          if ( nrow1 == 0 ){
-            cat('\n - nrow1 = 0')
-            return()
-          } else { cat('\n - outlierData has' , nrow1 , 'rows')}
-
-          # remove duplicate rows because downloads may create duplicates
-          u = d %>% as.data.table() %>% unique
-          nrow2 = nrow( u )
-          cat('\n - There were', nrow1-nrow2, 'duplicates' )
-
-          
-        #### This section -- repetivie key errors-- moved to mad_outliers function (Cleaning.R)
-        #  cat( '\n - Scanning for repetive key entry errors')
-        #  key_entry_errors =
-        #    count( as_tibble( d %>%
-        #                    filter( nchar(original)>3 ,
-        #                           effectiveLeaf ) ) ,
-        #          original ) %>%
-        #    arrange(-n)
-        # 
-        # # Default: values where the number happens at least 3 > than
-        #  # median of the top 10 rows
-        #  key_entry_errors = key_entry_errors %>%
-        #    filter(  n > 3 * median(
-        #      key_entry_errors %>% filter( row_number()<11 )  %>%
-        #        pull( n ) )
-        #      ) %>% pull( original )
-        # 
-        #  # print( head( key_entry_errors ) )
-        #  if ( is_empty( key_entry_errors )  ) key_entry_errors = NA
-
-
-        cat( '\n - scanning for MAD outliers')
-        .total = length( key_size( d ) )
-
-        .threshold = 50
-
-        withProgress(     message = "Searchng",
-                            detail = "starting ...",
-                            value = 0, {
-
-
-           data.mad = mad_outliers( d )
-        })
-
-        outlierData$df_data = data1.mad
-
-        showModal(
-              modalDialog( title = "Saving results of scan for extreme values",
-                           easyClose = TRUE ,
-                           size = 'm' ,
-                           footer = "(click anywhere to close dialog box)"
-                           )
-              )
-
-        # Save data for next time...
-        cat('\n - saving data1.mad to replace dataset')
-        saveRDS( data1.mad , paste0( data.folder(), dataset.file() ) )
-        removeModal()
-
-        }
-
-
-        return( data1.mad )
-    })
+    # data1.mad = reactive({
+    #     req( outlierData$df_data )
+    #     cat('\n* data1.mad' )
+    #     cat('\n - scanForMAD:' , scanForMAD() )
+    # 
+    #     if ( scanForMAD() ){
+    #       cat('\n - data1.mad search')
+    # 
+    #       d = outlierData$df_data
+    #       cat( '\n - class(d)' , class(d) )
+    # 
+    #       nrow1 = nrow( d )
+    #       if ( nrow1 == 0 ){
+    #         cat('\n - nrow1 = 0')
+    #         return()
+    #       } else { cat('\n - outlierData has' , nrow1 , 'rows')}
+    # 
+    #       # remove duplicate rows because downloads may create duplicates
+    #       u = d %>% as.data.table() %>% unique
+    #       nrow2 = nrow( u )
+    #       cat('\n - There were', nrow1-nrow2, 'duplicates' )
+    # 
+    #       
+    #     #### This section -- repetivie key errors-- moved to mad_outliers function (Cleaning.R)
+    #     #  cat( '\n - Scanning for repetive key entry errors')
+    #     #  key_entry_errors =
+    #     #    count( as_tibble( d %>%
+    #     #                    filter( nchar(original)>3 ,
+    #     #                           effectiveLeaf ) ) ,
+    #     #          original ) %>%
+    #     #    arrange(-n)
+    #     # 
+    #     # # Default: values where the number happens at least 3 > than
+    #     #  # median of the top 10 rows
+    #     #  key_entry_errors = key_entry_errors %>%
+    #     #    filter(  n > 3 * median(
+    #     #      key_entry_errors %>% filter( row_number()<11 )  %>%
+    #     #        pull( n ) )
+    #     #      ) %>% pull( original )
+    #     # 
+    #     #  # print( head( key_entry_errors ) )
+    #     #  if ( is_empty( key_entry_errors )  ) key_entry_errors = NA
+    # 
+    # 
+    #     cat( '\n - scanning for MAD outliers')
+    #     .total = length( key_size( d ) )
+    # 
+    #     .threshold = 50
+    # 
+    #     withProgress(     message = "Searchng",
+    #                         detail = "starting ...",
+    #                         value = 0, {
+    # 
+    # 
+    #        data.mad = mad_outliers( d )
+    #     })
+    # 
+    #     outlierData$df_data = data1.mad
+    # 
+    #     showModal(
+    #           modalDialog( title = "Saving results of scan for extreme values",
+    #                        easyClose = TRUE ,
+    #                        size = 'm' ,
+    #                        footer = "(click anywhere to close dialog box)"
+    #                        )
+    #           )
+    # 
+    #     # Save data for next time...
+    #     cat('\n - saving data1.mad to replace dataset')
+    #     saveRDS( data1.mad , paste0( data.folder(), dataset.file() ) )
+    #     removeModal()
+    # 
+    #     }
+    # 
+    # 
+    #     return( data1.mad )
+    # })
     
     # Option to rerun seasonal outliers
     rerunSeasonalModal <- function() {
@@ -661,77 +662,77 @@ cleaning_widget_server <- function( id ,
      }
    })
          
-    data1.seasonal = reactive({
-      req( outlierData$df_data )
-      cat('\n* data1.seasonal')
-      
-      # if data1 already has seasonal columns, return data1
-      # if ( !rerunSeasonalOutliers() & 'seasonal3' %in% names( outlierData$df_data ) ){
-      #   cat('\n - seasonal cols already in data1' )
-      #   return( outlierData$df_data )
-      # } 
-      
-      
-      if ( scanForSeasonal()  ){
-      cat('\n* data1.seasonal search')
-      
-      # outlierData$df_data = data1.mad() 
-    
-      # Stop if mad10 not in dataset
-      
-      cat('\n - names(outlierData$df_data)' , names(outlierData$df_data) )
-      if ( !'mad10' %in% names( outlierData$df_data ) ){
-            
-        showModal(
-              modalDialog( title = "Please search for extreme values first", 
-                           easyClose = TRUE ,
-                           size = 'm' ,
-                           footer = "(click anywhere to close dialog box)"
-                           )
-              )
-        
-        searchForSeasonalOutliers( FALSE )
-        return( outlierData$df_data )
-      }
- 
-       cat( '\n - scanning for Seasonal outliers')
-       d = outlierData$df_data
-      .total = length( key_size( d ) )
-       cat( '\n - .total' , .total )
-  
-      .threshold = 50
-
-      withProgress(  message = "Seasonal Outliers",
-                        detail = "starting ...",
-                        value = 0, {
-      
-              data1.seasonal = data1.seasonal( d )
-        })  
-        
-        showModal(
-              modalDialog( title = "Finished scanning for seasonal values; saving data", 
-                           easyClose = TRUE ,
-                           size = 'm' ,
-                           footer = "Click anywhere to close dialog box.  To see results, go to Data page and refresh data selection."
-                           )
-              )
-        
-    cat('\n - saving data1.seasonal to replace dataset')
-    cat('\n - names(data1.seasonal):', names(data1.seasonal) )
-    
-    
-    saveRDS( data1.seasonal , paste0( data.folder(), dataset.file() ) )
-    removeModal()
-    
-    # outlierData$df_data = data1.seasonal 
-    
-    searchForSeasonalOutliers( FALSE )
-    afterSeasonal( TRUE )
-      }
-      
-    # return( outlierData$df_data )
-    return( data1.seasonal )
-    })
+    # data1.seasonal = reactive({
+    #   req( outlierData$df_data )
+    #   cat('\n* data1.seasonal')
+    #   
+    #   # if data1 already has seasonal columns, return data1
+    #   # if ( !rerunSeasonalOutliers() & 'seasonal3' %in% names( outlierData$df_data ) ){
+    #   #   cat('\n - seasonal cols already in data1' )
+    #   #   return( outlierData$df_data )
+    #   # } 
+    #   
+    #   
+    #   if ( scanForSeasonal()  ){
+    #   cat('\n* data1.seasonal search')
+    #   
+    #   # outlierData$df_data = data1.mad() 
+    # 
+    #   # Stop if mad10 not in dataset
+    #   
+    #   cat('\n - names(outlierData$df_data)' , names(outlierData$df_data) )
+    #   if ( !'mad10' %in% names( outlierData$df_data ) ){
+    #         
+    #     showModal(
+    #           modalDialog( title = "Please search for extreme values first", 
+    #                        easyClose = TRUE ,
+    #                        size = 'm' ,
+    #                        footer = "(click anywhere to close dialog box)"
+    #                        )
+    #           )
+    #     
+    #     searchForSeasonalOutliers( FALSE )
+    #     return( outlierData$df_data )
+    #   }
+    # 
+    #    cat( '\n - scanning for Seasonal outliers')
+    #    d = outlierData$df_data
+    #   .total = length( key_size( d ) )
+    #    cat( '\n - .total' , .total )
+    # 
+    #   .threshold = 50
+    # 
+    #   withProgress(  message = "Seasonal Outliers",
+    #                     detail = "starting ...",
+    #                     value = 0, {
+    #   
+    #           data1.seasonal = data1.seasonal( d )
+    #     })  
+    #     
+    #     showModal(
+    #           modalDialog( title = "Finished scanning for seasonal values; saving data", 
+    #                        easyClose = TRUE ,
+    #                        size = 'm' ,
+    #                        footer = "Click anywhere to close dialog box.  To see results, go to Data page and refresh data selection."
+    #                        )
+    #           )
+    #     
+    # cat('\n - saving data1.seasonal to replace dataset')
+    # cat('\n - names(data1.seasonal):', names(data1.seasonal) )
+    # 
+    # 
+    # saveRDS( data1.seasonal , paste0( data.folder(), dataset.file() ) )
+    # removeModal()
+    # 
+    # # outlierData$df_data = data1.seasonal 
+    # 
+    # searchForSeasonalOutliers( FALSE )
+    # afterSeasonal( TRUE )
+    #   }
+    #   
+    # # return( outlierData$df_data )
+    # return( data1.seasonal )
+    # })
    
   # Summary ####
   

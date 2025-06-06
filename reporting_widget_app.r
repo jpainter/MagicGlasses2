@@ -690,8 +690,11 @@ reporting_widget_server <- function( id ,
       
       #Testing
       # testing = TRUE
-      cat( "\n - saving data, selected_data_categories as 'orgunits.reports.data.rda' ")
-      if ( testing )  save( data, mrm, selected_data_categories, file= 'orgunits.reports.data.rda')
+      
+      if ( testing ){
+        cat( "\n - saving data, selected_data_categories as 'orgunits.reports.data.rda' ")
+        save( data, mrm, selected_data_categories, file= 'orgunits.reports.data.rda')
+      }  
       
       if ( !input$count.any  ){
         
@@ -1579,7 +1582,7 @@ reporting_widget_server <- function( id ,
     
     data.text = paste( unique( selected_data()$data ) ,
                        collapse = " + " ) 
-    cat("\n - data.text:" , data.text )
+    # cat("\n - data.text:" , data.text )
     
     # #print( 'data.text'); #print( data.text )
     

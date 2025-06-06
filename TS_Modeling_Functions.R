@@ -309,7 +309,7 @@ mable_data = function(
     
     data.total = dataTotal( data = d , 
                             group_by_cols = group_by_cols , 
-                            dataSets = .dataSets, 
+                            dataSets = NULL , 
                             covariates = covariates , 
                             .cat = .cat  )
   

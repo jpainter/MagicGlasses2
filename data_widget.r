@@ -315,7 +315,8 @@ data_widget_server <- function( id ,
           
           cat('\n* data_widget  dataset.file():', input$dataset )
           
-          file = paste0( data.folder() , input$dataset  )
+          data.folder = isolate( data.folder() )
+          file = paste0( data.folder , input$dataset  )
           
           cat('\n - ', file )
           return( file )
@@ -328,7 +329,7 @@ data_widget_server <- function( id ,
           
           req( input$dataset  )
   
-          file  = dataset.file()
+          file  = isolate( dataset.file() )
 
           if ( !is.null( input$dataset ) && file_test("-f",  file) ){
             

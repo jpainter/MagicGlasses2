@@ -433,7 +433,8 @@ dataset.consisency = function( .dataset ){
 ### Impact Model Functions ####
 
 #  Function to create time-period datasets
-dataset = function( data = mcc5, startMonth = yearmonth( "Jan 2015" ) , 
+dataset = function( data = mcc5, 
+                    startMonth = yearmonth( "Jan 2015" ) , 
                     startEvalMonth = yearmonth( "Jan 2020") ,
                     numberTestMonths = 12 , 
                     endEvalMonth = yearmonth( "Dec 2022") ,
@@ -549,14 +550,14 @@ tsmodels = function( train_data ,
   tic()
   tic()
   
-  # Prevent parallel processin
-  future::plan( future::sequential() )
-  oopts <- options(future.globals.maxSize = 40.0 * 1e9)  ## 1.0 GB
+  # Prevent parallel processing
+  # future::plan( future::sequential() )
+  # oopts <- options(future.globals.maxSize = 40.0 * 1e9)  ## 1.0 GB
   # on.exit(options(oopts))
   
   if ( is.na( type ) ){
     
-    progressr::with_progress(
+    # progressr::with_progress(
     pre.intervention.train.primary.models <- train_data %>%
       model(
         a = ARIMA( var )
@@ -569,7 +570,7 @@ tsmodels = function( train_data ,
         , p8 = prophet(  var ~ season("year", 8, type = "multiplicative")  ) ,
         .safely = TRUE 
       ) 
-      )
+      # )
   }
   
   if ( type %in% 'transform and covariate' ){
@@ -591,15 +592,15 @@ tsmodels = function( train_data ,
   if ( type %in% 'transform' ){
     pre.intervention.train.primary.models <- train_data %>%
       model(
-        a = ARIMA( log( var )   )
-        , e = ETS(  log( var ) )
-        , n = NNETAR(  log( var )   ) 
+        a = ARIMA( log( var + 1 )   )
+        , e = ETS(  log( var + 1 ) )
+        , n = NNETAR(  log( var + 1 )   ) 
         , t = TSLM( log( var )  ~ trend() + season()  ) 
-        , p1 = prophet( log( var ) ~ 
+        , p1 = prophet( log( var + 1 ) ~ 
                           season("year", 1, type = "multiplicative")  )
-        , p4 = prophet(  log( var )  ~ 
+        , p4 = prophet(  log( var + 1 )  ~ 
                            season("year", 4, type = "multiplicative")  )
-        , p8 = prophet(  log( var )  ~ 
+        , p8 = prophet(  log( var + 1 )  ~ 
                            season("year", 8, type = "multiplicative")  )
       )
   }
@@ -630,14 +631,14 @@ tsmodels = function( train_data ,
   if (.set.seed) set.seed( 1432 )
   
     pre.intervention.train.primary.forecasts = 
-      suppressMessages(
+      # suppressMessages(
         pre.intervention.train.primary.models %>% 
       forecast( h = numberForecastMonths # new_data = test_data ,
                 , times = n_forecasts  ) %>% 
       mutate( samples = generate( var, n_forecasts  ) )
-    )
+    # )
   
-  t = toc(quiet = TRUE)   
+  t = toc( quiet = TRUE )   
   
   
   if (msg) cat('\n - tsmodels:Primary forecasts finished', t$callback_msg )
@@ -706,12 +707,14 @@ model_metrics = function( test.forecasts , test.data , msg = TRUE,
                   rename( actual = {{ var }} ) ,
                 by = byVars ) %>%
     unnest( samples ) %>%
-    group_by( across(  group_by_cols1 ) ) %>%
+    # group_by( across(  group_by_cols1 ) ) %>%
+    group_by( !!!syms(group_by_cols1) ) %>%
     mutate(
       .id = row_number() ,
       ae = abs(actual - samples) 
     ) %>%
-    group_by( across(  group_by_cols2  ) )  %>%
+    # group_by( across(  group_by_cols2  ) )  %>%
+    group_by( !!!syms(group_by_cols2) ) %>%
     summarise(
       # swape =  200 * sum( ae ) / ( abs(actual) + abs(samples) )
       swape = 200 * sum( ae ) / ( sum( abs(actual) ) + sum( abs(samples) ) ) ,
@@ -723,7 +726,8 @@ model_metrics = function( test.forecasts , test.data , msg = TRUE,
   
   pre.intervention.train.combo.accuracyOOS.all =
     pre.intervention.train.combo.accuracyOOS %>%
-    group_by( across(  group_by_cols3  )   ) %>%
+    # group_by( across(  group_by_cols3  )   ) %>%
+    group_by( !!!syms(group_by_cols3) ) %>%
     summarise(
       swape = mean( swape ) ,
       .groups = "drop"

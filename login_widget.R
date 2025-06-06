@@ -137,7 +137,7 @@ login_widget_server <- function( id ,
    cat('reactive instances \n')
    iFile = "Instances.xlsx"
   
-  file.locations = c( paste0( data.folder(), '_Instances.xlsx') , '_Instances.xlsx'  )
+  file.locations = c( paste0( "./", '_Instances.xlsx') , '_Instances.xlsx'  )
   cat( "\n* instances.  file.locations" , file.locations )
   
   if ( any( file.exists(  file.locations ) ) ) {

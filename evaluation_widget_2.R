@@ -71,8 +71,8 @@ evaluation_widget_ui = function ( id ){
                   textInput( ns( 'covariates' ), 'Model covariates' ,
                       value =  NULL ) ,
                   
-                  checkboxInput( ns( "transform" ) , label ='Transform: box_cox(auto)',
-                                 value = FALSE  ) ,
+                  checkboxInput( ns( "transform" ) , label ='Log transform count data',
+                                 value = TRUE  ) ,
                     
                   checkboxInput( ns( "smooth" ) , label ='Show smoothed trend line (loess)',
                                  value = FALSE  ) ,
@@ -85,7 +85,7 @@ evaluation_widget_ui = function ( id ){
                               value = FALSE ) ,
                   
                   checkboxInput( ns( "forecast_ci" ) , label ='Prediction interval',
-                                 value = FALSE  ) ,
+                                 value = TRUE  ) ,
                   
                   # checkboxInput( ns( "bootstrap" ) , label ='Bootstrap estimate',
                   #                value = FALSE  ) ,
@@ -94,7 +94,7 @@ evaluation_widget_ui = function ( id ){
                   #                value = FALSE  ) ,
                 
                  checkboxInput( ns( "ensemble" ) , label ='Use ensemble models',
-                                 value = FALSE  ) ,
+                                 value = TRUE  ) ,
                 
                  selectInput( ns( "replicates") , label = "Forecasting replicates:" , 
                   choices = c( 100, 500, 1000, 5000 ) , 
@@ -186,8 +186,8 @@ evaluation_widget_ui = function ( id ){
                                        style = "font-size: 60%; width: 100%" )
                                    )
               ) ) ,
-              tabPanel( "Symmetric Weighted Percent Error (SWPE)" , 
-                         h5( "Weighted Absolute Percent Error (WAPE) of predicted values and the actual values") ,
+              tabPanel( "Posterior Distribution of Change" , 
+                         h5( "Weighted Absolute Percent Error (WAPE) of difference between predicted values and the actual values") ,
                         
                         fluidRow( style = "height:60vh;",
                             column(12,  chartModuleUI( ns("wpeHistogram" ) , "WPE Histogram" ) )
@@ -211,6 +211,9 @@ evaluation_widget_server <- function( id ,
     id ,
     function( input, output, session 
               ) {
+      
+    # Force all future operations to run sequentially
+    plan(sequential)
       
     testing = FALSE
 
@@ -572,7 +575,7 @@ evaluation_widget_server <- function( id ,
 
       pi_levels = reactive({
         # req( input$forecast_ci )
-        cat( '/n* pi_levels:' , input$forecast_ci )
+        cat( '\n* pi_levels:' , input$forecast_ci )
         if ( ! input$forecast_ci ) return( NULL )
         return( 90 )
       })
@@ -732,125 +735,189 @@ evaluation_widget_server <- function( id ,
     # observeEvent( input$forecast , { cat("\n * observed button push") })
 
 # Auto Model ####   
-    auto_model_available = reactiveValues( done = FALSE )
-    auto_model = eventReactive( input$forecast , {
+    
+    # Set up parallel processing with proper RNG
+    # plan( multisession, workers = min(4, availableCores() - 1) )
+    plan( sequential )
+    options( future.rng.onMisuse = "warning" )  # Keep warnings enabled
+
+    # Use reactiveValues to store results
+    auto_model_values <- reactiveValues(  computing = FALSE ,
+                                          model_output = NULL , 
+                                          done = FALSE 
+                              )
+    
+    observeEvent(input$forecast, {
       
-              req( mable_Data() )
-              req( input$evaluation_month )
-              
-              cat("\n* evaluationWidget auto forecast")
-              
-              shinyalert( "Starting forecast", "fitting multiple models..." , type = 'info', timer = 2000)
-              
-
-              mable.data = isolate( mable_Data() )
-              startMonth = min( mable.data$Month , na.rm = T )
-              evaluation_month  = yearmonth( isolate( input$evaluation_month ) )
-              numberTestMonths =  as.integer( isolate( input$horizon ) )
-              endEvalMonth = evaluation_month + numberTestMonths # max( mable_data$Month, na.rm = T )
-              
-              n_forecasts = as.integer( isolate( input$replicates ) )
-              ensemble = isolate( input$ensemble )
-              
-               # # Testing
-              # cat( '\n - saving parameters')
-              # save(mable_data, evaluation_month, startMonth, endEvalMonth, numberTestMonths, ensemble ,n_forecasts ,
-              #      file = 'model_output.rda' )
-     
-           
-              modelingData = dataset( data = mable.data ,
-                                 startMonth = startMonth ,
-                                 startEvalMonth = evaluation_month  ,
-                                 numberTestMonths = numberTestMonths ,
-                                 endEvalMonth = endEvalMonth ,
-                                 unadjusted = TRUE ,
-                                 grouping = FALSE
-                                 )
-
-              # Testing
-              # saveRDS( modelingData , "modelingData.rds")
-
-              cat("\n * test.forecasts")
-              shinyalert( "Validating models", 
-                          "generating forecasts for 12-months before intervention to compare with actual" , 
-                          type = 'info', timer = 2000)
-              
-              cat( "\n- calling tsmodels with" , input$replicates ,'replicates')
-              
-              train_data = modelingData$pre.intervention.train  
-              test_data = modelingData$pre.intervention.test
-              
-              # cat( "\n - object.size:" , object.size( train_data ) )
-              # cat( "\n - object.size:" , object.size( test_data ) )
-              # cat( "\n - object.size:" , object.size( n_forecasts ) )
-              # cat( "\n - object.size:" , object.size( numberTestMonths ) )
-              # cat( "\n - object.size:" , object.size( ensemble ) )
-  
-              test.forecasts = tsmodels(  train_data  , 
-                                          test_data , 
-                                          n_forecasts = n_forecasts ,
-                                          .var = 'total' ,
-                                          numberForecastMonths = numberTestMonths ,
-                                          type = NA , # c('transform and covariate' ,'transform', 'covariate' )
-                                          covariate = NULL ,
-                                          ensemble = ensemble , 
-                                          msg = TRUE ,
-                                          .set.seed = TRUE )
-
-              cat("\n * validate.forecasts")
-              shinyalert( "Validating models", "determining best fitting model", type = 'info', timer = 2000)
-
-              validations = model_metrics( test.forecasts , test_data, .var = 'total' )
-
-              model_selection = modelSelection( validations , type = 'synchronize'  )
-              cat("\n * model_selection:",  model_selection$.model )
-              
-              cat("\n * preparing evaluation period forecasts")
-              shinyalert( "Creating counterfactual", "from best fitting model", type = 'info', timer = 2000)
-              
-              evaluation.forecasts = tsmodels(  train_data = modelingData$pre.intervention , 
-                                                test_data = modelingData$post.intervention ,
-                                              n_forecasts = n_forecasts  ,.var = 'total' ,
-                                              numberForecastMonths = numberTestMonths ,
-                                              type = NA , # c('transform and covariate' ,'transform', 'covariate' )
-                                              covariate = NULL ,
-                                              ensemble = ensemble , 
-                                              msg = TRUE ,
-                                              .set.seed = TRUE ) %>%
-              semi_join( model_selection ,  by = c(  '.model' ))
-
-
-              model_output = list( actual = modelingData$fable.data ,
-                                   train_data = modelingData$pre.intervention.train ,
-                                   test_data = modelingData$pre.intervention.test ,
-                                   test.forecasts = test.forecasts ,
-                                   validations = validations ,
-                                   model_selection = model_selection , 
-                                   predicted = evaluation.forecasts  )
-              
-              
-              # impactSummary[ 1 ,]
-
-      auto_model_available$done = TRUE 
+      req(mable_Data())
+      req(input$evaluation_month)
       
-      return( model_output )
-      # return( paste0('test forecast has ', nrow(test.forecasts ), 'models') )
+      cat("\n* observeEvent(input$forecast: auto_model" )
+      # Show loading modal
+      showModal(modalDialog("Running time series analysis...", footer = NULL))
+      
+      
+      # Set computing flag
+      auto_model_values$computing <- TRUE
+      auto_model_values$done = FALSE
+      auto_model_values$model_output <- NULL
+      
+      withProgress(message = 'Running analysis...', value = 0, {
+        
+      data = isolate( mable_Data() ) 
+      model_data = as_tsibble( data )
+      startMonth = min( model_data$Month, na.rm = T) 
+      evaluation_month = yearmonth( isolate( input$evaluation_month ))
+      numberTestMonths = as.integer( isolate( input$horizon ))
+      endEvalMonth = evaluation_month + numberTestMonths
+      ensemble = input$ensemble
+      
+      n_forecasts = as.integer(isolate(input$replicates))
+      
+      # Create training and test datasets
+      cat("\n- Create training and test datasets" )
+      incProgress(0.1, detail = "Create training and test datasets" )
 
-     })
+      modelingData = dataset(
+        data = model_data,
+        startMonth = startMonth,
+        startEvalMonth = evaluation_month,
+        numberTestMonths = 12,
+        endEvalMonth = endEvalMonth,
+        unadjusted = TRUE,
+        grouping = FALSE
+      )
+      
+      cat("\n- calling tsmodels with", input$replicates, 'replicates')
+      
+      train_data = modelingData$pre.intervention.train  
+      test_data = modelingData$pre.intervention.test
+      
+      incProgress(0.25, detail = "Modeling data" )
+      
+      # If transformed selected (esp when values approach zero) use log transform in tsmodels
+      .type = switch( as.character( input$transform ) ,
+        "TRUE" = 'transform' ,
+        "FALSE" = NA 
+      )
+            
+      # Run computation in background
+      fut <- future(seed = TRUE, {       
+        
+        # incProgress(0.3, detail = "Training models...")
+        
+        # First computation: test forecasts
+        test.forecasts = tsmodels(
+          train_data, 
+          test_data, 
+          n_forecasts = n_forecasts,
+          .var = 'total',
+          numberForecastMonths = 12,
+          type = .type ,
+          covariate = NULL,
+          ensemble = ensemble , 
+          msg = TRUE ,
+          .set.seed = TRUE
+        )
+        
+        cat("\n * validate.forecasts")
+        # incProgress(0.6, detail = "Validating...")
+        
+        # Model validation
+        validations = model_metrics( test.forecasts, test_data, .var = 'total' )
+        
+        # Model selection
+        model_selection = modelSelection( validations, type = 'synchronize' )
+        cat("\n * model_selection:", model_selection$.model)
+        
+        # incProgress(0.8, detail = "Final forecasts...")
+        cat("\n * preparing evaluation period forecasts")
+        
+        # Evaluation forecasts
+        evaluation.forecasts = tsmodels(
+          train_data = modelingData$pre.intervention, 
+          test_data = modelingData$post.intervention,
+          n_forecasts = n_forecasts,
+          .var = 'total',
+          numberForecastMonths = numberTestMonths,
+          type = .type ,
+          covariate = NULL,
+          ensemble = ensemble, 
+          msg = TRUE ,
+          .set.seed = TRUE
+        ) %>%
+        semi_join(model_selection, by = c('.model')) 
+          
+        
+        # incProgress(1, detail = "Complete!")
+        
+        # Return complete model output
+        model_output = list(
+          actual = modelingData$fable.data,
+          train_data = modelingData$pre.intervention.train,
+          test_data = modelingData$pre.intervention.test,
+          test.forecasts = test.forecasts,
+          validations = validations,
+          model_selection = model_selection, 
+          predicted = evaluation.forecasts
+        )
+        
+        return( model_output )
+      })
+      
+      # Check for completion periodically
+      observe({
+        if (resolved(fut) ) {
+          result <- tryCatch({
+            value(fut)
+          }, error = function(e) {
+            cat( "\n-- Analysis failed:", e$message )
+            showModal(modalDialog(
+              title = "Error",
+              paste( "Analysis failed:", e$message ),
+              footer = modalButton("OK")
+            ))
+            NULL
+          })
+          
+          # Update reactive values
+          auto_model_values$model_output <- result
+          auto_model_values$done = TRUE
+          auto_model_values$computing <- FALSE
+          removeModal()
+        } else {
+          # Keep checking every 100ms
+          invalidateLater(100)
+        }
+      })
+      
+      })
+    })
+    
+    # Access results with reactive
+    auto_model <- reactive({
+      auto_model_values$model_output
+    })
+    
+    # Check if computing
+    is_computing <- reactive({
+      auto_model_values$computing
+    })
 
     # Use the output of eventReactive in the UI
    output$forecastResult <- renderTable({
      
              req( auto_model() )
              auto_model = auto_model()
+             
              # Testing
              # saveRDS( auto_model ,  "auto_model.rds")
              
-              cat("\n* impactSummary")
+              cat("\n* output$forecastResult: impactSummary")
               
               diff.summary( actual = auto_model$actual , 
-                                           predicted = auto_model$predicted , 
-                                           .var = 'total' )
+                            predicted = auto_model$predicted , 
+                            .var = 'total' )
   })
    
    wpeHistogram <- reactive({
@@ -1715,18 +1782,24 @@ evaluation_widget_server <- function( id ,
           }
       
       ## Auto Model Prediction  ####
-         if ( auto_model_available$done ){
-
+         if ( auto_model_values$done ){
+            
+            cat("\n - auto_model_values$done = ", auto_model_values$done )
             auto_model = auto_model()
             
             # Testing
             # save( g , auto_model , file = "auto_model_chart.rda")
 
             cat( '\n - auto predicted trend  ')
-            cat( '\n - pi_levels:' , pi_levels() )
+            cat( "\n - nrow(auto_model$predicted) = ", nrow(auto_model$predicted) )
+            cat( '\n - input$forecast_ci:', input$forecast_ci )
+            # cat( '\n - pi_levels:' , pi_levels() )
+            
+            predicted = auto_model$predicted
+            test.forecasts = auto_model$test.forecasts
 
            g = g +
-            fabletools::autolayer( auto_model$predicted ,
+            fabletools::autolayer( predicted ,
                                    # series = ".mean" ,
                        # , level = 80  # pi_levels()
                        , color = 'blue'
@@ -1734,7 +1807,7 @@ evaluation_widget_server <- function( id ,
                        , linetype = 'dashed', linewidth = 1
                        ,  alpha = .75 ) +
           
-            fabletools::autolayer( auto_model$test.forecasts %>%
+            fabletools::autolayer( test.forecasts %>%
                                      filter( .model %in% auto_model$model_selection ),
                                    # series = ".mean" ,
                        # , level = 80  # pi_levels()

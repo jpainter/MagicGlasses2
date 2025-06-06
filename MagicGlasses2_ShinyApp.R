@@ -15,8 +15,8 @@ packages = c(
  'tsibble' , 'feasts' , 'forecast' , 'fpp3' , 'tibbletime' ,
  'fable' , 'fabletools' , 'fable.prophet' , 'prophet' ,  "distributional" ,
  'table.express' , 'data.table' , 
- 'furrr' , 
- # 'future' , 
+ 'furrr' , 'promises' ,
+ 'future' , 'future.apply' ,
  'GGally' , 'ggExtra' , 'gtable' , 'HDInterval' , 'hrbrthemes' , 
  'htmltools' , 'httr' , 'igraph' , 'jsonlite' , 'lubridate' , 'magrittr' , 'mapview' , 
  'officer' , 'openxlsx' , 'pacman' , 'patchwork' , 'plotly' , 'progress' , 'progressr' , 
@@ -83,12 +83,14 @@ conflicts_prefer( purrr::flatten )
 # conflicts_prefer(testthat::is_null)
 # conflicts_prefer(purrr::compose)
 conflicts_prefer(flextable::compose)
+conflicts_prefer(base::load)
+conflicts_prefer(dplyr::where)
 
 
 # Options ####
 options("menu.graphics" = FALSE)
 rstudioapi::writeRStudioPreference("console_max_lines", 2000L )
-options(future.globals.maxSize = 6 * 1024^3)
+options(future.globals.maxSize = 30 * 1024^3)
 
 options(shiny.trace=FALSE)
 options(shiny.reactlog=FALSE)

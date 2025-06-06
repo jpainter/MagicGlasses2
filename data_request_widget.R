@@ -107,6 +107,11 @@ data_request_widget_server <- function( id ,
       orgUnitLevels = reactive({ metadata_widget_output$orgUnitLevels() })
       orgUnits = reactive({ metadata_widget_output$orgUnits() })
       selected_regions =  reactive({ regions_widget_output$selected_regions() })
+      
+      dataElements = reactive({ metadata_widget_output$dataElements() })
+      dataSets = reactive({ metadata_widget_output$dataSets() })
+      categories = reactive({ metadata_widget_output$categories() })
+      ousTree = reactive({ metadata_widget_output$ousTree() })
   
   
       # updata formula
@@ -257,6 +262,7 @@ data_request_widget_server <- function( id ,
           .level = input$level
           # .orgUnitLevels = orgUnitLevels()
           # .orgUnits = orgUnitRequest()
+          
           .formula.name = indicator()
   
           
@@ -371,7 +377,7 @@ data_request_widget_server <- function( id ,
           cat( '\n saving formula.request as', saveAs )
           
         showModal(
-          modalDialog( title = "Finished downloading.  Now saving the file", 
+          modalDialog( title = "Finished downloading.  Now saving the raw data download", 
                        easyClose = TRUE ,
                        size = 's' ,
                        footer=  cat( nrow(x), 'records downloaded.Of these, there was no value for' , sum( is.na(x$SUM) ), 'records' )
@@ -379,21 +385,109 @@ data_request_widget_server <- function( id ,
                        )
           )  
                     
-          saveRDS( x , saveAs , compress = FALSE )
+          saveRDS( x , saveAs , compress = TRUE )
           removeModal()
           
-          showModal(
-            modalDialog( title = "New file is saved", 
-                         easyClose = TRUE ,
-                         size = 's' ,
-                         footer= '(To refresh data in the app: use the refresh button (to left) and then re-select formula file and formula. '
-                         )
-          )  
+          # showModal(
+          #   modalDialog( title = "New file is saved", 
+          #                easyClose = TRUE ,
+          #                size = 's' 
+          #                # footer= '(To refresh data in the app: use the refresh button (to left) and then re-select formula file and formula. '
+          #                )
+          # )
+          
+          
           cat( '\n* finished downloading' , .formula.name , '\n') 
           completedRequest( completedRequest() + 1 )
-
-      }
           
+          showModal(
+                modalDialog( title = "Preparing raw data for analysis.  Just a moment...", 
+                             easyClose = TRUE ,
+                             size = 's' ,
+                             footer= '(click anywhere to continue)'
+                             )
+                )
+              
+          cat( '\n -- preparing data1')
+          
+          # Prepare data d1 ####
+          d1 = data_1( x , 
+                           formula_elements = formula_elements() ,
+                           dataSets = dataSets() , 
+                           dataElements = dataElements() , 
+                           categories = categories() , 
+                           ousTree = ousTree()  )
+
+    }
+       # Search for duplicated rows ####
+            nrow1 = nrow( d1 )
+            
+            cat( "\n - d1 has", nrow1, "rows" )
+            
+            if ( nrow1 == 0 ){
+              cat('\n - nrow1 = 0')
+              return()
+            } 
+            
+            # remove duplicate rows because downloads may create duplicates
+            u = d1 %>% as.data.table() %>% unique 
+            nrow2 = nrow( u )
+            cat('\n - There were', nrow1-nrow2, 'duplicates' )
+            
+
+         
+        # MAD Search for extreme values  ####
+        cat( '\n - scanning for MAD outliers')
+            
+        removeModal()
+            showModal(
+                modalDialog( title = "Scanning data for extreme values data", 
+                             easyClose = TRUE ,
+                             size = 'm' ,
+                             footer = "(click anywhere to close dialog box)"
+                             )
+                )
+
+          .total = length( key_size( d1 ) )
+        
+          .threshold = 50
+      
+          withProgress(     message = "Searchng for extreme values (MAD)",
+                              detail = "starting ...",
+                              value = 0, {
+  
+                data.mad = mad_outliers( d1 ,  .total = .total ,  .threshold = 50  )
+          })
+          
+         cat( '\n - scanning for Seasonal outliers')
+
+        .total = length( key_size( data.mad ) )
+         cat( '\n - .total' , .total )
+    
+        withProgress(  message = "Searchng for seasonal Outliers",
+                          detail = "starting ...",
+                          value = 0, {
+        
+             data1.seasonal = seasonal_outliers( data.mad , .total = .total , .threshold = 50)
+          
+             })  
+          
+        showModal(
+                modalDialog( title = "Finished scanning for seasonal values; saving data", 
+                             easyClose = TRUE ,
+                             size = 'm' ,
+                             footer = "(click anywhere to close dialog box)"
+                             )
+                )
+      
+        
+      # Saving ####    
+      cat('\n - saving data1.seasonal to replace dataset')
+     
+      saveRDS( data1.seasonal ,  saveAs , compress = TRUE ) 
+      removeModal()
+      
+      
         })
     
      
