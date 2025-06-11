@@ -85,6 +85,7 @@ conflicts_prefer( purrr::flatten )
 conflicts_prefer(flextable::compose)
 conflicts_prefer(base::load)
 conflicts_prefer(dplyr::where)
+conflicts_prefer(dplyr::lag)
 
 
 # Options ####
@@ -116,6 +117,29 @@ source( paste0( mg2 , 'cleaning_functions.R' ) )
 source( paste0( mg2 , "data Functions.R" ) )
 source( paste0( mg2 , "dqa_functions.R" ) )
 source( paste0( mg2 , "MG2_Forecast_Functions.R" ) )
+source( paste0( mg2 , "Annual Change Table.R" ) )
+
+# Reads .fst if available, otherwise .rds
+readFile = function(filename) {
+  # Get the file extension
+  ext <- tools::file_ext(filename)
+  
+  # Check extension and read accordingly
+  if (tolower(ext) == "fst") {
+    # Load fst package if not already loaded
+    if (!requireNamespace("fst", quietly = TRUE)) {
+      stop("Package 'fst' is required but not installed.")
+    }
+    return(fst::read_fst(filename))
+    
+  } else if (tolower(ext) == "rds") {
+    return(readRDS(filename))
+    
+  } else {
+    stop("Unsupported file extension: ", ext, ". Only .fst and .rds files are supported.")
+  }
+}
+
 
 as.yearmonth = function( date.string , fmt = "%B%Y" ) zoo::as.yearmon( date.string , fmt) %>% yearmonth
 

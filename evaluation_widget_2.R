@@ -86,6 +86,9 @@ evaluation_widget_ui = function ( id ){
                   
                   checkboxInput( ns( "forecast_ci" ) , label ='Prediction interval',
                                  value = TRUE  ) ,
+                
+                  # checkboxInput( ns( "annualChange" ) , label ='Show legend',
+                  #              value = FALSE  )
                   
                   # checkboxInput( ns( "bootstrap" ) , label ='Bootstrap estimate',
                   #                value = FALSE  ) ,
@@ -170,12 +173,14 @@ evaluation_widget_ui = function ( id ){
                                       
                                       chartModuleUI( ns('plotOutput') , "Trend Analysis" )
                                       ) ,
-                          
-                            fluidRow( tableOutput( ns( "forecastResult" ) ) )
+                            
+                            fluidRow( tableOutput( ns( "forecastResult" ) ) ) 
                             )  
                           ) ,
                 
-                # tabPanel("Evaluation Table1", tableOutput(  ns("forecastResult") ) ),
+                tabPanel("Annual Change", 
+                         uiOutput( ns( "annualTable" ) ) 
+                         ),
                 
                 tabPanel( "Validation table" , 
                           h5( "Symmetric Weighted Absolute Percent Error (SWAPE) of difference between the test forecasts and the actual values") ,
@@ -903,8 +908,25 @@ evaluation_widget_server <- function( id ,
     is_computing <- reactive({
       auto_model_values$computing
     })
+    
+  # Annual Table ####
+    output$annualTable <- renderUI({
+     
+          req( mable_Data() )
 
-    # Use the output of eventReactive in the UI
+          cat( '\n* evaluation_widget annualTable():' )
+          
+          mable_Data = mable_Data()
+          
+          # cat("\n - yearly_summary_table " )
+          ft = yearly_summary_table( data = mable_Data ) 
+          
+          cat( "\n - class(ft):" , class( ft ))
+          ft %>% htmltools_value()
+  })
+
+  # forecastResult table ####
+  # Use the output of eventReactive in the UI
    output$forecastResult <- renderTable({
      
              req( auto_model() )
