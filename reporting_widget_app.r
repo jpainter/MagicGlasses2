@@ -1151,16 +1151,16 @@ reporting_widget_server <- function( id ,
       #                     )  +
       ylim( 0 , NA ) +
       scale_color_manual( values = c( 'All' = 'black' , 
-                                      'Selected'= 'brown' ) ) +
+                                      'Champion'= 'brown' ) ) +
       scale_fill_manual( values = c( 'All' = 'black' , 
-                                      'Selected'= 'brown' ) ) 
+                                      'Champion'= 'brown' ) ) 
   
     if (!is.null( reportingSelectedOUs() ) ){
-      cat('\n - g + selected facilities ')
+      cat('\n - g + champion facilities ')
       g = g + 
         # geom_col(  data = x.months() %>% mutate( facilities = 'Selected' )  ) 
-        geom_point( data = x.months() %>% mutate( facilities = 'Selected' ) ) +
-        geom_line( data = x.months() %>% mutate( facilities = 'Selected' ) )
+        geom_point( data = x.months() %>% mutate( facilities = 'Champion' ) ) +
+        geom_line( data = x.months() %>% mutate( facilities = 'Champion' ) )
       }
     
     # return( shift_legend3(g) )
@@ -1291,14 +1291,15 @@ reporting_widget_server <- function( id ,
    #print( 'selected_data():')
    req( data1() )
    req( selected_data_categories$elements )
+   req( levelNames() )
    
    cat("\n* reporting_widget selected_data(): " )
   
-   cat("\n - levels " , 
-       selected_org_levels$level2 , selected_org_levels$level3  ,selected_org_levels$level4  ,selected_org_levels$level5   )
-   
-   cat("\n - reporting_widget selected_data_categories(): " , 
-       paste( selected_data_categories$elements , collapse = ", " )   )
+   # cat("\n - levels " , 
+   #     selected_org_levels$level2 , selected_org_levels$level3  ,selected_org_levels$level4  ,selected_org_levels$level5   )
+   # 
+   # cat("\n - reporting_widget selected_data_categories(): " , 
+   #     paste( selected_data_categories$elements , collapse = ", " )   )
     
    selected_data =  selectedData( 
                         data = data1() ,

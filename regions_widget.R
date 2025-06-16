@@ -237,7 +237,8 @@ getDescendantsRecursive <- function( node, df, visited = character() ) {
         cat("\n - input$level2: ", input$level2 )
         
         # TESTING
-        # saveRDS( gf.ous, "gf.ous.rds" )
+        saveRDS( ousTree(), "ousTree.rds" )
+        saveRDS( geoFeatures(), "geoFeatures.rds" )
     
         # Get all descendant nodes for the selected node
         descendants <- getDescendantsRecursive( input$level2, gf.ous)
@@ -277,8 +278,11 @@ getDescendantsRecursive <- function( node, df, visited = character() ) {
         gf.ous = gf.ous %>% filter( name %in% nodesToKeep )
       }
       
+      # Testing 
+      # saveRDS( gf.ous , "gf.ous.rds")
+      
       # Remove slashes from levelNames
-      cat( '\n - remove slashes from levelName')
+      # cat( '\n - remove slashes from levelName')
       gf.ous$levelName = str_replace_all( gf.ous$levelName , fixed("/") , ";")
       
       return( gf.ous )
@@ -290,7 +294,7 @@ getDescendantsRecursive <- function( node, df, visited = character() ) {
         geoFeatures.ous() %>% 
           st_drop_geometry() %>%
           as_tibble() %>% 
-          select( name, level, levelName, parentName, id, leaf, latitude, longitude ) ,
+          select( name, level, levelName, parentName, id, latitude, longitude ) ,
     
           rownames = FALSE,
           filter = 'top' ,
@@ -369,7 +373,7 @@ getDescendantsRecursive <- function( node, df, visited = character() ) {
                      group = admin.levels[ i ] ,
                      label = ~paste( name ,   
                                      ifelse( level < 3 , '' , 
-                                             paste( 'in' ,  parentName ) )
+                                             paste( 'in' ,  parent ) )
                                             ) ,
                      layerId = ~name,
                      color = "black", 

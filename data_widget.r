@@ -343,12 +343,12 @@ data_widget_server <- function( id ,
               
             cat( '\n - reading selected rds file', file )
             d = readRDS( file ) 
-              
-            cat('\n - done: dataset has' , nrow(d),  'rows')
-          
+            
             removeModal()
-          
-        return( d )
+            
+            cat('\n - done: dataset has' , nrow(d),  'rows')
+ 
+            return( d )
           
           } else {
             cat('\n - dataset.file() not selected or not found')
@@ -478,7 +478,7 @@ data_widget_server <- function( id ,
             # 
             # d1 = as_tsibble( d1, index = {{ indexvars }} , key = {{ keyvars }} )
         
-            cat( "\n - end d1  class/cols:\n -- " , class( d1 ) , "\n -- " ,  names( d1)  , "\n  " )
+            cat( "\n - end d1  class/cols:\n -- " , class( d1 ) , "\n"  )
             
             return( d1 )
       })

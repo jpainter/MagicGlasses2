@@ -714,7 +714,7 @@ selectedData = function( data1 ,
     # filter to selected category
 
     if ( any( !is.null( data_categories ) ) ){
-      if ( .cat ) cat( '\n - selectedData filtered by' , data_categories )
+      if ( .cat ) cat( '\n - selectedData filtered by data_categories' )
       data = data %>% filter( data %in% data_categories )
       if ( .cat ) cat( '\n - nrow( d ):' , nrow( data ))
     }
@@ -722,7 +722,7 @@ selectedData = function( data1 ,
     # Consistent reporting
     if ( alwaysReporting ){
      
-     if ( .cat ) cat( '\n - add Selected as Champion or Non-Champion' )
+     if ( .cat ) cat( '\n - alwaysReporting: add Selected as Champion or Non-Champion' )
      
       # TESTING
       # cat("\ - saving selectedData data ")

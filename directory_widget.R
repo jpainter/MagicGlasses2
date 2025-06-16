@@ -122,7 +122,8 @@ directory_widget_server <- function( id ) {
         
          metadata.files = grepl( "metadata" , data.dir.files , ignore.case = TRUE ) 
          formula.files = grepl( "formulas" , data.dir.files  , ignore.case = TRUE ) 
-         data.files = grepl( "rds" , data.dir.files  , ignore.case = TRUE ) 
+         data.files = grepl( "rds" , data.dir.files  , ignore.case = TRUE ) &
+           !grepl( "metadata" , data.dir.files  , ignore.case = TRUE ) 
          
          info = tibble( `File type:` = c("Metadata" , 'Formula', 'Data') ,
                         Number = c( sum(metadata.files), sum(formula.files) , sum(data.files) ) ,

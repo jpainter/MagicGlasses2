@@ -168,16 +168,24 @@ metadata_widget_server <- function( id ,
     cat('\n * metadata_widget getMetadataButton login()' , login(), '\n')
     
     if ( login()  ){
-        cat('\n baseurl()' , baseurl(), '\n')
+        cat('\n baseurl()' , baseurl(), 'login is TRUE\n')
     
         loginFetch( TRUE )
+        cat("\n--- login fetch orgUnitLevels")
         o = orgUnitLevels()
+        cat("\n--- login fetch orgUnits")
         p = orgUnits()
+        cat("\n--- login fetch ousTree")
         q = ousTree()
+        cat("\n--- login fetch geoFeatures")
         w = geoFeatures()
+        cat("\n--- login fetch dataElementDictionary")
         x = dataElementDictionary()
+        cat("\n--- login fetch indicatorDictionary")
         y = indicatorDictionary()
+        cat("\n--- login fetch systemInfo")
         z = systemInfo()
+        cat("\n--- login fetch resources")
         zz = resources() 
         
         # also save as RDS
@@ -195,9 +203,9 @@ metadata_widget_server <- function( id ,
                      geoFeatures = w 
         ) 
         
+        cat( "\n- Saving metadata.rds")
         saveRDS( meta , paste0( dir() , "metadata_", Sys.Date() ,".rds" ) )
-        
-        removeModal()
+
 
       } else {
  
@@ -451,6 +459,7 @@ metadata_widget_server <- function( id ,
     }
     
       cat( '\n -finished metadata_widget datasets \n')
+      removeModal()
       return( dataSets )
     
   })
@@ -603,6 +612,7 @@ metadata_widget_server <- function( id ,
           Categories = paste( categoryOptionCombo , collapse = ' ;\n '  ) ,
           categoryOptionCombo.ids = paste( categoryOptionCombo.id , collapse = ' ;\n '  )
         )
+      
       removeModal()
       
     } else {
@@ -639,10 +649,10 @@ metadata_widget_server <- function( id ,
     if (  login()  & loginFetch() ){ 
     cat( '\n *** creating dataElementDictionary \n' )
 
-    de = dataElements()
-    ds = dataSets()
-    cats = categories()
-    deg = dataElementGroups()
+    de = isolate( dataElements() )
+    ds = isolate( dataSets() )
+    cats = isolate( categories() )
+    deg = isolate( dataElementGroups() )
     
     cat( '\n -creating dsde..' )
     
@@ -1333,7 +1343,9 @@ metadata_widget_server <- function( id ,
             cat('\n- adding leaf to ous.tree'  )
             # cat('\n- orgUnits() names:'  , names(orgUnits()  ))
             # cat('\n- ous.tree names:'  , names( ous.tree  ))
-            ous.tree = ous.tree %>% left_join( orgUnits()  %>% select( id, leaf ) , by = c('orgUnit' = 'id') )
+            ous.tree = ous.tree %>% left_join( orgUnits()  %>% 
+                                                 select( id, leaf ) , 
+                                               by = c('orgUnit' = 'id') )
           }
           
           cat('\n- ous.tree has' , nrow(ous.tree) , "rows" ) 
@@ -1440,39 +1452,59 @@ metadata_widget_server <- function( id ,
 
   geoFeatures = reactive({
     
-    req( metadata() )
     cat('\n * geoFeatures():'  )
     
-    if ( 'geoFeatures' %in% names( metadata() ) ){
+    if (  login() & loginFetch() ){
       
-      cat('\n- reading geofeatures from metadata file'  )
-      geosf. =  metadata()$geoFeatures 
-      cat('\n- geofeatures have' , nrow(geosf.) , "rows" ) 
+      cat('\n- reading orgUnitLevels()'  )
+      orgUnitLevels = orgUnitLevels() 
+      levels = orgUnitLevels$level
+      cat('\n- there are', levels, 'levels'  )
       
-    } else {
-      
-      file = paste0( dir(), geofeatures.files()[1] )
-      cat('\n - looking for geofeatures file:' , file )
-      
-      if ( file.exists( file ) & !dir.exists( file )){
-        
-        cat('\n- reading from geofeatures file'  )
-        geosf. = readRDS( file )
-        cat('\n- geofeatures have' , nrow(geosf.) , "rows" ) 
-      } else {
-        return()
+      geosf. = list()
+      for ( i in levels ){
+        geosf.[[i]] = geoFeatures_download(i)
       }
       
-    }
-
-    # Fill latitude and longitude only if geometry is POINT
-    cat( '\n add lat and long when geometry is point')
+      cat("\n - compiling geofeatures")
+      geosf. = bind_rows( geosf. )
+      cat("\n - compiled", nrow( geosf. ), "rows" )
+      
+      # Fill latitude and longitude only if geometry is POINT
+      cat( '\n add lat and long when geometry is point')
+      
+      geosf.$geom_type <- st_geometry_type( geosf. )
+      is_point <- geosf.$geom_type == "POINT"
+      geosf.$latitude[is_point] <- st_coordinates(geosf.[is_point, ])[, "Y"]
+      geosf.$longitude[is_point] <- st_coordinates(geosf.[is_point, ])[, "X"]
     
-    geosf.$geom_type <- st_geometry_type( geosf. )
-    is_point <- geosf.$geom_type == "POINT"
-    geosf.$latitude[is_point] <- st_coordinates(geosf.[is_point, ])[, "Y"]
-    geosf.$longitude[is_point] <- st_coordinates(geosf.[is_point, ])[, "X"]
-    
+      # add level.name 
+      geosf.$levelName = orgUnitLevels$levelName[match(geosf.$level, orgUnitLevels$level)]
+      
+      # add parent name
+      orgUnits = orgUnits() 
+      geosf.$parentName = orgUnits$parent[ match( geosf.$parent, orgUnits$parent.id )]
+                                 
+      } else { 
+        if ( 'geoFeatures' %in% names( metadata() ) ){
+          
+          cat('\n- reading geofeatures from metadata file'  )
+          geosf. =  metadata()$geoFeatures 
+          cat('\n- geofeatures have' , nrow(geosf.) , "rows" ) 
+          
+        } else { return }
+      }
+      
+      # file = paste0( dir(), geofeatures.files()[1] )
+      # cat('\n - looking for geofeatures file:' , file )
+      # 
+      # if ( file.exists( file ) & !dir.exists( file )){
+      #   
+      #   cat('\n- reading from geofeatures file'  )
+      #   geosf. = readRDS( file )
+      #   cat('\n- geofeatures have' , nrow(geosf.) , "rows" ) 
+      
+  
     return( geosf. )
     
   })
@@ -1653,6 +1685,14 @@ metadata_widget_server <- function( id ,
         # if available, use resources method
         cat( '\n **Resources'  )
         
+        showModal(
+        modalDialog( title = "Downloading list of API resources", 
+                     easyClose = TRUE ,
+                     size = 'm' ,
+                     footer=NULL
+                     )
+        )
+              
         url = paste0( baseurl() , "api/resources.json" )
         resources =  get( source_url = url )[[1]]
         
@@ -1667,12 +1707,12 @@ metadata_widget_server <- function( id ,
           mutate( href = paste0( href , '?fields=:all&paging=false' ) ) %>%
           arrange( Attribute )
           
-          cat( '*metadata_widget found', nrow(resources),'resources' )
+          cat( '\n - metadata_widget found', nrow(resources),'resources' )
         
+          removeModal() 
           return( resources )
         } else {}
-            
-        
+
       }
       
     }) 
