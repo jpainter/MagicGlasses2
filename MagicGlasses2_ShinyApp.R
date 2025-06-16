@@ -118,6 +118,7 @@ source( paste0( mg2 , "data Functions.R" ) )
 source( paste0( mg2 , "dqa_functions.R" ) )
 source( paste0( mg2 , "MG2_Forecast_Functions.R" ) )
 source( paste0( mg2 , "Annual Change Table.R" ) )
+source( paste0( mg2 , "adjustedCorrectdIncidence.R" ) )
 
 # Reads .fst if available, otherwise .rds
 readFile = function(filename) {
