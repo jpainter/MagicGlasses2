@@ -239,7 +239,7 @@ reporting_widget_ui = function ( id ){
                           )
         ) ,
         
-        tabPanel( "Facilities", value = 'facilities' , 
+        tabPanel( "Champion Facilities", value = 'facilities' , 
                   
                  # tableOutput( ns('orgUnitReportingTable')) 
                  
@@ -1316,7 +1316,8 @@ reporting_widget_server <- function( id ,
                         level3 = selected_org_levels$level3 ,
                         level4 = selected_org_levels$level4 ,
                         level5 = selected_org_levels$level5 ,
-                        .cat = TRUE  )
+                        .cat = TRUE  ) %>% 
+     mutate( dataCol = original )
    
    cat("\n - end reporting_widget selected_data()")
    
@@ -1656,7 +1657,9 @@ reporting_widget_server <- function( id ,
       scale_x_yearweek( date_breaks = "1 year" )
     
     g = g +
-      scale_y_continuous( label=comma, limits = .limits ) +
+      scale_y_continuous( label=comma
+                          # , limits = .limits 
+                          ) +
       labs( y = "" , x="" ,
             title = str_wrap( input$indicator , 200 ) ,
             subtitle = str_wrap( data.text , 200 ) 
@@ -1742,6 +1745,8 @@ reporting_widget_server <- function( id ,
     req( input$reportingTab == "facilities" )
     req( champion_facilities() )
     cat( "\n * facility_chart:")
+    
+    if ( testing ) saveRDS( champion_facilities(), "champion_facilities.rds" )
     
     champion_facilities = champion_facilities() %>% st_drop_geometry()
     
@@ -1871,7 +1876,8 @@ reporting_widget_server <- function( id ,
     
     # Testing
     # cat( "\n - saving facility_map files for testing")
-    if ( testing )  save( gf, facilities, avgValues, base.map , file = "facility_map.rda" )
+    # if ( testing )  
+      save( gf, facilities, avgValues, base.map , file = "facility_map.rda" )
     
     
     cat( "\n - admin.levels")

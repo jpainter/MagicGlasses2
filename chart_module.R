@@ -42,18 +42,18 @@ chartModuleServer <- function(id, plot_expr) {
     
     rv <- reactiveValues( 
       
-      filename = paste0( "chart_" ,  Sys.Date() ) ,
+      filename = "chart"  ,
       title = NULL ,
       subtitle = NULL ,
       caption = NULL ,
-      base.size = 11, 
+      base.size = 8, 
       legend.position = "bottom" ,
       format = "png" ,
       width = 6 ,
       height = 4 ,
       dpi = 300 , 
       transparent = TRUE  ,
-      theme = "Gray (default)" , 
+      theme = "Minimal" , 
       ready = TRUE 
       
       )
@@ -62,7 +62,7 @@ chartModuleServer <- function(id, plot_expr) {
     observeEvent(input$open_modal, {
       showModal(modalDialog(
         title = "Download Options",
-        textInput(ns("filename"), "Filename (no extension)", "my_plot"),
+        textInput(ns("filename"), "Filename (no extension)", "filename"),
         textInput(ns("title"), "Plot title:", ""),
         textInput(ns("subtitle"), "Subtitle:", ""),
         textInput(ns("caption"), "Caption:", ""),
