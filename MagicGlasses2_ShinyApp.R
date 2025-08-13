@@ -29,7 +29,7 @@ packages = c(
  'leaflet' ,  'leaflegend' , 'ggrepel' ,
  'tibbletime' , 'tictoc' , 'tsbox' , 'flextable', 
  'zoo', 'conflicted', 'assertthat' , 'stringi' , 
- 'digest'
+ 'digest', 'webshot'
 )
 
 # optional packages (from previous versions): forecast, Bolstad, bsts, fable.bsts 
@@ -110,7 +110,7 @@ source( paste0( mg2 , 'DToptions.R') )
 source( paste0( mg2 , 'model_ts2.R' ) )
 source( paste0( mg2 , 'api_data.r' ) )
 source( paste0( mg2 , 'api_data_function_revision.R') )  # revision October 2024
-source( paste0( mg2 , 'dqa.r' ) )
+# source( paste0( mg2 , 'dqa.r' ) )
 source( paste0( mg2 , 'Cleaning.R' ) )
 source( paste0( mg2 , 'prepareDataset.R' ) )
 source( paste0( mg2 , 'cleaning_functions.R' ) )

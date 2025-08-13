@@ -10,19 +10,21 @@ dqa_years = function( dqa_data ) dqa_data %>%
   count( Year = year( Month ) ) %>%
   select( -n )
 
-dqa_reporting = function( dqa_data , missing_reports = 0 , count.any= TRUE , .cat = FALSE, ... ){
+dqa_reporting = function( dqa_data , missing_reports = 0 , count.any= TRUE , 
+                          .cat = FALSE, ... ){
   
   startingMonth = yearmonth( paste0( dqa_years(dqa_data)$Year , "Jan") )
   
   # Excluding last month data reported
   endingMonth = 
     dqa_data %>% as_tibble %>% ungroup %>%
-    group_by( year( Month ) ) %>%
+    group_by( year = year( Month ) ) %>%
     summarize(latest_month = max(Month), .groups = "drop") %>%
     pull( latest_month ) 
+  
   endingMonth[ length(endingMonth) ] = endingMonth[ length(endingMonth) ] - 1
   
-  cat( "\n *dqa_reporting - mostFrequentReportingOUs")
+  if (.cat) cat( "\n *dqa_reporting - mostFrequentReportingOUs")
   reportingOUS = map( 1:length( startingMonth ) ,  
                       ~mostFrequentReportingOUs( data = dqa_data , 
                             startingMonth = startingMonth[.x] ,
@@ -46,7 +48,8 @@ dqaPercentReporting = function( dqa_data  , .cat = FALSE ){
      if (.cat ) cat('\n -  years:', paste( year, collapse = ","  ))
     
     n_frequently_reporting = dqa_reporting( dqa_data, missing_reports = 0 )
-    n_facilities = nrow( data_ous( dqa_data = dqa_data) )
+    # n_facilities = nrow( data_ous( dqa_data = dqa_data) )
+    n_facilities = unique( dqa_data$orgUnit ) %>% length()
     pr = n_frequently_reporting / n_facilities
     
     if (.cat ) cat('\n -  pr:', paste( pr, collapse = ","  ) )
@@ -57,7 +60,7 @@ dqaPercentReporting = function( dqa_data  , .cat = FALSE ){
     return( data )
   }
 
-dqa_reporting_plot = function( data ,  text_size = 18  ){
+dqa_reporting_plot = function( data , text_size = 18  ){
   
   n_facilities = max( data$n_facilities )
   
@@ -71,8 +74,8 @@ dqa_reporting_plot = function( data ,  text_size = 18  ){
           labs( x = "Year" , 
                 y = "Percent" , 
                 title = "Percent of facilities consistently reporting each year",
-                subtitle  = paste( 'Out of the number of facilities that have ever reported (' , n_facilities , ")" ) ,
-                caption = paste( "'Consistently reporting' is reporting every month of the year. Excluding last month data reported." )
+                subtitle  = paste( 'Out of the number of facilities that have ever reported (' , comma( n_facilities ), ")" ) 
+                # , caption = paste( "'Consistently reporting' is reporting every month of the year." )
                 ) + 
           theme_minimal( base_size = text_size  ) 
           # theme( plot.margin = margin(10,10,10,10, "points" ) )
@@ -145,7 +148,7 @@ yearly.outlier.summary_plot = function( data, text_size = 18 , label_size = 6 ){
                    vjust = 2 , hjust = -1 , size = label_size  ) +
    
           scale_y_continuous( labels = scales::percent, limits = c(0,1) , 
-                              expand = expand_scale(mult = c(0.1, 0.2)) ) +
+                              expand = expansion(mult = c(0.1, 0.2)) ) +
           scale_color_hue(  l=40, c=35 ) +
           guides( color = "none" ) +
           labs( x = "Year" , y = "Percent" , 

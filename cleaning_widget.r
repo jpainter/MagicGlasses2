@@ -488,7 +488,7 @@ cleaning_widget_server <- function( id ,
              
            
           cat( '\n - scanning for MAD outliers')
-          .total = length( key_size( d ) )
+          # .total = length( key_size( d ) )
         
           .threshold = 50
       
@@ -496,19 +496,23 @@ cleaning_widget_server <- function( id ,
                               detail = "starting ...",
                               value = 0, {
   
-                data.mad = mad_outliers( d ,  .total = .total ,  .threshold = 50  )
+                data.mad = mad_outliers( d , 
+                                         # .total = .total ,  
+                                         .threshold = 50  )
           })
           
          cat( '\n - scanning for Seasonal outliers')
 
-        .total = length( key_size( data.mad ) )
-         cat( '\n - .total' , .total )
+        # .total = length( key_size( data.mad ) )
+         # cat( '\n - .total' , .total )
     
         withProgress(  message = "Searchng for seasonal Outliers",
                           detail = "starting ...",
                           value = 0, {
         
-                data1.seasonal = seasonal_outliers( data.mad , .total = .total , .threshold = 50)
+                data1.seasonal = seasonal_outliers( data.mad ,
+                                                    # .total = .total ,
+                                                    .threshold = 50)
           })  
           
           removeModal()
@@ -1012,7 +1016,7 @@ cleaning_widget_server <- function( id ,
       d = outlier.dataset()
       
       if ( 'seasonal3' %in% names( d )){
-        cols = c('mad15', 'mad10', 'mad5','seasonal5' , 'seasonal3', 'expected')
+        cols = c('mad15', 'mad10', 'mad5','seasonal5' , 'seasonal3' )
       } else if( 'mad5' %in% names( d ) ){
         cols = c('mad15', 'mad10', 'mad5' )
       } else { 

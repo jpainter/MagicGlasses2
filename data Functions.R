@@ -210,7 +210,7 @@ mostFrequentReportingOUs <- function(
         group_by( year = year( !! rlang::sym( period )  ) ) %>%
         distinct( !! rlang::sym( period ) , orgUnit ) %>%
         group_by( year , orgUnit ) %>%
-        summarise( report_periods = n() )
+        summarise( report_periods = n() , .groups = 'keep')
     
        
        #print( "mr" ); #print( summary( mr$n ) )
@@ -234,6 +234,7 @@ mostFrequentReportingOUs <- function(
           years = n() ,
           consistent = all( report_periods >= ( max - missing_reports ) ) ,
           champion =  ( years == max_years ) & consistent
+          , .groups = 'drop'
         ) %>%
          filter( champion ) %>%
          pull( orgUnit ) %>% unique

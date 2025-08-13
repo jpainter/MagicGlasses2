@@ -204,12 +204,7 @@ reporting_widget_ui = function ( id ){
                               
                             column(6, 
                                    
-                              # h5( 'Number of Facilties Reporting Each Period') ,
-                              
-                              ### Number of Facilties Reporting each Period (plot_reporting_by_month)
-                              # plotOutput( ns('plot_reporting_by_month') )
-                                          
-                                          
+                                        
                               chartModuleUI( ns('plot_reporting_by_month') , "Number of Reports"
                                              # p( "Number of Reports" , style = "font-size: 16px" )
                               )
@@ -241,41 +236,26 @@ reporting_widget_ui = function ( id ){
         
         tabPanel( "Champion Facilities", value = 'facilities' , 
                   
-                 # tableOutput( ns('orgUnitReportingTable')) 
-                 
-                 
-                 # miniPage(
-                 # gadgetTitleBar( "Shiny gadget example" ),
-                 
-                 # miniTabstripPanel(
                  tabsetPanel( type = "tabs" ,
 
                    tabPanel( "Chart" , style = "height:80vh;" ,
-                   # miniTabPanel( "Visualize" , icon = icon("area-chart"),
-                                 # miniContentPanel(
-                                   plotOutput( ns("facility_chart") , height = "100%")
-                                 # )
+                   
+                                 chartModuleUI( ns('champion_comparison') , "Champion vs Non-Champion" )     
                    ),
                    tabPanel( "Map" , style = "height:90vh;" ,
-                   # miniTabPanel( ns("Map") ,
-                                 # icon = icon("map-o"),
-
-                                 # miniContentPanel(padding = 0,
-                                                  # leafletOutput( ns("map") , height = "100%")
-                                 # ),
-                                 # miniButtonBlock(
-                                   # actionButton( ns("resetMap") , "Reset" )
-                                 # )
                    
                        fluidRow( style = "height:80vh;",
                                  column(12, 
-                                        leafletOutput( ns("facility_map") , height = "100%")  )
+                                        leafletOutput( ns("champion_map") , height = "90%")   ,
+                                    br(),
+                                    downloadButton( ns("download_html"), "Download Interactive Map (HTML)"),
+                                    downloadButton( ns("download_png"), "Download Static Map (PNG)")
                                  )
+                       )
                        ) ,
                    tabPanel( "Data" , style = "height:80vh;" ,
-                   # miniTabPanel( ns("Data")  , icon = icon("table"),
-                                 # miniContentPanel(
-                                   DT::dataTableOutput( ns("facility_table") )
+                             
+                                   DT::dataTableOutput( ns("champion_table") )
                                  # )
                    )
                  )
@@ -284,7 +264,7 @@ reporting_widget_ui = function ( id ){
                   
                   
         ) # end main panel
-) # end sidbar layout
+) # end sidebar layout
 ) # end tagset
   )
 ))
@@ -1135,7 +1115,7 @@ reporting_widget_server <- function( id ,
   
     cat('\n - plot2: ggplot( monthly.reports() ... ')
     g = ggplot( monthly.reports() %>% mutate( facilities = 'All' ), 
-                aes( x =  !! rlang::sym( .period ) 
+                aes( x =  as.Date( !! rlang::sym( .period ) )
                      , y = n  
                      , group = facilities
                      , color = facilities 
@@ -1145,10 +1125,11 @@ reporting_widget_server <- function( id ,
       geom_line( ) +
       geom_hline( yintercept = facilities() ) +
       facet_wrap( ~ year , scales = 'free_x') +
-      # scale_x_discrete( .period 
-      #                     , breaks = .breaks
-      #                     # , labels  = as.character( .breaks )
-      #                     )  +
+      scale_x_date(
+        date_breaks = "3 months",
+        date_labels = "%b"
+      ) +
+      labs( x = NULL ) +
       ylim( 0 , NA ) +
       scale_color_manual( values = c( 'All' = 'black' , 
                                       'Champion'= 'brown' ) ) +
@@ -1741,10 +1722,10 @@ reporting_widget_server <- function( id ,
     return( champion_facilities )
   })
   
-  facility_chart = reactive({
+  champion_chart = reactive({
     req( input$reportingTab == "facilities" )
     req( champion_facilities() )
-    cat( "\n * facility_chart:")
+    cat( "\n * champion_chart:")
     
     if ( testing ) saveRDS( champion_facilities(), "champion_facilities.rds" )
     
@@ -1757,7 +1738,7 @@ reporting_widget_server <- function( id ,
     
     annotation = paste0( "mean = ", round( summary$mean ), " (n=", scales::comma( summary$n ) , ")" )
     
-    facility_chart = 
+    champion_chart = 
       champion_facilities %>%
       ggplot( aes( champion, medianValue  ) ) + 
       geom_boxplot() +
@@ -1766,10 +1747,11 @@ reporting_widget_server <- function( id ,
       labs( x = "", y = "Median Value") +
       scale_y_log10() +
       annotate( 'text' , x = 1:2 , y = 1.5 , label =  annotation  ) +
-      labs( title = "Comparison of Values Repoted by Consistent and Inconsistent Reporting Facilities" )
+      labs( title = "Comparison of Values Repoted by Consistent and Inconsistent Reporting Facilities" ) +
+      theme_minimal( base_size = 20 )
 
-    cat( "\n - done facility_chart:")
-    return( facility_chart )
+    cat( "\n - done champion_chart:")
+    return( champion_chart )
   })
   
   base.map = reactive({
@@ -1866,7 +1848,7 @@ reporting_widget_server <- function( id ,
       
   })
   
-  facility_map = reactive({
+  champion_map = reactive({
     
     cat( "\n * reporting_widget: facility map")
     gf = geoFeatures()
@@ -1875,10 +1857,10 @@ reporting_widget_server <- function( id ,
     base.map = base.map()
     
     # Testing
-    # cat( "\n - saving facility_map files for testing")
-    # if ( testing )  
-      save( gf, facilities, avgValues, base.map , file = "facility_map.rda" )
-    
+    # cat( "\n - saving champion_map files for testing")
+    if ( testing ){
+      save( gf, facilities, avgValues, base.map , file = "champion_map.rda" )
+      }
     
     cat( "\n - admin.levels")
     admins = gf %>% filter( st_geometry_type(.) != 'POINT') %>% filter( !st_is_empty(.) )
@@ -1887,7 +1869,8 @@ reporting_widget_server <- function( id ,
     
     cat( '\n - factpal')
     
-    factpal <- colorFactor( c("red4", "grey20")  , facilities$champion )
+    factpal <- colorFactor( c("#E69F00", "darkblue")  , facilities$champion )
+    # factpal <- colorFactor( c("red4", "grey20")  , facilities$champion )
     
     cat( '\n - symbols')
     
@@ -1898,7 +1881,7 @@ reporting_widget_server <- function( id ,
       color = factpal( facilities$champion ) ,
       fillColor =  factpal( facilities$champion ) ,
       fillOpacity = .8,
-      baseSize = .5
+      baseSize = 1
     )
     
     cat( '\n - add markers')
@@ -1922,9 +1905,6 @@ reporting_widget_server <- function( id ,
                  icon = symbols ,
                  group = "Reporting" ) 
     
-
-  
-      
     # size legend with library(  leaflegend )
     
     cat( '\n - add legend')
@@ -1959,14 +1939,68 @@ reporting_widget_server <- function( id ,
     
   })
   
-  output$facility_chart <- renderPlot({ facility_chart() })
+  # Save leaflet map to temp file and return path
+  save_map_temp <- reactive({
+    map <- leaflet() %>%
+      addTiles() %>%
+      addMarkers(lng = -74.006, lat = 40.7128, popup = "New York City")
+    
+    tmp_html <- tempfile(fileext = ".html")
+    saveWidget(map, file = tmp_html, selfcontained = TRUE)
+    tmp_html
+  })
   
-  output$facility_map <- renderLeaflet({ facility_map()  })
+  # Download interactive map
+  output$download_html <- downloadHandler(
+    filename = function() {
+      "champion_map.html"
+    },
+    content = function(file) {
+      file.copy( save_map_temp(), file )
+    }
+  )
   
-  output$facility_table <- DT::renderDataTable({ 
-    champion_facilities() %>% st_drop_geometry() %>% 
-      select( -parentGraph , - groups )
-    })
+   # Download static map as PNG
+  output$download_png <- downloadHandler(
+    filename = function() {
+      "champion_map.png"
+    },
+    content = function(file) {
+      tmp_html <- save_map_temp()
+      webshot(tmp_html, file = file, vwidth = 800, vheight = 600)
+    }
+  ) 
+  
+  # output$champion_chart <- renderPlot({ champion_chart() })
+  chartModuleServer( "champion_comparison" , reactive({ champion_chart() }) )
+  
+  output$champion_map <- renderLeaflet({ champion_map()  })
+  
+  output$champion_table <- DT::renderDT(DT::datatable( 
+    
+    champion_facilities() %>% 
+      st_drop_geometry() %>% 
+      select( -parentGraph , - groups ) ,
+    
+    rownames = FALSE, 
+    filter = 'top' ,
+    # options = DToptions_no_buttons()
+    options = list(
+      # bPaginate = FALSE, 
+      # autoWidth = TRUE ,
+      scrollY = "60vh"  ,
+      scrollX = TRUE ,
+      scrollCollapse = TRUE ,
+      paging = TRUE ,
+      searching = TRUE , 
+      info = TRUE ,
+      lengthMenu = list( c(  10, 25, 100, -1 ) , 
+                         list( '10', '25', '100', 'All' ) ) ,
+      pageLength = 10 ,
+      server = TRUE ,
+      dom = 'tilrp' ) ,
+    fillContainer = TRUE
+    ))
   
 
 # Return ####
