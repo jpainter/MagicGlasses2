@@ -107,7 +107,7 @@ ous_tree = function( ous , ouLevels ){
     cat('\n* PrepareDataset.R ous_tree:')
   
     # TESTING
-    save( ous, ouLevels, file = 'ousTree.rda' )
+    # save( ous, ouLevels, file = 'ousTree.rda' )
   
     # Special screening for benin!
     ous2.bad = ous %>% filter( parent %in% 'UO_supprimé') %>% pull( id ) #; length( ous2.bad )
@@ -141,16 +141,17 @@ ous_tree = function( ous , ouLevels ){
     }
   
     # glimpse( ous.id_parent )
-    
+    cat('\n - preparing ous.tree ')
     ous.tree = FromDataFrameNetwork( ous.id_parent  )
     
+    cat('\n - preparing dti ')
     dti = data.tree::as.igraph.Node( ous.tree )
     nodes = V(dti)
     node.attributes = nodes %>% attributes()
     ids = node.attributes$names
     
     # FAST, but needs proper level names...
-    
+    cat('\n - preparing dft ')
     dft = ToDataFrameTree( ous.tree , 
                     orgUnit = ids ,
                     lvl1 = function(x) x$path[1],
@@ -161,12 +162,13 @@ ous_tree = function( ous , ouLevels ){
                     lvl6 = function(x) x$path[6],
                     lvl7 = function(x) x$path[7],
                     lvl8 = function(x) x$path[8],
+                    lvl9 = function(x) x$path[9],
                     level = function(x) as.integer( x$level) )[,-1] %>%
       as_tibble()
     
     cols = ouLevels$levelName
-    keep.col.numbers = c( 1:eval( length( cols ) + 1) , 10 ) 
-    dft = dft %>% select( all_of( keep.col.numbers ) ) %>%
+    keep.col.numbers = c( 1:eval( length( cols ) + 1)  )
+    dft = dft %>% select( orgUnit, all_of( keep.col.numbers ), level ) %>%
       setnames( c( 'orgUnit', cols , 'level' ) )
     # glimpse(dft)
     
@@ -174,7 +176,7 @@ ous_tree = function( ous , ouLevels ){
     dft.translated = dft %>%
       pivot_longer( cols = c(-orgUnit,-level) , names_to = 'Level') %>%
       left_join( ous %>% dplyr::select( id, name ) , by = c( 'value' = 'id') ) %>%
-      pivot_wider( -value , names_from = Level, values_from = name ) %>%
+      pivot_wider( id_cols = -value , names_from = Level, values_from = name ) %>%
       left_join( ous %>% dplyr::select( id, name , leaf ) , by = c( 'orgUnit' = 'id') ) %>%
       rename( orgUnitName = name ) %>%
       arrange( level ) %>%

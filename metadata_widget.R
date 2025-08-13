@@ -1054,7 +1054,8 @@ metadata_widget_server <- function( id ,
       orgUnitLevels =  get( source_url = url )[[1]]  %>% 
         select( !!cols ) %>% 
         arrange( level ) %>%
-        rename( levelName = name ) 
+        rename( levelName = name ) |> 
+        filter( !grepl( 'level', levelName, ignore.case = TRUE ) )
       
       removeModal()
       
