@@ -104,7 +104,10 @@ translate_dataset_2 = function( data , dataElements, categories  ){
 
 ous_tree = function( ous , ouLevels ){
   
-    cat('\n* ous_tree:')
+    cat('\n* PrepareDataset.R ous_tree:')
+  
+    # TESTING
+    save( ous, ouLevels, file = 'ousTree.rda' )
   
     # Special screening for benin!
     ous2.bad = ous %>% filter( parent %in% 'UO_supprimé') %>% pull( id ) #; length( ous2.bad )
