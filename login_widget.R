@@ -105,15 +105,15 @@ login_widget_server <- function( id ,
      req( input$instance )
 
       if (  nchar( input$instance ) > 0 ){ 
-          cat("\n ** DEMO\n")
+          # cat("\n ** DEMO\n")
         
           # cat( '\n instances()$Instance:' , instances()$Instance )
-          cat( '\n input$instance:' , input$instance, '\n' )
+          cat( '\n instance selected:' , input$instance, '\n' )
       
           i_row = instances()$Instance %in% input$instance 
 
-          cat( '\n i_row:' , i_row )
-          cat( '\n input$demo:' , input$demo == TRUE )
+          # cat( '\n i_row:' , i_row )
+          # cat( '\n input$demo:' , input$demo == TRUE )
           ins = instances()[ i_row ,]
           # print( ins )
 
@@ -123,7 +123,7 @@ login_widget_server <- function( id ,
           
       } else {
         
-        cat("\n ** NO DEMO\n")
+        cat("\n ** instance selected")
         updateTextInput( session, "baseurl" , value = "" )
         updateTextInput( session, "username" , value = "" )
         updateTextInput( session, "password" , value = "" )
