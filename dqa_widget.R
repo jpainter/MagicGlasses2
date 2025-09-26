@@ -118,6 +118,7 @@ dqa_widget_server <- function( id ,
     cat('\n*  dqa_widget plotDqaNoError')
       
     dqa_data = data1()
+    
     dqa_data %>% monthly.outlier.summary() %>%
         yearly.outlier.summary() %>%
         dqa_outliers %>%

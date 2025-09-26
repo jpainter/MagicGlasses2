@@ -24,7 +24,8 @@
 #                    n.e = n() )
 
 monthly.outlier.summary = function( df.ts , 
-                                    err.cols = c(mad15, mad10,seasonal5, seasonal3) ,
+                                    err.cols = c( 'over_max', 'key_entry_error' ,
+                                                  'mad15', 'mad10', 'mad5', 'seasonal5', 'seasonal3' ) ,
                                     .cat = TRUE
 ){
   if (.cat ) cat( "\n * monthly.outlier.summary" )
@@ -33,15 +34,19 @@ monthly.outlier.summary = function( df.ts ,
   # NOTE: 'All' refers to all data; 'algorithm' refers to the method used to flag and error; 'combined' refers to any error flag 
   
   if (.cat ) cat( "\n - errors_by_data_and_algorithm" )
+  
+  # check which error cols in data
+  inDataErrorCols = {{ err.cols }}[ {{ err.cols }} %in%  names( df.ts ) ]
+  
   errors_by_data_and_algorithm = 
     df.ts %>% as_tibble() %>%
     ungroup %>% 
     filter( effectiveLeaf ) %>%
-    select( Month ,  data.id , data ,value,  {{err.cols}}  , original ) %>%
+    select( Month ,  data.id , data ,value,  {{ inDataErrorCols }}  , original ) %>%
     mutate(
-      Combined = reduce(across( {{err.cols }} ), pmax, .init = -Inf) > 0
+      Combined = reduce( across( {{ inDataErrorCols }} ), pmax, .init = -Inf, na.rm = TRUE ) > 0
     ) %>%
-    pivot_longer( cols = c(   {{err.cols}} , Combined ) ,
+    pivot_longer( cols = c(   {{ inDataErrorCols }} , Combined ) ,
                   names_to = "Alg" , values_to = "val"  ) %>%
     filter( val == TRUE 
             # ,  ( value & Alg %in% "seasonal3" & is.na( val ) )  
@@ -66,7 +71,7 @@ monthly.outlier.summary = function( df.ts ,
   
   
   # calculate for all data 
-  if (.cat ) cat( "\n- all data errors")
+  if (.cat ) cat( "\n - all data errors")
   errors_for_all_data_by_algorithm = 
     errors_by_data_and_algorithm %>%
     group_by( Month , Alg ) %>% 
@@ -106,6 +111,7 @@ monthly.outlier.summary = function( df.ts ,
 yearly.outlier.summary = function( grand.data.error.totals , .cat = TRUE ){
   
    if (.cat ) cat( "\n * yearly.outlier.summary" ) 
+  
    yearly.summary = grand.data.error.totals %>% 
      as_tibble %>%
      filter( Alg %in% 'Combined' ) %>%
